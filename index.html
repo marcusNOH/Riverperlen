@@ -248,39 +248,18 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 <body>
 <div id="app">
 
-<!-- LOGIN SCREEN – radio-based, zero JS needed for name selection -->
+<!-- LOGIN SCREEN -->
 
 <style>
-.nm-radio { display:none; }
-.nm-btn {
-  display:block;
-  padding:12px 8px;
-  background:#1e2230;
-  border:2px solid #2a2f42;
-  border-radius:10px;
-  color:#e8eaf0;
-  font-size:13px;
-  font-weight:600;
-  text-align:center;
-  cursor:pointer;
-  width:100%;
-  box-sizing:border-box;
-  font-family:sans-serif;
-  -webkit-tap-highlight-color:transparent;
-  transition:border-color .1s, background .1s;
-  user-select:none;
-}
-.nm-radio:checked + .nm-btn {
-  border-color:#f0a500 !important;
-  background:#2d2000 !important;
-  color:#f0a500 !important;
-}
-.nm-label { display:block; }
+.nm-radio{display:none}
+.nm-btn{display:block;padding:12px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;font-family:sans-serif;-webkit-tap-highlight-color:transparent}
+.nm-radio:checked+.nm-btn{border-color:#f0a500;background:#2d2000;color:#f0a500}
+.nm-label{display:block}
 </style>
 
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent">🔄 Aktualisieren</button>
+    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 Aktualisieren</button>
   </div>
   <div style="font-size:52px;margin-bottom:6px">🎳</div>
   <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
@@ -288,51 +267,20 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
     <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px" id="loginBtnGrid">
-      <label class="nm-label" for="nm_Jens_Wolters">
-        <input type="radio" name="loginName" id="nm_Jens_Wolters" value="Jens Wolters" class="nm-radio">
-        <span class="nm-btn">Jens W.</span>
-      </label>
-      <label class="nm-label" for="nm_Simon_Hassmann">
-        <input type="radio" name="loginName" id="nm_Simon_Hassmann" value="Simon Haßmann" class="nm-radio">
-        <span class="nm-btn">Simon H.</span>
-      </label>
-      <label class="nm-label" for="nm_Marcus_Schmele">
-        <input type="radio" name="loginName" id="nm_Marcus_Schmele" value="Marcus Schmele" class="nm-radio">
-        <span class="nm-btn">Marcus S.</span>
-      </label>
-      <label class="nm-label" for="nm_Patrick_Jentges">
-        <input type="radio" name="loginName" id="nm_Patrick_Jentges" value="Patrick Jentges" class="nm-radio">
-        <span class="nm-btn">Patrick J.</span>
-      </label>
-      <label class="nm-label" for="nm_Tilo_Hase">
-        <input type="radio" name="loginName" id="nm_Tilo_Hase" value="Tilo Hase" class="nm-radio">
-        <span class="nm-btn">Tilo H.</span>
-      </label>
-      <label class="nm-label" for="nm_Nico_Foppe">
-        <input type="radio" name="loginName" id="nm_Nico_Foppe" value="Nico Foppe" class="nm-radio">
-        <span class="nm-btn">Nico F.</span>
-      </label>
-      <label class="nm-label" for="nm_Sascha_Franke">
-        <input type="radio" name="loginName" id="nm_Sascha_Franke" value="Sascha Franke" class="nm-radio">
-        <span class="nm-btn">Sascha F.</span>
-      </label>
-      <label class="nm-label" for="nm_Stefan_Hermann_Thien">
-        <input type="radio" name="loginName" id="nm_Stefan_Hermann_Thien" value="Stefan Hermann Thien" class="nm-radio">
-        <span class="nm-btn">Stefan T.</span>
-      </label>
-      <label class="nm-label" for="nm_Marcel_Albers">
-        <input type="radio" name="loginName" id="nm_Marcel_Albers" value="Marcel Albers" class="nm-radio">
-        <span class="nm-btn">Marcel A.</span>
-      </label>
-      <label class="nm-label" for="nm_Hendrik_Poetter">
-        <input type="radio" name="loginName" id="nm_Hendrik_Poetter" value="Hendrik Pötter" class="nm-radio">
-        <span class="nm-btn">Hendrik P.</span>
-      </label>
+      <label class="nm-label" for="nm_Jens_Wolters"><input type="radio" name="loginName" id="nm_Jens_Wolters" value="Jens Wolters" class="nm-radio"><span class="nm-btn">Jens W.</span></label>
+      <label class="nm-label" for="nm_Simon_Haßmann"><input type="radio" name="loginName" id="nm_Simon_Haßmann" value="Simon Haßmann" class="nm-radio"><span class="nm-btn">Simon H.</span></label>
+      <label class="nm-label" for="nm_Marcus_Schmele"><input type="radio" name="loginName" id="nm_Marcus_Schmele" value="Marcus Schmele" class="nm-radio"><span class="nm-btn">Marcus S.</span></label>
+      <label class="nm-label" for="nm_Patrick_Jentges"><input type="radio" name="loginName" id="nm_Patrick_Jentges" value="Patrick Jentges" class="nm-radio"><span class="nm-btn">Patrick J.</span></label>
+      <label class="nm-label" for="nm_Tilo_Hase"><input type="radio" name="loginName" id="nm_Tilo_Hase" value="Tilo Hase" class="nm-radio"><span class="nm-btn">Tilo H.</span></label>
+      <label class="nm-label" for="nm_Nico_Foppe"><input type="radio" name="loginName" id="nm_Nico_Foppe" value="Nico Foppe" class="nm-radio"><span class="nm-btn">Nico F.</span></label>
+      <label class="nm-label" for="nm_Sascha_Franke"><input type="radio" name="loginName" id="nm_Sascha_Franke" value="Sascha Franke" class="nm-radio"><span class="nm-btn">Sascha F.</span></label>
+      <label class="nm-label" for="nm_Stefan_Hermann_Thien"><input type="radio" name="loginName" id="nm_Stefan_Hermann_Thien" value="Stefan Hermann Thien" class="nm-radio"><span class="nm-btn">Stefan T.</span></label>
+      <label class="nm-label" for="nm_Marcel_Albers"><input type="radio" name="loginName" id="nm_Marcel_Albers" value="Marcel Albers" class="nm-radio"><span class="nm-btn">Marcel A.</span></label>
+      <label class="nm-label" for="nm_Hendrik_Pötter"><input type="radio" name="loginName" id="nm_Hendrik_Pötter" value="Hendrik Pötter" class="nm-radio"><span class="nm-btn">Hendrik P.</span></label>
     </div>
     <div style="margin-bottom:10px">
       <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
-      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password"
-        style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
+      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
     </div>
     <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
     <button type="button" id="loginSubmitBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
@@ -1909,59 +1857,40 @@ checkBdayNotifs();
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
-let currentUser = null; // set by doLogin() or initLogin()
-
-// Name selection handled by radio inputs (CSS only)
+let currentUser = null;
 
 function doLogin() {
-// Read selected name from radio input – no JS state needed
-var checked = document.querySelector(’#loginBtnGrid input[name=“loginName”]:checked’);
+var checked = document.querySelector(‘input[name=“loginName”]:checked’);
 var name = checked ? checked.value : ‘’;
-var pw   = document.getElementById(‘loginPw’).value;
-var err  = document.getElementById(‘loginError’);
+var pw  = document.getElementById(‘loginPw’).value;
+var err = document.getElementById(‘loginError’);
 if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
 var correctPw = (state && state.appPassword) ? state.appPassword : ‘1234’;
 if (pw !== correctPw && pw !== ‘1234’) { err.textContent = ‘❌ Falsches Kennwort’; return; }
 currentUser = name;
 try { sessionStorage.setItem(‘rp_user’, name); } catch(e) {}
 var ls = document.getElementById(‘loginScreen’);
-if (ls && ls.parentNode) ls.parentNode.removeChild(ls);
+if (ls) ls.parentNode.removeChild(ls);
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 1000);
 }
 
 function initLogin() {
-// Bind login button – done here so JS is guaranteed loaded
-var btn = document.getElementById(‘loginSubmitBtn’);
-if (btn) btn.addEventListener(‘click’, doLogin);
-var pw = document.getElementById(‘loginPw’);
-if (pw) pw.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
-
-// Restore session
+// Restore previous session
 var saved = null;
 try { saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
 if (saved) {
 currentUser = saved;
 var ls = document.getElementById(‘loginScreen’);
-if (ls && ls.parentNode) ls.parentNode.removeChild(ls);
+if (ls) ls.parentNode.removeChild(ls);
 setTimeout(initPresence, 2000);
 }
-// Add extra member buttons if state has custom members
-const defaults = [‘Jens Wolters’,‘Simon Haßmann’,‘Marcus Schmele’,‘Patrick Jentges’,
-‘Tilo Hase’,‘Nico Foppe’,‘Sascha Franke’,‘Stefan Hermann Thien’,‘Marcel Albers’,‘Hendrik Pötter’];
-const extra = getMembers().filter(m => !defaults.includes(m));
-if (extra.length) {
-const grid = document.getElementById(‘loginBtnGrid’);
-if (grid) extra.forEach(function(m) {
-const b = document.createElement(‘button’);
-b.className = ‘nm-btn’;
-b.setAttribute(‘data-name’, m);
-b.textContent = m.split(’ ‘)[0] + ’ ’ + (m.split(’ ‘)[1]||’’).charAt(0) + ‘.’;
-b.onclick = function() { selectLoginName(this); };
-grid.appendChild(b);
-});
-}
+// Bind button + Enter key
+var btn = document.getElementById(‘loginSubmitBtn’);
+if (btn) btn.addEventListener(‘click’, doLogin);
+var pwEl = document.getElementById(‘loginPw’);
+if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
 updateHeader();
 }
 
