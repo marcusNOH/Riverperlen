@@ -283,9 +283,23 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
       <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
     </div>
     <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
-    <button type="button" id="loginSubmitBtn" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
+    <button type="button" id="loginSubmitBtn" ontouchend="event.preventDefault();doLogin();" onclick="doLogin();" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
   </div>
 </div>
+<script>
+// doLogin proxy - available immediately, delegates to main script when ready
+window.doLogin = function() {
+  // Wait for main script then call real doLogin
+  if (typeof window._doLoginReal === 'function') {
+    window._doLoginReal();
+  } else {
+    // Show spinner and retry
+    var err = document.getElementById('loginError');
+    if (err) err.textContent = '⏳ Wird geladen…';
+    setTimeout(window.doLogin, 200);
+  }
+};
+</script>
 
   <header>
     <div class="logo-circle" id="logoCircle"><span>PR</span></div>
@@ -1867,6 +1881,7 @@ var err = document.getElementById(‘loginError’);
 if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
 var correctPw = (state && state.appPassword) ? state.appPassword : ‘1234’;
 if (pw !== correctPw && pw !== ‘1234’) { err.textContent = ‘❌ Falsches Kennwort’; return; }
+err.textContent = ‘’;
 currentUser = name;
 try { sessionStorage.setItem(‘rp_user’, name); } catch(e) {}
 var ls = document.getElementById(‘loginScreen’);
@@ -1875,9 +1890,17 @@ updateHeader();
 renderDashboard();
 setTimeout(initPresence, 1000);
 }
+// Register real doLogin so the early proxy can call it
+window._doLoginReal = doLogin;
 
 function initLogin() {
-// Restore previous session
+// FIRST bind button (before anything removes loginScreen from DOM)
+var btn = document.getElementById(‘loginSubmitBtn’);
+if (btn) btn.addEventListener(‘click’, doLogin);
+var pwEl = document.getElementById(‘loginPw’);
+if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
+
+// THEN restore session
 var saved = null;
 try { saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
 if (saved) {
@@ -1886,11 +1909,6 @@ var ls = document.getElementById(‘loginScreen’);
 if (ls) ls.parentNode.removeChild(ls);
 setTimeout(initPresence, 2000);
 }
-// Bind button + Enter key
-var btn = document.getElementById(‘loginSubmitBtn’);
-if (btn) btn.addEventListener(‘click’, doLogin);
-var pwEl = document.getElementById(‘loginPw’);
-if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
 updateHeader();
 }
 
