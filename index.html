@@ -176,7 +176,8 @@ nav::-webkit-scrollbar{display:none}
 .btn-danger{background:var(–red);color:#fff}.btn-danger:active{transform:scale(.97)}
 .btn-secondary{background:var(–bg3);color:var(–text);border:1px solid var(–border)}.btn-secondary:active{transform:scale(.97)}
 .btn-green{background:var(–green);color:#000}.btn-green:active{transform:scale(.97)}
-.btn-purple{background:var(–purple);color:#fff}.btn-purple:active{transform:scale(.97)}
+.btn-purple{background:var(–purple);color:#fff}
+.btn-gold{background:var(–gold);color:#111;font-weight:700}.btn-purple:active{transform:scale(.97)}
 
 .section-title{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:22px;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
 .section-title .accent{color:var(–gold)}
@@ -308,6 +309,7 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
   <div class="card mb-8">
     <div class="card-title">Mitglied auswählen</div>
+    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:15px" onclick="openFreieModal()">💸 Freie Strafe (individueller Betrag)</button>
     <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
     <div id="strafeList"></div>
   </div>
@@ -419,7 +421,18 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   </div>
 
   <div class="card">
-    <div class="card-title">⚠️ Strafen-Modus</div>
+    <div class="card-title">➕ Neue Strafe anlegen</div>
+    <div class="gap-8">
+      <div><label>Name der Strafe</label><input type="text" id="newStrafeName" placeholder="z.B. Handy klingelt…"></div>
+      <div class="flex-row">
+        <div><label>Preis (€)</label><input type="number" id="newStrafePrice" placeholder="1.00" step="0.50" min="0.50"></div>
+        <div><label>Modus</label><select id="newStrafeMode"><option value="einzel">👤 Einzelperson</option><option value="alle">🔔 Alle bekommen</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="addStrafe()">➕ Strafe hinzufügen</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Strafen verwalten &amp; Modus</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
       <strong style="color:var(--purple)">🔔 Alle bekommen:</strong> Beim Eintragen dieser Strafe bekommt sie jeder Anwesende automatisch. Du wählst nur die Ausnahmen aus.
     </div>
@@ -487,6 +500,26 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   </div>
 </div>
 
+<!-- FREIE STRAFE MODAL -->
+
+<div class="modal-overlay" id="freieModal" style="display:none" onclick="if(event.target===this)closeFreieModal()">
+  <div class="modal">
+    <div class="modal-title">💸 Freie Strafe</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Betrag frei wählen – für alle oder einzelne Mitglieder.</div>
+    <div class="gap-8" style="margin-bottom:12px">
+      <div><label>Bezeichnung (optional)</label><input type="text" id="freieLabel" placeholder="z.B. Schiedsrichterentscheidung…"></div>
+      <div><label>Betrag (€)</label><input type="number" id="freieBetrag" placeholder="0.50" step="0.50" min="0.50" style="font-size:22px;font-weight:700;text-align:center"></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">Wer bekommt die Strafe?</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tippe auf Mitglieder zum Auswählen / Abwählen:</div>
+    <div class="member-check-list" id="freieListe"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
+      <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // CONSTANTS
@@ -496,7 +529,7 @@ const MEMBERS = [
   'Nico Foppe','Sascha Franke','Stefan Hermann Thien','Marcel Albers','Hendrik Pötter'
 ];
 
-const STRAFEN = [
+const DEFAULT_STRAFEN = [
   {id:'ratte',    name:'Ratte',                 price:1.00},
   {id:'tunnel',   name:'Tunnel',                price:5.00},
   {id:'schnur',   name:'Schnur berühren',       price:1.00},
@@ -509,6 +542,7 @@ const STRAFEN = [
   {id:'unabgem',  name:'Unabgemeldet fehlen',   price:10.00},
   {id:'lust',     name:'Lustwurf',              price:1.00}
 ];
+function getStrafen() { return (state && state.strafenListe && state.strafenListe.length) ? state.strafenListe : DEFAULT_STRAFEN; }
 
 const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 const TERMIN_START = new Date('2026-03-05T00:00:00');
@@ -553,6 +587,15 @@ let ignoreNextRemote = false;
 
 (function loadFbCfg() {
   try { fbCfg = JSON.parse(localStorage.getItem('rp_fbcfg')||'null'); } catch(e){}
+  // Prefill with club defaults if nothing saved yet
+  if (!fbCfg) {
+    fbCfg = {
+      databaseURL: 'https://riverperlen-440c1-default-rtdb.europe-west1.firebasedatabase.app',
+      apiKey: 'AIzaSyBr0rO8xKa5HlfKiAoOzuvtAg4j1PZAzaU',
+      projectId: 'riverperlen-440c1'
+    };
+    localStorage.setItem('rp_fbcfg', JSON.stringify(fbCfg));
+  }
 })();
 
 function fbConnect() {
@@ -717,7 +760,7 @@ function calcKasse() {
 }
 function calcMemberStrafen(m) {
   let t=0; const ms=state.strafen[m]||{};
-  STRAFEN.forEach(s=>t+=(ms[s.id]||0)*s.price);
+  getStrafen().forEach(s=>t+=(ms[s.id]||0)*s.price);
   return t;
 }
 function calcTotalStrafen() { let t=0; MEMBERS.forEach(m=>t+=calcMemberStrafen(m)); return t; }
@@ -806,7 +849,7 @@ function renderStrafen() {
 
   const ms = state.strafen[selMember]||{};
   const modes = state.strafenModes||{};
-  document.getElementById('strafeList').innerHTML = STRAFEN.map(s=>{
+  document.getElementById('strafeList').innerHTML = getStrafen().map(s=>{
     const count = ms[s.id]||0;
     const isAlle = (modes[s.id]||'einzel')==='alle';
     return `<div class="strafe-item">
@@ -843,7 +886,7 @@ let alleExcl = new Set();
 function openAlleModal(strafeId) {
   alleStrafId = strafeId;
   alleExcl = new Set();
-  const s = STRAFEN.find(x=>x.id===strafeId);
+  const s = getStrafen().find(x=>x.id===strafeId);
   document.getElementById('alleMTitle').textContent = `🔔 ${s.name} – Alle bekommen!`;
   renderAlleList();
   document.getElementById('alleModal').style.display='flex';
@@ -876,7 +919,7 @@ function toggleAlleExcl(m) {
 }
 
 function alleBestaetigen() {
-  const s = STRAFEN.find(x=>x.id===alleStrafId);
+  const s = getStrafen().find(x=>x.id===alleStrafId);
   const targets = getAlleTargets().filter(m=>!alleExcl.has(m));
   targets.forEach(m=>{
     if (!state.strafen[m]) state.strafen[m]={};
@@ -884,6 +927,61 @@ function alleBestaetigen() {
   });
   saveState(); closeAlleModal(); renderStrafen(); updateHeader();
   showToast(`🔔 ${s.name} an ${targets.length} Mitglied${targets.length!==1?'er':''} eingetragen!`);
+}
+
+// ═══════════════════════════════════════════
+// FREIE STRAFE
+// ═══════════════════════════════════════════
+let freieSel = new Set();
+
+function openFreieModal() {
+  freieSel = new Set(getAlleTargets()); // default: alle anwesenden ausgewählt
+  document.getElementById('freieLabel').value = '';
+  document.getElementById('freieBetrag').value = '';
+  renderFreieListe();
+  document.getElementById('freieModal').style.display = 'flex';
+}
+
+function closeFreieModal() {
+  document.getElementById('freieModal').style.display = 'none';
+  freieSel = new Set();
+}
+
+function renderFreieListe() {
+  document.getElementById('freieListe').innerHTML = MEMBERS.map(m => {
+    const sel = freieSel.has(m);
+    const present = state.anwesenheit[m]?.present;
+    return `<div class="member-check-item ${sel ? 'gegeben' : 'ausgenommen'}" onclick="toggleFreieSel('${m}')">
+      <span class="chk-icon">${sel ? '✅' : '❌'}</span>
+      <span class="chk-name">${m}${present ? '' : ' <span style="font-size:10px;color:var(--text3)">(abwesend)</span>'}</span>
+      <span class="chk-status">${sel ? 'Bekommt Strafe' : 'Nicht dabei'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleFreieSel(m) {
+  if (freieSel.has(m)) freieSel.delete(m); else freieSel.add(m);
+  renderFreieListe();
+}
+
+function freieBestaetigen() {
+  const betrag = parseFloat(document.getElementById('freieBetrag').value);
+  if (isNaN(betrag) || betrag <= 0) { showToast('❌ Bitte einen Betrag eingeben'); return; }
+  if (freieSel.size === 0) { showToast('❌ Niemand ausgewählt'); return; }
+  const label = document.getElementById('freieLabel').value.trim() || 'Freie Strafe';
+  // Use a unique id per label+price combo so it accumulates correctly
+  const sid = 'frei_' + label.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + Math.round(betrag*100);
+  // Make sure this strafe exists in strafenListe
+  if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+  if (!state.strafenListe.find(s => s.id === sid)) {
+    state.strafenListe.push({ id: sid, name: label, price: betrag });
+  }
+  freieSel.forEach(m => {
+    if (!state.strafen[m]) state.strafen[m] = {};
+    state.strafen[m][sid] = (state.strafen[m][sid] || 0) + 1;
+  });
+  saveState(); closeFreieModal(); renderStrafen(); updateHeader();
+  showToast(`💸 "${label}" (${betrag.toFixed(2).replace('.',',')} €) an ${freieSel.size} Mitglied${freieSel.size !== 1 ? 'er' : ''} verteilt!`);
 }
 
 // ═══════════════════════════════════════════
@@ -895,7 +993,7 @@ function renderAbschluss() {
     const total=calcMemberStrafen(m); grand+=total;
     if (!total) return '';
     const ms=state.strafen[m]||{};
-    const det=STRAFEN.filter(s=>ms[s.id]>0).map(s=>`${s.name} ×${ms[s.id]} = ${fmt(ms[s.id]*s.price)}`).join(', ');
+    const det=getStrafen().filter(s=>ms[s.id]>0).map(s=>`${s.name} ×${ms[s.id]} = ${fmt(ms[s.id]*s.price)}`).join(', ');
     const pp=state.paypal?.[m]||'';
     const link=pp?`https://www.paypal.com/paypalme/${pp}/${total.toFixed(2)}`:`https://www.paypal.com/send?amount=${total.toFixed(2)}`;
     return `<div class="abschluss-member">
@@ -1079,7 +1177,7 @@ function renderStats() {
   MEMBERS.forEach(m=>all[m]=0);
   (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{
     const ms=h.strafen?.[m]||{};
-    STRAFEN.forEach(s=>all[m]=(all[m]||0)+(ms[s.id]||0)*s.price);
+    getStrafen().forEach(s=>all[m]=(all[m]||0)+(ms[s.id]||0)*s.price);
   }));
   MEMBERS.forEach(m=>all[m]=(all[m]||0)+calcMemberStrafen(m));
 
@@ -1096,10 +1194,10 @@ function renderStats() {
   document.getElementById('statsKasse').textContent=fmt(calcKasse());
 
   const sc={};
-  STRAFEN.forEach(s=>sc[s.id]=0);
-  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};STRAFEN.forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
-  MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};STRAFEN.forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
-  document.getElementById('statsStrafenTop').innerHTML=STRAFEN.map(s=>({name:s.name,count:sc[s.id]}))
+  getStrafen().forEach(s=>sc[s.id]=0);
+  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
+  MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
+  document.getElementById('statsStrafenTop').innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
     .sort((a,b)=>b.count-a.count).slice(0,5)
     .map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join('');
 }
@@ -1116,22 +1214,26 @@ function renderSettings() {
     document.getElementById('fbStatus').textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
   }
 
-  // Strafen-Modi
+  // Strafen-Modi + Verwaltung
   const modes=state.strafenModes||{};
-  document.getElementById('strafenModeList').innerHTML=STRAFEN.map(s=>{
+  const isCustom = id => !DEFAULT_STRAFEN.find(s=>s.id===id);
+  document.getElementById('strafenModeList').innerHTML=getStrafen().map(s=>{
     const mode=modes[s.id]||'einzel';
     return `<div class="strafe-mode-row">
-      <div>
-        <div style="font-weight:600;font-size:14px">${s.name}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${s.name} ${isCustom(s.id)?'<span style="font-size:10px;background:rgba(74,158,255,.2);color:var(--blue);padding:1px 6px;border-radius:6px;font-weight:700">NEU</span>':''}</div>
         <div style="font-size:11px;color:var(--text2)">${fmt(s.price)} je Strich</div>
         ${mode==='alle'?`<div style="font-size:10px;color:var(--purple);margin-top:2px">🔔 Beim Eintragen alle außer Ausnahmen</div>`:''}
       </div>
-      <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:6px 10px;font-size:12px">
-        <option value="einzel" ${mode==='einzel'?'selected':''}>👤 Einzelperson</option>
-        <option value="alle"   ${mode==='alle'?'selected':''}>🔔 Alle bekommen</option>
-      </select>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px">
+          <option value="einzel" ${mode==='einzel'?'selected':''}>👤 Einzel</option>
+          <option value="alle"   ${mode==='alle'?'selected':''}>🔔 Alle</option>
+        </select>
+        ${isCustom(s.id)?`<button onclick="deleteStrafe('${s.id}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px">🗑️</button>`:''}
+      </div>
     </div>`;
-  }).join('');
+  }).join('')
 
   // Member photos
   document.getElementById('memberPhotoList').innerHTML=MEMBERS.map(m=>{
@@ -1159,11 +1261,37 @@ function renderSettings() {
   }).join('');
 }
 
+function addStrafe() {
+  const name = document.getElementById('newStrafeName').value.trim();
+  const price = parseFloat(document.getElementById('newStrafePrice').value);
+  const mode = document.getElementById('newStrafeMode').value;
+  if (!name || isNaN(price) || price <= 0) { showToast('❌ Name und Preis erforderlich'); return; }
+  if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+  const id = 'custom_' + Date.now();
+  state.strafenListe.push({ id, name, price });
+  if (!state.strafenModes) state.strafenModes = {};
+  state.strafenModes[id] = mode;
+  document.getElementById('newStrafeName').value = '';
+  document.getElementById('newStrafePrice').value = '';
+  saveState(); renderSettings(); renderStrafen();
+  showToast('✅ Strafe "' + name + '" hinzugefügt!');
+}
+
+function deleteStrafe(id) {
+  const s = getStrafen().find(x=>x.id===id);
+  showModal('Strafe löschen', `<p class="modal-text">Strafe "${s?.name}" wirklich löschen? Bereits eingetragene Werte bleiben in der Historie erhalten.</p>`, () => {
+    if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+    state.strafenListe = state.strafenListe.filter(x=>x.id!==id);
+    saveState(); renderSettings(); renderStrafen();
+    showToast('🗑️ Strafe gelöscht');
+  });
+}
+
 function setMode(id, mode) {
   if (!state.strafenModes) state.strafenModes={};
   state.strafenModes[id]=mode;
   saveState(); renderSettings();
-  const name=STRAFEN.find(s=>s.id===id)?.name||id;
+  const name=getStrafen().find(s=>s.id===id)?.name||id;
   showToast(mode==='alle'?`🔔 ${name} → Alle-bekommen aktiv`:`👤 ${name} → Einzelmodus`);
 }
 
