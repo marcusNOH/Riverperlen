@@ -247,34 +247,62 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 <body>
 <div id="app">
 
-<!-- LOGIN SCREEN – inside body so CSS & JS work -->
+<!-- LOGIN SCREEN -->
+
+<style>
+#loginScreen .nm-btn {
+  padding:12px 8px;
+  background:#1e2230;
+  border:2px solid #2a2f42;
+  border-radius:10px;
+  color:#e8eaf0;
+  font-size:13px;
+  font-weight:600;
+  text-align:center;
+  cursor:pointer;
+  width:100%;
+  box-sizing:border-box;
+  font-family:sans-serif;
+  -webkit-tap-highlight-color:transparent;
+  transition:border-color .1s, background .1s;
+}
+#loginScreen .nm-btn.sel {
+  border-color:#f0a500 !important;
+  background:#2d2000 !important;
+  color:#f0a500 !important;
+}
+</style>
 
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent">🔄 Aktualisieren</button>
+  </div>
   <div style="font-size:52px;margin-bottom:6px">🎳</div>
   <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
-  <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:22px">RIVERPERLEN</div>
+  <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
-    <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">Wer bist du?</div>
-    <div class="login-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
-      <button onclick="selectLoginName('Jens Wolters')" id="lbtn_0" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Jens Wolters</button>
-      <button onclick="selectLoginName('Simon Haßmann')" id="lbtn_1" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Simon Haßmann</button>
-      <button onclick="selectLoginName('Marcus Schmele')" id="lbtn_2" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Marcus Schmele</button>
-      <button onclick="selectLoginName('Patrick Jentges')" id="lbtn_3" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Patrick Jentges</button>
-      <button onclick="selectLoginName('Tilo Hase')" id="lbtn_4" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Tilo Hase</button>
-      <button onclick="selectLoginName('Nico Foppe')" id="lbtn_5" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Nico Foppe</button>
-      <button onclick="selectLoginName('Sascha Franke')" id="lbtn_6" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Sascha Franke</button>
-      <button onclick="selectLoginName('Stefan Hermann Thien')" id="lbtn_7" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Stefan Hermann Thien</button>
-      <button onclick="selectLoginName('Marcel Albers')" id="lbtn_8" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Marcel Albers</button>
-      <button onclick="selectLoginName('Hendrik Pötter')" id="lbtn_9" style="padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#f0a500'" onmouseout="this.style.borderColor=this.dataset.sel==='1'?'#f0a500':'#2a2f42'">Hendrik Pötter</button>
+    <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px" id="loginBtnGrid">
+      <button class="nm-btn" onclick="selectLoginName(this,'Jens Wolters')">Jens W.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Simon Haßmann')">Simon H.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Marcus Schmele')">Marcus S.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Patrick Jentges')">Patrick J.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Tilo Hase')">Tilo H.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Nico Foppe')">Nico F.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Sascha Franke')">Sascha F.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Stefan Hermann Thien')">Stefan T.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Marcel Albers')">Marcel A.</button>
+      <button class="nm-btn" onclick="selectLoginName(this,'Hendrik Pötter')">Hendrik P.</button>
     </div>
-    <input type="hidden" id="loginName" value="">
-    <div id="loginSelectedName" style="text-align:center;font-size:13px;color:#f0a500;min-height:18px;margin-bottom:8px;font-weight:700"></div>
-    <div style="margin-bottom:12px">
-      <div style="font-size:12px;color:#8a90a8;margin-bottom:4px">Kennwort</div>
-      <input type="password" id="loginPw" placeholder="••••••••" style="width:100%;padding:12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:15px;box-sizing:border-box" onkeydown="if(event.key==='Enter')doLogin()">
+    <div id="loginSelectedName" style="text-align:center;font-size:13px;color:#f0a500;min-height:22px;margin-bottom:10px;font-weight:700;background:rgba(240,165,0,.08);border-radius:6px;padding:4px 8px">Bitte Name antippen ☝️</div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
+      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password"
+        style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none"
+        onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
-    <button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px">EINLOGGEN</button>
+    <button onclick="doLogin()" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
   </div>
 </div>
 
@@ -1820,51 +1848,59 @@ checkBdayNotifs();
 let currentUser = sessionStorage.getItem(‘rp_user’) || null;
 
 function initLogin() {
-// If already logged in from sessionStorage, hide login screen immediately
 if (currentUser) {
 document.getElementById(‘loginScreen’).style.display = ‘none’;
 setTimeout(() => initPresence(), 2000);
 }
-// If members have been customised, add extra buttons for new members
-const extra = getMembers().filter(m => ![‘Jens Wolters’,‘Simon Haßmann’,‘Marcus Schmele’,
-‘Patrick Jentges’,‘Tilo Hase’,‘Nico Foppe’,‘Sascha Franke’,
-‘Stefan Hermann Thien’,‘Marcel Albers’,‘Hendrik Pötter’].includes(m));
+// Restore any pending name selection (in case page was reloaded)
+const pending = localStorage.getItem(‘rp_login_name’);
+if (pending) {
+document.getElementById(‘loginSelectedName’).textContent = ‘✅ ’ + pending;
+document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) {
+if (b.getAttribute(‘onclick’) && b.getAttribute(‘onclick’).includes(pending.split(’ ‘)[0])) {
+b.classList.add(‘sel’);
+}
+});
+}
+// Add extra members if any were added beyond defaults
+const defaults = [‘Jens Wolters’,‘Simon Haßmann’,‘Marcus Schmele’,‘Patrick Jentges’,
+‘Tilo Hase’,‘Nico Foppe’,‘Sascha Franke’,‘Stefan Hermann Thien’,‘Marcel Albers’,‘Hendrik Pötter’];
+const extra = getMembers().filter(m => !defaults.includes(m));
 if (extra.length) {
-const grid = document.querySelector(’#loginScreen .login-grid’);
-if (grid) extra.forEach(m => {
+const grid = document.getElementById(‘loginBtnGrid’);
+if (grid) extra.forEach(function(m) {
 const b = document.createElement(‘button’);
-b.textContent = m;
-b.onclick = () => selectLoginName(m);
-b.style.cssText = ‘padding:11px 14px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:14px;font-weight:600;text-align:left;cursor:pointer’;
+b.className = ‘nm-btn’;
+b.textContent = m.split(’ ‘)[0] + ’ ’ + (m.split(’ ‘)[1]||’’).charAt(0) + ‘.’;
+b.onclick = function() { selectLoginName(this, m); };
 grid.appendChild(b);
 });
 }
 updateHeader();
 }
 
-function selectLoginName(name) {
-document.getElementById(‘loginName’).value = name;
-document.getElementById(‘loginSelectedName’).textContent = ‘✅ ’ + name;
-// Highlight selected button, reset others
-document.querySelectorAll(’#loginScreen button[id^=“lbtn_”]’).forEach(b => {
-const isThis = b.textContent.trim() === name;
-b.style.borderColor = isThis ? ‘#f0a500’ : ‘#2a2f42’;
-b.style.background  = isThis ? ‘#2a1f00’ : ‘#1e2230’;
-b.dataset.sel = isThis ? ‘1’ : ‘0’;
+function selectLoginName(btn, name) {
+// Store in localStorage – survives iOS keyboard/scroll repaint
+localStorage.setItem(‘rp_login_name’, name);
+// Update button styles
+document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) {
+b.classList.remove(‘sel’);
 });
-// Auto-focus password
-document.getElementById(‘loginPw’).focus();
+if (btn) btn.classList.add(‘sel’);
+document.getElementById(‘loginSelectedName’).textContent = ’✅ ’ + name;
 }
 
 function doLogin() {
-const name = document.getElementById(‘loginName’).value;
+// Read name from localStorage (survives iOS focus/scroll events)
+const name = localStorage.getItem(‘rp_login_name’) || ‘’;
 const pw   = document.getElementById(‘loginPw’).value;
 const err  = document.getElementById(‘loginError’);
-if (!name) { err.textContent = ‘❌ Bitte Namen antippen’; return; }
+if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
 const correctPw = state.appPassword || ‘1234’;
 if (pw !== correctPw) { err.textContent = ‘❌ Falsches Kennwort’; return; }
 currentUser = name;
 sessionStorage.setItem(‘rp_user’, name);
+localStorage.removeItem(‘rp_login_name’);
 document.getElementById(‘loginScreen’).style.display = ‘none’;
 err.textContent = ‘’;
 updateHeader();
@@ -1875,14 +1911,12 @@ initPresence();
 function logout() {
 currentUser = null;
 sessionStorage.removeItem(‘rp_user’);
+localStorage.removeItem(‘rp_login_name’);
 document.getElementById(‘loginPw’).value = ‘’;
-document.getElementById(‘loginName’).value = ‘’;
-document.getElementById(‘loginSelectedName’).textContent = ‘’;
+document.getElementById(‘loginSelectedName’).textContent = ‘Bitte Name antippen ☝️’;
 document.getElementById(‘loginError’).textContent = ‘’;
-document.querySelectorAll(’#loginScreen button[id^=“lbtn_”]’).forEach(b => {
-b.style.borderColor = ‘#2a2f42’;
-b.style.background  = ‘#1e2230’;
-b.dataset.sel = ‘0’;
+document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) {
+b.classList.remove(‘sel’);
 });
 document.getElementById(‘loginScreen’).style.display = ‘flex’;
 }
@@ -3157,39 +3191,19 @@ function confirmReset() {
 // ═══════════════════════════════════════════
 let currentUser = sessionStorage.getItem('rp_user') || null;
 
-function initLogin() {
-  const sel = document.getElementById('loginName');
-  sel.innerHTML = '<option value="">Name wählen…</option>' +
-    getMembers().map(m=>`<option value="${m}">${m}</option>`).join('');
-  if (currentUser) {
-    document.getElementById('loginScreen').style.display = 'none';
-  }
-}
 
-function doLogin() {
-  const name = document.getElementById('loginName').value;
-  const pw = document.getElementById('loginPw').value;
-  const err = document.getElementById('loginError');
-  if (!name) { err.textContent = 'Bitte Namen wählen'; return; }
-  const correctPw = state.appPassword || '1234';
-  if (pw !== correctPw) { err.textContent = '❌ Falsches Kennwort'; return; }
-  currentUser = name;
-  sessionStorage.setItem('rp_user', name);
-  document.getElementById('loginScreen').style.display = 'none';
-  err.textContent = '';
-}
+
+
 
 function logout() {
   currentUser = null;
   sessionStorage.removeItem('rp_user');
+  localStorage.removeItem('rp_login_name');
   document.getElementById('loginPw').value = '';
-  document.getElementById('loginName').value = '';
-  document.getElementById('loginSelectedName').textContent = '';
+  document.getElementById('loginSelectedName').textContent = 'Bitte Name antippen ☝️';
   document.getElementById('loginError').textContent = '';
-  document.querySelectorAll('#loginScreen button[id^="lbtn_"]').forEach(b => {
-    b.style.borderColor = '#2a2f42';
-    b.style.background  = '#1e2230';
-    b.dataset.sel = '0';
+  document.querySelectorAll('#loginBtnGrid .nm-btn').forEach(function(b) {
+    b.classList.remove('sel');
   });
   document.getElementById('loginScreen').style.display = 'flex';
 }
