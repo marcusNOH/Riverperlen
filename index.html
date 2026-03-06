@@ -305,14 +305,19 @@ function doLogin() {
   if (ls) { ls.style.display = 'none'; ls.style.pointerEvents = 'none'; }
 
   // Activate app - wait for main JS if needed
+  // Set currentUser globally and refresh UI
+  window.currentUser = name;
+  // Remove login screen from DOM
+  var ls2 = document.getElementById('loginScreen');
+  if (ls2 && ls2.parentNode) ls2.parentNode.removeChild(ls2);
+  // Wait for main JS then refresh
   function activate() {
-    if (typeof currentUser !== 'undefined') {
-      currentUser = name;
-      if (typeof updateHeader === 'function') updateHeader();
+    if (typeof updateHeader === 'function') {
+      updateHeader();
       if (typeof renderDashboard === 'function') renderDashboard();
       if (typeof initPresence === 'function') setTimeout(initPresence, 1000);
     } else {
-      setTimeout(activate, 100); // retry until main JS loaded
+      setTimeout(activate, 50);
     }
   }
   activate();
@@ -1299,22 +1304,22 @@ function kegelbahnKosten() {
 // MEMBER PROFILES (persönliche Daten)
 // ═══════════════════════════════════════════
 function renderMyProfile() {
-  if (!currentUser) {
+  if (!window.currentUser) {
     document.getElementById('myProfileContent').innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">Bitte erst einloggen</div>';
     return;
   }
-  const p = (state.memberProfiles||{})[currentUser] || {};
-  const bday = (state.memberBdays||{})[currentUser] || '';
-  const pp = (state.paypal||{})[currentUser] || '';
+  const p = (state.memberProfiles||{})[window.currentUser] || {};
+  const bday = (state.memberBdays||{})[window.currentUser] || '';
+  const pp = (state.paypal||{})[window.currentUser] || '';
 
   document.getElementById('myProfileContent').innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
       <div class="member-avatar" style="width:56px;height:56px;font-size:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;flex-shrink:0;overflow:hidden" onclick="document.getElementById('myPhotoUpload').click()">
-        ${(localMeta.photos?.[currentUser]) ? `<img src="${localMeta.photos[currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(currentUser)}
-        <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${currentUser}',event)">
+        ${(localMeta.photos?.[window.currentUser]) ? `<img src="${localMeta.photos[window.currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(window.currentUser)}
+        <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${window.currentUser}',event)">
       </div>
       <div>
-        <div style="font-weight:700;font-size:17px">${currentUser}</div>
+        <div style="font-weight:700;font-size:17px">${window.currentUser}</div>
         <div style="font-size:12px;color:var(--text3)">Tippe auf das Foto um es zu ändern</div>
       </div>
     </div>
@@ -1346,17 +1351,17 @@ function renderMyProfile() {
 }
 
 function saveMyField(field, value) {
-if (!currentUser) return;
+if (!window.currentUser) return;
 if (field === ‘bday’) {
 if (!state.memberBdays) state.memberBdays = {};
-state.memberBdays[currentUser] = value;
+state.memberBdays[window.currentUser] = value;
 } else if (field === ‘paypal’) {
 if (!state.paypal) state.paypal = {};
-state.paypal[currentUser] = value;
+state.paypal[window.currentUser] = value;
 } else {
 if (!state.memberProfiles) state.memberProfiles = {};
-if (!state.memberProfiles[currentUser]) state.memberProfiles[currentUser] = {};
-state.memberProfiles[currentUser][field] = value;
+if (!state.memberProfiles[window.currentUser]) state.memberProfiles[window.currentUser] = {};
+state.memberProfiles[window.currentUser][field] = value;
 }
 saveState();
 showToast(‘✅ Gespeichert’);
@@ -1455,8 +1460,8 @@ const dayZusagen = zusagen[dateKey] || {};
 // Count responses for future dates
 const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
 const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
-const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
-const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
+const myStatus = window.currentUser ? (dayZusagen[window.currentUser]?.status || null) : null;
+const myGrund = window.currentUser ? (dayZusagen[window.currentUser]?.grund || '') : '';
 
 // Build participant list for future dates
 let participantHtml = '';
@@ -1471,7 +1476,7 @@ if (isFuture || isToday) {
     </div>`;
 
   // Action buttons only if logged in and future/today
-  if (currentUser) {
+  if (window.currentUser) {
     participantHtml += `
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
         <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
@@ -1549,15 +1554,15 @@ state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast(‘🗑�
 }
 
 function terminZusage(dateKey, status) {
-if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
+if (!window.currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
 if (!state.terminZusagen) state.terminZusagen = {};
 if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-const prev = state.terminZusagen[dateKey][currentUser]?.status;
+const prev = state.terminZusagen[dateKey][window.currentUser]?.status;
 // Toggle off if same
 if (prev === status) {
-delete state.terminZusagen[dateKey][currentUser];
+delete state.terminZusagen[dateKey][window.currentUser];
 } else {
-state.terminZusagen[dateKey][currentUser] = { status, grund: ‘’ };
+state.terminZusagen[dateKey][window.currentUser] = { status, grund: ‘’ };
 }
 saveState(); renderTermine();
 if (status === ‘zusage’ && prev !== ‘zusage’) showToast(‘✅ Zusage gespeichert!’);
@@ -1565,11 +1570,11 @@ if (status === ‘absage’ && prev !== ‘absage’) showToast(‘❌ Absage ge
 }
 
 function terminGrund(dateKey, grund) {
-if (!currentUser) return;
+if (!window.currentUser) return;
 if (!state.terminZusagen) state.terminZusagen = {};
 if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: ‘absage’, grund: ‘’ };
-state.terminZusagen[dateKey][currentUser].grund = grund;
+if (!state.terminZusagen[dateKey][window.currentUser]) state.terminZusagen[dateKey][window.currentUser] = { status: ‘absage’, grund: ‘’ };
+state.terminZusagen[dateKey][window.currentUser].grund = grund;
 saveState(); renderTermine();
 }
 
@@ -1758,12 +1763,12 @@ let onlineRef = null;
 let onlineUsers = {};
 
 function initPresence() {
-if (!currentUser || !fbApp) return;
+if (!window.currentUser || !fbApp) return;
 try {
 const db = firebase.database(fbApp);
-const myRef = db.ref(‘riverperlen/online/’ + currentUser.replace(/[.#$[]]/g,’_’));
+const myRef = db.ref(‘riverperlen/online/’ + window.currentUser.replace(/[.#$[]]/g,’_’));
 // Set online
-myRef.set({ name: currentUser, ts: Date.now() });
+myRef.set({ name: window.currentUser, ts: Date.now() });
 // Remove on disconnect
 myRef.onDisconnect().remove();
 // Listen to all online users
@@ -1777,7 +1782,7 @@ renderOnlineIndicator();
 if (document.getElementById(‘page-termine’)?.classList.contains(‘active’)) renderTermine();
 });
 // Heartbeat every 2 min
-setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
+setInterval(() => myRef.set({ name: window.currentUser, ts: Date.now() }), 120000);
 } catch(e) { console.warn(‘Presence error:’, e); }
 }
 
@@ -1799,7 +1804,7 @@ if (names.length === 0) {
 tel.innerHTML = ‘<span style="color:var(--text3)">Niemand gerade online</span>’;
 } else {
 tel.innerHTML = names.map(n => {
-const isMe = n === currentUser;
+const isMe = n === window.currentUser;
 return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border-radius:20px;padding:4px 10px;margin:2px;font-size:12px"> <span style="color:var(--green);font-size:9px">●</span> <span style="font-weight:${isMe?'700':'400'};color:${isMe?'var(--gold)':'var(--text)'}">${n.split(' ')[0]}${isMe?' (du)':''}</span> </span>`;
 }).join(’’);
 }
@@ -1907,10 +1912,10 @@ checkBdayNotifs();
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
-let currentUser = (function(){ try { return sessionStorage.getItem(‘rp_user’); } catch(e) { return null; } })() || null;
+window.currentUser = (function(){ try { return sessionStorage.getItem(‘rp_user’); } catch(e) { return null; } })() || null;
 
 function initLogin() {
-if (currentUser) {
+if (window.currentUser) {
 // Logged in – remove login screen completely from DOM
 var ls = document.getElementById(‘loginScreen’);
 if (ls) ls.parentNode.removeChild(ls);
@@ -1936,7 +1941,7 @@ updateHeader();
 // selectLoginName and doLogin are defined in the early inline script above
 
 function logout() {
-currentUser = null;
+window.currentUser = null;
 try { sessionStorage.removeItem(‘rp_user’); } catch(e) {}
 localStorage.removeItem(‘rp_login_name’);
 // Reload page – cleanest way to show login screen again
@@ -1951,7 +1956,7 @@ const msgs = state.chatMessages || [];
 document.getElementById(‘chatMessages’).innerHTML = msgs.length === 0
 ? ‘<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>’
 : msgs.map((m,i) => {
-const isMe = m.author === currentUser;
+const isMe = m.author === window.currentUser;
 const d = new Date(m.ts);
 const time = d.getHours().toString().padStart(2,‘0’)+’:’+d.getMinutes().toString().padStart(2,‘0’);
 return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px"> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div> <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div> </div>`;
@@ -1962,18 +1967,18 @@ box.scrollTop = box.scrollHeight;
 }
 
 function sendChat() {
-if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
+if (!window.currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
 const inp = document.getElementById(‘chatInput’);
 const text = inp.value.trim();
 if (!text) return;
 if (!state.chatMessages) state.chatMessages = [];
-state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
+state.chatMessages.push({ author: window.currentUser, text, ts: Date.now() });
 // Keep last 100 messages
 if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
 inp.value = ‘’;
 saveState(); renderChat();
 // Notify others
-sendNotif(’💬 Neue Nachricht von ’ + currentUser, text, ‘chat’);
+sendNotif(’💬 Neue Nachricht von ’ + window.currentUser, text, ‘chat’);
 }
 
 // ═══════════════════════════════════════════
@@ -1983,7 +1988,7 @@ function renderMemberManagement() {
 const members = getMembers();
 document.getElementById(‘memberMgmtList’).innerHTML = members.map((m,i) => {
 const bday = (state.memberBdays||{})[m] || ‘’;
-const isMe = m === currentUser;
+const isMe = m === window.currentUser;
 const prof = (state.memberProfiles||{})[m] || {};
 return `<div style="padding:8px 0;border-bottom:1px solid var(--border)"> <div style="display:flex;align-items:center;gap:8px"> <div style="flex:1"> <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div> <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} ${prof.email?'· '+prof.email:''}</div> </div> ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''} </div> </div>`;
 }).join(’’);
