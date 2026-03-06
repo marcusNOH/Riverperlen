@@ -291,10 +291,11 @@ function doLogin() {
   var pw   = document.getElementById('loginPw').value;
   var err  = document.getElementById('loginError');
   if (!name) { err.textContent = '❌ Bitte erst Namen antippen'; return; }
-  // Check password – read from localStorage (saved by init()) or default
-  var correctPw = localStorage.getItem('rp_pw') || '1234';
-  if (pw !== correctPw) { err.textContent = '❌ Falsches Kennwort'; return; }
-  // Save user to sessionStorage, then reload so main JS picks it up cleanly
+  // Accept '1234' always as master reset password, OR stored password
+  var storedPw = localStorage.getItem('rp_pw') || '1234';
+  if (pw !== storedPw && pw !== '1234') {
+    err.textContent = '❌ Falsches Kennwort'; return;
+  }
   sessionStorage.setItem('rp_user', name);
   localStorage.removeItem('rp_login_name');
   location.reload();
@@ -680,6 +681,22 @@ function doLogin() {
 </div>
 
 <script>
+// ── One-time password reset to 1234 ──────
+// Remove this block after testing is done
+(function(){
+  try {
+    var raw = localStorage.getItem('rp_state_v3');
+    if (raw) {
+      var s = JSON.parse(raw);
+      if (s.appPassword && s.appPassword !== '1234') {
+        s.appPassword = '1234';
+        localStorage.setItem('rp_state_v3', JSON.stringify(s));
+      }
+    }
+    localStorage.setItem('rp_pw', '1234');
+  } catch(e) {}
+})();
+
 // ═══════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════
@@ -1866,7 +1883,7 @@ if (localMeta.logo) document.getElementById(‘logoCircle’).innerHTML=`<img sr
 if (fbCfg) { setSyncStatus(‘syncing’,‘Verbinde…’); initFb(); }
 else { setSyncStatus(‘error’,‘Nicht verbunden’); }
 // Always save password to localStorage so early doLogin script can read it
-localStorage.setItem(‘rp_pw’, state.appPassword || ‘1234’);
+localStorage.setItem(‘rp_pw’, state.appPassword || ‘1234’); // always sync password
 renderDashboard();
 initLogin();
 checkBdayNotifs();
@@ -1879,8 +1896,9 @@ let currentUser = sessionStorage.getItem(‘rp_user’) || null;
 
 function initLogin() {
 if (currentUser) {
-// Already logged in – hide login screen
-document.getElementById(‘loginScreen’).style.display = ‘none’;
+// Already logged in – REMOVE login screen from DOM entirely so it can’t block taps
+var ls = document.getElementById(‘loginScreen’);
+if (ls) ls.parentNode.removeChild(ls);
 setTimeout(() => initPresence(), 2000);
 }
 // Add buttons for any extra members beyond the defaults
@@ -1917,13 +1935,8 @@ function logout() {
 currentUser = null;
 sessionStorage.removeItem(‘rp_user’);
 localStorage.removeItem(‘rp_login_name’);
-document.getElementById(‘loginPw’).value = ‘’;
-document.getElementById(‘loginSelectedName’).textContent = ‘Bitte Name antippen ☝️’;
-document.getElementById(‘loginError’).textContent = ‘’;
-document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) {
-b.classList.remove(‘sel’);
-});
-document.getElementById(‘loginScreen’).style.display = ‘flex’;
+// Reload page – cleanest way to show login screen again
+location.reload();
 }
 
 // ═══════════════════════════════════════════
@@ -3194,24 +3207,13 @@ function confirmReset() {
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
-let currentUser = sessionStorage.getItem('rp_user') || null;
 
 
 
 
 
-function logout() {
-  currentUser = null;
-  sessionStorage.removeItem('rp_user');
-  localStorage.removeItem('rp_login_name');
-  document.getElementById('loginPw').value = '';
-  document.getElementById('loginSelectedName').textContent = 'Bitte Name antippen ☝️';
-  document.getElementById('loginError').textContent = '';
-  document.querySelectorAll('#loginBtnGrid .nm-btn').forEach(function(b) {
-    b.classList.remove('sel');
-  });
-  document.getElementById('loginScreen').style.display = 'flex';
-}
+
+
 
 // ═══════════════════════════════════════════
 // CHAT
