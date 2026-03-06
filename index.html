@@ -1,3 +1,26 @@
+<!-- LOGIN SCREEN -->
+
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:32px">
+  <div style="font-size:64px;margin-bottom:8px">🎳</div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:28px;color:var(--gold);letter-spacing:2px;margin-bottom:4px">PEGELCLUB</div>
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:var(--text2);letter-spacing:3px;margin-bottom:40px">RIVERPERLEN</div>
+  <div style="width:100%;max-width:320px;background:var(--card);border-radius:18px;padding:24px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:14px;text-align:center">🔐 Anmelden</div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Name</label>
+      <select id="loginName" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:15px">
+        <option value="">Name wählen…</option>
+      </select>
+    </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">Kennwort</label>
+      <input type="password" id="loginPw" placeholder="••••••••" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:15px" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div id="loginError" style="color:var(--red);font-size:12px;text-align:center;min-height:16px;margin-bottom:10px"></div>
+    <button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),var(--gold2));border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:1px">EINLOGGEN</button>
+  </div>
+</div>
+
 <!DOCTYPE html>
 
 <html lang="de">
@@ -261,6 +284,10 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
     </div>
   </header>
 
+  <div style="display:flex;align-items:center;padding:3px 12px 3px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
+    <span style="font-size:11px;color:var(--text2);flex:1">👤 <span id="headerUser">–</span></span>
+    <button onclick="logout()" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px">Abmelden ↩</button>
+  </div>
   <nav>
     <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard',this)">🏠 Start</button>
     <button class="nav-btn" data-page="anwesenheit" onclick="showPage('anwesenheit',this)">👥 Heute</button>
@@ -270,6 +297,7 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
     <button class="nav-btn" data-page="events" onclick="showPage('events',this)">🎉 Events</button>
     <button class="nav-btn" data-page="termine" onclick="showPage('termine',this)">📆 Termine</button>
     <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">📊 Stats</button>
+    <button class="nav-btn" data-page="chat" onclick="showPage('chat',this)">💬</button>
     <button class="nav-btn" data-page="settings" onclick="showPage('settings',this)">⚙️</button>
   </nav>
 
@@ -294,7 +322,15 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
       <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
     </div>
   </div>
+  <div class="stats-grid" style="margin-top:0">
+    <div class="stat-card" style="grid-column:span 2;background:linear-gradient(135deg,rgba(232,64,64,.15),rgba(232,64,64,.05));border:1px solid rgba(232,64,64,.3)">
+      <div class="stat-icon">💳</div>
+      <div class="stat-val" id="dashOffenGesamt" style="color:var(--red)">€0</div>
+      <div class="stat-label">Gesamt offen (alle Mitglieder)</div>
+    </div>
+  </div>
   <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
+  <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
 </div>
 
 <!-- ANWESENHEIT -->
@@ -401,6 +437,18 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 </div>
 
 <!-- SETTINGS -->
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="section-title"><span class="accent">💬</span> Gruppen-Chat</div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 200px)">
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:4px 0;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;padding:8px;background:var(--card);border-radius:14px;border:1px solid var(--border)">
+      <input type="text" id="chatInput" placeholder="Nachricht…" style="flex:1;border:none;background:transparent;color:var(--text);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="background:var(--gold);border:none;border-radius:10px;padding:8px 14px;font-weight:700;color:#000;cursor:pointer;font-size:16px">➤</button>
+    </div>
+  </div>
+</div>
+
 <div class="page" id="page-settings">
   <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
 
@@ -451,6 +499,25 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 
   <div class="card"><div class="card-title">👤 Mitglieder-Fotos</div><div id="memberPhotoList"></div></div>
   <div class="card"><div class="card-title">💳 PayPal Benutzernamen</div><div id="paypalSettings"></div></div>
+
+  <div class="card">
+    <div class="card-title">👥 Mitglieder verwalten</div>
+    <div id="memberMgmtList"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input type="text" id="newMemberName" placeholder="Neues Mitglied…" style="flex:1">
+      <button class="btn btn-primary" style="width:auto;padding:10px 14px" onclick="addMember()">➕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔐 Kennwort ändern</div>
+    <div class="gap-8">
+      <div><label>Aktuelles Kennwort</label><input type="password" id="pwOld" placeholder="••••••••"></div>
+      <div><label>Neues Kennwort</label><input type="password" id="pwNew" placeholder="••••••••"></div>
+      <div><label>Neues Kennwort bestätigen</label><input type="password" id="pwNew2" placeholder="••••••••"></div>
+      <button class="btn btn-primary" onclick="changePassword()">🔐 Kennwort ändern</button>
+    </div>
+  </div>
 
   <div class="card mt-12">
     <div class="card-title">⚠️ Daten</div>
@@ -514,6 +581,10 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
     <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tippe auf Mitglieder zum Auswählen / Abwählen:</div>
     <div class="member-check-list" id="freieListe"></div>
     <div class="modal-actions">
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px;cursor:pointer">
+        <input type="checkbox" id="freiAddKasse" checked style="width:16px;height:16px">
+        In Gesamtkasse addieren
+      </label>
       <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
       <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
     </div>
@@ -524,10 +595,13 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 // ═══════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════
-const MEMBERS = [
+const DEFAULT_MEMBERS = [
   'Jens Wolters','Simon Haßmann','Marcus Schmele','Patrick Jentges','Tilo Hase',
   'Nico Foppe','Sascha Franke','Stefan Hermann Thien','Marcel Albers','Hendrik Pötter'
 ];
+function getMembers() { return (state && state.members && state.members.length) ? state.members : DEFAULT_MEMBERS; }
+// Backward compat alias
+Object.defineProperty(window,'MEMBERS',{get:getMembers});
 
 const DEFAULT_STRAFEN = [
   {id:'ratte',    name:'Ratte',                 price:1.00},
@@ -554,7 +628,12 @@ function defaultState() {
   return {
     anwesenheit:{}, strafen:{}, kasse:[], kasseStart:0,
     events:[], extraTermine:[], history:[],
-    paypal:{}, strafenModes:{klingeln:'alle'}
+    paypal:{}, strafenModes:{klingeln:'alle'},
+    members: null,      // null = use MEMBERS constant
+    memberBdays: {},    // {name: 'YYYY-MM-DD'}
+    bezahlt: {},        // {name: amount_paid}
+    chatMessages: [],   // [{author,text,ts}]
+    appPassword: '1234' // default password, can be changed
   };
 }
 
@@ -720,9 +799,1310 @@ function renderPage(id) {
     events: renderEvents,
     termine: renderTermine,
     stats: renderStats,
-    settings: renderSettings
+    settings: renderSettings,
+    chat: renderChat
   }[id] || (()=>{}))();
 }
+
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
+function fmt(v) { return '€ '+v.toFixed(2).replace('.',','); }
+function initials(n) { return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function showToast(msg, dur=2400) {
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t = document.createElement('div');
+  t.className='toast'; t.textContent=msg; document.body.appendChild(t);
+  setTimeout(()=>t.remove(), dur);
+}
+
+function showModal(title, bodyHtml, onConfirm, confirmTxt='Bestätigen', confirmCls='btn-danger') {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.textContent = confirmTxt; btn.className = 'btn '+confirmCls;
+  btn.onclick = ()=>{ closeModal(); onConfirm(); };
+  document.getElementById('modalOverlay').style.display = 'flex';
+}
+function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
+
+function updateHeader() {
+  document.getElementById('headerAmount').textContent = fmt(calcKasse());
+  if (localMeta.logo) document.getElementById('logoCircle').innerHTML = `<img src="${localMeta.logo}">`;
+  const hu = document.getElementById('headerUser');
+  if (hu) hu.textContent = currentUser || 'Nicht angemeldet';
+}
+
+function calcKasse() {
+  let t = state.kasseStart||0;
+  (state.kasse||[]).forEach(e=>{ t += e.typ==='ein' ? e.betrag : -e.betrag; });
+  return t;
+}
+function calcMemberStrafen(m) {
+  let t=0; const ms=state.strafen[m]||{};
+  getStrafen().forEach(s=>t+=(ms[s.id]||0)*s.price);
+  return t;
+}
+function calcTotalStrafen() { let t=0; MEMBERS.forEach(m=>t+=calcMemberStrafen(m)); return t; }
+
+function avatar(m) {
+  const photo = localMeta.photos?.[m];
+  return photo ? `<img src="${photo}">` : initials(m);
+}
+
+// ═══════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════
+function renderDashboard() {
+  updateHeader(); updateSyncBanner();
+  document.getElementById('dashKasse').textContent    = fmt(calcKasse());
+  document.getElementById('dashAnwesend').textContent = MEMBERS.filter(m=>state.anwesenheit[m]?.present).length;
+  document.getElementById('dashOffen').textContent    = fmt(calcTotalStrafen());
+  document.getElementById('dashEvents').textContent   = (state.events||[]).filter(e=>e.active).length;
+
+  const ranking = getMembers().map(m=>({name:m,total:calcMemberStrafen(m)})).sort((a,b)=>b.total-a.total).slice(0,5);
+  const maxV = ranking[0]?.total||1;
+  document.getElementById('dashRanking').innerHTML = ranking.map((r,i)=>`
+    <div class="ranking-item">
+      <div class="rank-pos rank-${i+1}">${i+1}</div>
+      <div style="flex:1"><div class="rank-name">${r.name.split(' ')[0]}</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${r.total/maxV*100}%"></div></div></div>
+      <div class="rank-amount">${fmt(r.total)}</div>
+    </div>`).join('');
+
+  // Total open amount across all members
+  const totalOffen = getMembers().reduce((sum,m)=>sum+Math.max(0,calcMemberStrafen(m)-(state.bezahlt?.[m]||0)),0);
+  const dashOffenEl = document.getElementById('dashOffenGesamt');
+  if (dashOffenEl) dashOffenEl.textContent = fmt(totalOffen);
+
+  // Birthdays next 2 months
+  const bdays = getBirthdaysNextTwoMonths();
+  const bdayEl = document.getElementById('dashBirthdays');
+  if (bdayEl) {
+    bdayEl.innerHTML = bdays.length === 0
+      ? '<div style="color:var(--text3);font-size:13px">Keine Geburtstage in den nächsten 2 Monaten</div>'
+      : bdays.map(b=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:24px">🎂</div>
+          <div style="flex:1"><div style="font-weight:600;font-size:14px">${b.name.split(' ')[0]}</div><div style="font-size:11px;color:var(--text2)">${b.dateStr}</div></div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gold)">${b.age} Jahre</div>
+        </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════
+// ANWESENHEIT
+// ═══════════════════════════════════════════
+function renderAnwesenheit() {
+  document.getElementById('memberList').innerHTML = MEMBERS.map(m=>{
+    const present = state.anwesenheit[m]?.present||false;
+    return `<div class="member-item">
+      <div class="member-avatar">${avatar(m)}</div>
+      <div style="flex:1"><div class="member-name">${m}</div><div class="member-sub">${present?'✅ Anwesend':'❌ Abwesend'}</div></div>
+      <div class="toggle-btn ${present?'on':''}" onclick="togglePresent('${m}')"></div>
+    </div>`;
+  }).join('');
+
+  const abw = MEMBERS.filter(m=>!state.anwesenheit[m]?.present);
+  const al = document.getElementById('abwesenList');
+  if (!abw.length) { al.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Alle anwesend 🎳</div>'; return; }
+  al.innerHTML = abw.map(m=>{
+    const g = state.anwesenheit[m]?.grund||'';
+    return `<div class="member-item">
+      <div class="member-avatar">${avatar(m)}</div>
+      <div style="flex:1"><div class="member-name">${m}</div>
+        <select onchange="setGrund('${m}',this.value)" style="margin-top:4px;padding:6px;font-size:12px;width:auto">
+          <option value="">Grund wählen…</option>
+          <option value="Krank" ${g==='Krank'?'selected':''}>🤒 Krank</option>
+          <option value="Arbeit" ${g==='Arbeit'?'selected':''}>💼 Arbeit</option>
+          <option value="Urlaub" ${g==='Urlaub'?'selected':''}>✈️ Urlaub</option>
+          <option value="Familiär" ${g==='Familiär'?'selected':''}>👨‍👩‍👧 Familiär</option>
+          <option value="Unentschuldigt" ${g==='Unentschuldigt'?'selected':''}>❌ Unentschuldigt</option>
+        </select>
+      </div>
+    </div>`;
+  }).join('');
+}
+function togglePresent(m) {
+  if (!state.anwesenheit[m]) state.anwesenheit[m]={};
+  state.anwesenheit[m].present = !state.anwesenheit[m].present;
+  saveState(); renderAnwesenheit(); renderDashboard();
+}
+function setGrund(m,g) {
+  if (!state.anwesenheit[m]) state.anwesenheit[m]={};
+  state.anwesenheit[m].grund=g; saveState();
+}
+
+// ═══════════════════════════════════════════
+// STRAFEN
+// ═══════════════════════════════════════════
+let selMember = MEMBERS[0];
+
+function renderStrafen() {
+  document.getElementById('strafeMemberTabs').innerHTML = MEMBERS.map(m=>{
+    const t = calcMemberStrafen(m);
+    return `<div class="strafe-tab ${m===selMember?'active':''}" onclick="selMember='${m}';renderStrafen()">
+      ${m.split(' ')[0]}${t>0?` <span style="color:var(--red);font-size:10px">${fmt(t)}</span>`:''}
+    </div>`;
+  }).join('');
+
+  const ms = state.strafen[selMember]||{};
+  const modes = state.strafenModes||{};
+  document.getElementById('strafeList').innerHTML = getStrafen().map(s=>{
+    const count = ms[s.id]||0;
+    const isAlle = (modes[s.id]||'einzel')==='alle';
+    return `<div class="strafe-item">
+      <div class="strafe-name">
+        <div class="strafe-label">${s.name}</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+          <span class="strafe-price">${fmt(s.price)} je</span>
+          ${isAlle?'<span class="badge-alle">🔔 Alle bekommen</span>':''}
+        </div>
+      </div>
+      <div class="counter-wrap">
+        <button class="cnt-btn minus" onclick="strafeCount('${selMember}','${s.id}',-1)">−</button>
+        <div class="cnt-val">${count}</div>
+        ${isAlle
+          ? `<button class="cnt-btn alle-plus" onclick="openAlleModal('${s.id}')" title="Alle bekommen diese Strafe">🔔</button>`
+          : `<button class="cnt-btn plus" onclick="strafeCount('${selMember}','${s.id}',1)">+</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function strafeCount(m, id, delta) {
+  if (!state.strafen[m]) state.strafen[m]={};
+  state.strafen[m][id] = Math.max(0,(state.strafen[m][id]||0)+delta);
+  saveState(); renderStrafen(); updateHeader();
+}
+
+// ═══════════════════════════════════════════
+// ALLE-BEKOMMEN MODAL
+// ═══════════════════════════════════════════
+let alleStrafId = null;
+let alleExcl = new Set();
+
+function openAlleModal(strafeId) {
+  alleStrafId = strafeId;
+  alleExcl = new Set();
+  const s = getStrafen().find(x=>x.id===strafeId);
+  document.getElementById('alleMTitle').textContent = `🔔 ${s.name} – Alle bekommen!`;
+  renderAlleList();
+  document.getElementById('alleModal').style.display='flex';
+}
+function closeAlleModal() {
+  document.getElementById('alleModal').style.display='none';
+  alleStrafId=null; alleExcl=new Set();
+}
+
+function getAlleTargets() {
+  const present = MEMBERS.filter(m=>state.anwesenheit[m]?.present);
+  return present.length>0 ? present : MEMBERS;
+}
+
+function renderAlleList() {
+  const targets = getAlleTargets();
+  document.getElementById('alleliste').innerHTML = targets.map(m=>{
+    const excl = alleExcl.has(m);
+    return `<div class="member-check-item ${excl?'ausgenommen':'gegeben'}" onclick="toggleAlleExcl('${m}')">
+      <span class="chk-icon">${excl?'❌':'✅'}</span>
+      <span class="chk-name">${m}</span>
+      <span class="chk-status">${excl?'Ausgenommen':'Bekommt Strafe'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleAlleExcl(m) {
+  if (alleExcl.has(m)) alleExcl.delete(m); else alleExcl.add(m);
+  renderAlleList();
+}
+
+function alleBestaetigen() {
+  const s = getStrafen().find(x=>x.id===alleStrafId);
+  const targets = getAlleTargets().filter(m=>!alleExcl.has(m));
+  targets.forEach(m=>{
+    if (!state.strafen[m]) state.strafen[m]={};
+    state.strafen[m][s.id] = (state.strafen[m][s.id]||0)+1;
+  });
+  saveState(); closeAlleModal(); renderStrafen(); updateHeader();
+  showToast(`🔔 ${s.name} an ${targets.length} Mitglied${targets.length!==1?'er':''} eingetragen!`);
+}
+
+// ═══════════════════════════════════════════
+// FREIE STRAFE
+// ═══════════════════════════════════════════
+let freieSel = new Set();
+
+function openFreieModal() {
+  freieSel = new Set(getAlleTargets()); // default: alle anwesenden ausgewählt
+  document.getElementById('freieLabel').value = '';
+  document.getElementById('freieBetrag').value = '';
+  renderFreieListe();
+  document.getElementById('freieModal').style.display = 'flex';
+}
+
+function closeFreieModal() {
+  document.getElementById('freieModal').style.display = 'none';
+  freieSel = new Set();
+}
+
+function renderFreieListe() {
+  document.getElementById('freieListe').innerHTML = MEMBERS.map(m => {
+    const sel = freieSel.has(m);
+    const present = state.anwesenheit[m]?.present;
+    return `<div class="member-check-item ${sel ? 'gegeben' : 'ausgenommen'}" onclick="toggleFreieSel('${m}')">
+      <span class="chk-icon">${sel ? '✅' : '❌'}</span>
+      <span class="chk-name">${m}${present ? '' : ' <span style="font-size:10px;color:var(--text3)">(abwesend)</span>'}</span>
+      <span class="chk-status">${sel ? 'Bekommt Strafe' : 'Nicht dabei'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleFreieSel(m) {
+  if (freieSel.has(m)) freieSel.delete(m); else freieSel.add(m);
+  renderFreieListe();
+}
+
+function freieBestaetigen() {
+  const betrag = parseFloat(document.getElementById('freieBetrag').value);
+  if (isNaN(betrag) || betrag <= 0) { showToast('❌ Bitte einen Betrag eingeben'); return; }
+  if (freieSel.size === 0) { showToast('❌ Niemand ausgewählt'); return; }
+  const label = document.getElementById('freieLabel').value.trim() || 'Freie Strafe';
+  const addToKasse = document.getElementById('freiAddKasse').checked;
+  const sid = 'frei_' + label.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + '_' + Math.round(betrag*100);
+  if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+  if (!state.strafenListe.find(s => s.id === sid)) {
+    state.strafenListe.push({ id: sid, name: label, price: betrag, noKasse: !addToKasse });
+  }
+  freieSel.forEach(m => {
+    if (!state.strafen[m]) state.strafen[m] = {};
+    state.strafen[m][sid] = (state.strafen[m][sid] || 0) + 1;
+  });
+  saveState(); closeFreieModal(); renderStrafen(); updateHeader();
+  showToast('💸 "'+label+'" ('+betrag.toFixed(2).replace('.',',')+' €) an '+freieSel.size+' Mitglied'+(freieSel.size !== 1 ? 'er' : '')+' verteilt!');
+}
+
+// ═══════════════════════════════════════════
+// ABSCHLUSS
+// ═══════════════════════════════════════════
+function renderAbschluss() {
+  let grand=0;
+  document.getElementById('abschlussContent').innerHTML = MEMBERS.map(m=>{
+    const total=calcMemberStrafen(m); grand+=total;
+    if (!total) return '';
+    const ms=state.strafen[m]||{};
+    const det=getStrafen().filter(s=>ms[s.id]>0).map(s=>`${s.name} ×${ms[s.id]} = ${fmt(ms[s.id]*s.price)}`).join(', ');
+    const pp=state.paypal?.[m]||'';
+    const link=pp?`https://www.paypal.com/paypalme/${pp}/${total.toFixed(2)}`:`https://www.paypal.com/send?amount=${total.toFixed(2)}`;
+    return `<div class="abschluss-member">
+      <div class="abschluss-header"><div class="abschluss-name">${m}</div><div class="abschluss-total">${fmt(total)}</div></div>
+      <div class="abschluss-detail">${det}</div>
+      <a href="${link}" target="_blank" class="paypal-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c-.013.076-.026.175-.041.254-.59 3.025-2.566 4.643-5.813 4.643h-2.189c-.988 0-1.829.716-1.974 1.694l-1.12 7.107h3.786c.432 0 .798-.318.865-.745l.036-.185.685-4.342.044-.24a.875.875 0 01.866-.744h.545c3.528 0 6.29-1.433 7.099-5.58.338-1.733.164-3.181-.182-4.321z"/></svg>
+        PayPal – ${fmt(total)}
+      </a>
+    </div>`;
+  }).join('');
+  document.getElementById('abschlussTotal').textContent=fmt(grand);
+}
+
+// ═══════════════════════════════════════════
+// KASSE
+// ═══════════════════════════════════════════
+function renderKasse() {
+  document.getElementById('kasseTotalDisplay').textContent=fmt(calcKasse());
+  const entries=[...(state.kasse||[])].reverse();
+  document.getElementById('kasseHistory').innerHTML = !entries.length
+    ? '<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Einträge</div>'
+    : entries.map((e,ri)=>{
+        const i=state.kasse.length-1-ri;
+        return `<div class="kasse-row">
+          <div><div style="font-size:13px;font-weight:600">${e.desc}</div><div style="font-size:11px;color:var(--text3)">${e.date}</div></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="${e.typ==='ein'?'kasse-pos':'kasse-neg'}">${e.typ==='ein'?'+':'−'}${fmt(e.betrag)}</div>
+            <button onclick="delKasse(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button>
+          </div>
+        </div>`;
+      }).join('');
+}
+
+function kasseEintrag() {
+  const desc=document.getElementById('kasseDesc').value.trim();
+  const betrag=parseFloat(document.getElementById('kasseBetrag').value);
+  const typ=document.getElementById('kasseTyp').value;
+  if (!desc||isNaN(betrag)||betrag<=0){showToast('❌ Bitte alle Felder ausfüllen');return;}
+  if (!state.kasse) state.kasse=[];
+  state.kasse.push({desc,betrag,typ,date:today()});
+  document.getElementById('kasseDesc').value='';
+  document.getElementById('kasseBetrag').value='';
+  saveState(); renderKasse(); updateHeader(); showToast('✅ Eintrag gespeichert');
+}
+function delKasse(i) {
+  showModal('Eintrag löschen',`<p class="modal-text">„${state.kasse[i].desc}" wirklich löschen?</p>`,()=>{
+    state.kasse.splice(i,1); saveState(); renderKasse(); updateHeader(); showToast('🗑️ Gelöscht');
+  });
+}
+
+// ═══════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════
+function renderEvents() {
+  document.getElementById('eventsList').innerHTML = !(state.events||[]).length
+    ? '<div class="card" style="color:var(--text3);font-size:13px">Noch keine Events erstellt.</div>'
+    : (state.events||[]).map((e,i)=>`
+      <div class="event-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">🎉 ${e.name}</div>
+            <div style="font-size:12px;color:var(--text2)">${e.date} · Einsatz: ${fmt(parseFloat(e.einsatz)||0)}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${e.desc}</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button onclick="toggleEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px">${e.active?'✅':'⭕'}</button>
+            <button onclick="delEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--red)">🗑️</button>
+          </div>
+        </div>
+        <span class="event-badge ${e.active?'badge-active':'badge-done'}">${e.active?'Aktiv':'Beendet'}</span>
+      </div>`).join('');
+}
+
+function eventHinzufuegen() {
+  const name=document.getElementById('eventName').value.trim();
+  const date=document.getElementById('eventDate').value;
+  const desc=document.getElementById('eventDesc').value.trim();
+  const einsatz=document.getElementById('eventEinsatz').value;
+  if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
+  if (!state.events) state.events=[];
+  state.events.push({name,date,desc,einsatz,active:true});
+  ['eventName','eventDate','eventDesc','eventEinsatz'].forEach(id=>document.getElementById(id).value='');
+  saveState(); renderEvents(); showToast('🎉 Event erstellt!');
+}
+function toggleEvent(i) { state.events[i].active=!state.events[i].active; saveState(); renderEvents(); renderDashboard(); }
+function delEvent(i) {
+  showModal('Event löschen',`<p class="modal-text">„${state.events[i].name}" wirklich löschen?</p>`,()=>{
+    state.events.splice(i,1); saveState(); renderEvents(); showToast('🗑️ Event gelöscht');
+  });
+}
+
+// ═══════════════════════════════════════════
+// TERMINE – unendlich, 28-Tage-Rhythmus
+// ═══════════════════════════════════════════
+let termineCount = 12;
+
+function getTermine(n) {
+  const list=[];
+  for (let i=0;i<n;i++) {
+    const d=new Date(TERMIN_START.getTime()+i*28*24*60*60*1000);
+    list.push(d);
+  }
+  return list;
+}
+
+function termineShowMore() { termineCount+=10; renderTermine(); }
+
+function renderTermine() {
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const termine = getTermine(termineCount);
+
+  document.getElementById('termineList').innerHTML = termine.map(d=>{
+    const isPast = d<todayD;
+    const isToday = d.toDateString()===todayD.toDateString();
+    const day=d.getDate().toString().padStart(2,'0');
+    const mon=MON[d.getMonth()];
+    const yr=d.getFullYear();
+    return `<div class="termin-item ${isPast&&!isToday?'termin-past':''}">
+      <div class="termin-date" style="${isToday?'background:var(--green);':''}">
+        <div class="termin-day">${day}</div>
+        <div class="termin-mon">${mon}</div>
+      </div>
+      <div class="termin-info">
+        <div class="termin-title">🎳 Kegelabend${isToday?` <span style="color:var(--green);font-size:11px"> ← Heute!</span>`:''}</div>
+        <div class="termin-sub">Donnerstag · ${day}. ${mon} ${yr}</div>
+      </div>
+      ${isPast&&!isToday?`<span style="font-size:11px;color:var(--text3)">✓</span>`:''}
+    </div>`;
+  }).join('');
+
+  renderExtraTermine();
+}
+
+function renderExtraTermine() {
+  const el=document.getElementById('extraTermineList');
+  if (!state.extraTermine||!state.extraTermine.length){el.innerHTML='';return;}
+  const sorted=[...state.extraTermine].sort((a,b)=>a.date.localeCompare(b.date));
+  el.innerHTML=`<div class="card mt-12">
+    <div class="card-title">📌 Zusatztermine</div>
+    ${sorted.map((t,i)=>{
+      const d=new Date(t.date+'T00:00:00');
+      const day=d.getDate().toString().padStart(2,'0');
+      const mon=MON[d.getMonth()];
+      const yr=d.getFullYear();
+      return `<div class="termin-item">
+        <div class="termin-date" style="background:var(--blue);color:#fff"><div class="termin-day">${day}</div><div class="termin-mon">${mon}</div></div>
+        <div class="termin-info">
+          <div class="termin-title">📌 ${t.name}</div>
+          <div class="termin-sub">${day}. ${mon} ${yr}${t.zeit?' · '+t.zeit:''}${t.ort?' · '+t.ort:''}</div>
+        </div>
+        <button onclick="delExtraTermin(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function extraTerminAdd() {
+  const name=document.getElementById('extraName').value.trim();
+  const date=document.getElementById('extraDate').value;
+  const zeit=document.getElementById('extraZeit').value.trim();
+  const ort=document.getElementById('extraOrt').value.trim();
+  if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
+  if (!state.extraTermine) state.extraTermine=[];
+  state.extraTermine.push({name,date,zeit,ort});
+  ['extraName','extraDate','extraZeit','extraOrt'].forEach(id=>document.getElementById(id).value='');
+  saveState(); renderTermine(); showToast('📌 Termin hinzugefügt');
+}
+
+function delExtraTermin(i) {
+  showModal('Termin löschen',`<p class="modal-text">„${state.extraTermine[i].name}" wirklich löschen?</p>`,()=>{
+    state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast('🗑️ Gelöscht');
+  });
+}
+
+// ═══════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════
+function renderStats() {
+  const all={};
+  MEMBERS.forEach(m=>all[m]=0);
+  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{
+    const ms=h.strafen?.[m]||{};
+    getStrafen().forEach(s=>all[m]=(all[m]||0)+(ms[s.id]||0)*s.price);
+  }));
+  MEMBERS.forEach(m=>all[m]=(all[m]||0)+calcMemberStrafen(m));
+
+  const ranking=MEMBERS.map(m=>({name:m,total:all[m]})).sort((a,b)=>b.total-a.total);
+  const maxV=ranking[0]?.total||1;
+  document.getElementById('statsRanking').innerHTML=ranking.map((r,i)=>`
+    <div class="ranking-item">
+      <div class="rank-pos rank-${i+1}">${i+1}</div>
+      <div style="flex:1"><div class="rank-name">${r.name}</div><div class="progress-bar"><div class="progress-fill" style="width:${r.total/maxV*100}%"></div></div></div>
+      <div class="rank-amount">${fmt(r.total)}</div>
+    </div>`).join('');
+
+  document.getElementById('statsAbende').textContent=(state.history?.length||0)+' Abende';
+  document.getElementById('statsKasse').textContent=fmt(calcKasse());
+
+  const sc={};
+  getStrafen().forEach(s=>sc[s.id]=0);
+  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
+  MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
+  document.getElementById('statsStrafenTop').innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
+    .sort((a,b)=>b.count-a.count).slice(0,5)
+    .map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════
+function renderSettings() {
+  // Prefill Firebase
+  if (fbCfg) {
+    document.getElementById('fbUrl').value    = fbCfg.databaseURL||'';
+    document.getElementById('fbKey').value    = fbCfg.apiKey||'';
+    document.getElementById('fbProjId').value = fbCfg.projectId||'';
+    document.getElementById('fbStatus').textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
+  }
+
+  renderMemberManagement();
+
+  // Strafen-Modi + Verwaltung
+  const modes=state.strafenModes||{};
+  const isCustom = id => !DEFAULT_STRAFEN.find(s=>s.id===id);
+  document.getElementById('strafenModeList').innerHTML=getStrafen().map(s=>{
+    const mode=modes[s.id]||'einzel';
+    return `<div class="strafe-mode-row">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${s.name} ${isCustom(s.id)?'<span style="font-size:10px;background:rgba(74,158,255,.2);color:var(--blue);padding:1px 6px;border-radius:6px;font-weight:700">NEU</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2)">${fmt(s.price)} je Strich</div>
+        ${mode==='alle'?`<div style="font-size:10px;color:var(--purple);margin-top:2px">🔔 Beim Eintragen alle außer Ausnahmen</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px">
+          <option value="einzel" ${mode==='einzel'?'selected':''}>👤 Einzel</option>
+          <option value="alle"   ${mode==='alle'?'selected':''}>🔔 Alle</option>
+        </select>
+        ${isCustom(s.id)?`<button onclick="deleteStrafe('${s.id}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('')
+
+  // Member photos
+  document.getElementById('memberPhotoList').innerHTML=MEMBERS.map(m=>{
+    const photo=localMeta.photos?.[m];
+    const sid=m.replace(/[^a-zA-Z]/g,'_');
+    return `<div class="settings-row">
+      <div><div class="settings-label">${m}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${photo?`<div style="width:32px;height:32px;border-radius:50%;overflow:hidden"><img src="${photo}" style="width:100%;height:100%;object-fit:cover"></div>`:''}
+        <button onclick="document.getElementById('p_${sid}').click()" style="padding:6px 12px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:12px">
+          📷 ${photo?'Ändern':'Foto'}
+        </button>
+        <input type="file" id="p_${sid}" accept="image/*" style="display:none" onchange="uploadPhoto('${m}',event)">
+      </div>
+    </div>`;
+  }).join('');
+
+  // PayPal
+  document.getElementById('paypalSettings').innerHTML=MEMBERS.map(m=>{
+    const pp=state.paypal?.[m]||'';
+    return `<div class="settings-row">
+      <div class="settings-label">${m.split(' ')[0]}</div>
+      <input class="settings-input" type="text" placeholder="PayPal.Me Username" value="${pp}" onchange="setPaypal('${m}',this.value)">
+    </div>`;
+  }).join('');
+}
+
+function changePassword() {
+  const old = document.getElementById('pwOld').value;
+  const nw = document.getElementById('pwNew').value;
+  const nw2 = document.getElementById('pwNew2').value;
+  const correct = state.appPassword || '1234';
+  if (old !== correct) { showToast('❌ Aktuelles Kennwort falsch'); return; }
+  if (!nw || nw.length < 4) { showToast('❌ Kennwort muss mind. 4 Zeichen lang sein'); return; }
+  if (nw !== nw2) { showToast('❌ Kennwörter stimmen nicht überein'); return; }
+  state.appPassword = nw;
+  ['pwOld','pwNew','pwNew2'].forEach(id=>document.getElementById(id).value='');
+  saveState(); showToast('✅ Kennwort geändert!');
+}
+
+function addStrafe() {
+  const name = document.getElementById('newStrafeName').value.trim();
+  const price = parseFloat(document.getElementById('newStrafePrice').value);
+  const mode = document.getElementById('newStrafeMode').value;
+  if (!name || isNaN(price) || price <= 0) { showToast('❌ Name und Preis erforderlich'); return; }
+  if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+  const id = 'custom_' + Date.now();
+  state.strafenListe.push({ id, name, price });
+  if (!state.strafenModes) state.strafenModes = {};
+  state.strafenModes[id] = mode;
+  document.getElementById('newStrafeName').value = '';
+  document.getElementById('newStrafePrice').value = '';
+  saveState(); renderSettings(); renderStrafen();
+  showToast('✅ Strafe "' + name + '" hinzugefügt!');
+}
+
+function deleteStrafe(id) {
+  const s = getStrafen().find(x=>x.id===id);
+  showModal('Strafe löschen', `<p class="modal-text">Strafe "${s?.name}" wirklich löschen? Bereits eingetragene Werte bleiben in der Historie erhalten.</p>`, () => {
+    if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+    state.strafenListe = state.strafenListe.filter(x=>x.id!==id);
+    saveState(); renderSettings(); renderStrafen();
+    showToast('🗑️ Strafe gelöscht');
+  });
+}
+
+function setMode(id, mode) {
+  if (!state.strafenModes) state.strafenModes={};
+  state.strafenModes[id]=mode;
+  saveState(); renderSettings();
+  const name=getStrafen().find(s=>s.id===id)?.name||id;
+  showToast(mode==='alle'?`🔔 ${name} → Alle-bekommen aktiv`:`👤 ${name} → Einzelmodus`);
+}
+
+function uploadLogo(event) {
+  const file=event.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=e=>{localMeta.logo=e.target.result;saveLocalMeta();document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;showToast('✅ Logo hochgeladen');};
+  r.readAsDataURL(file);
+}
+
+function uploadPhoto(member, event) {
+  const file=event.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    if (!localMeta.photos) localMeta.photos={};
+    localMeta.photos[member]=e.target.result;
+    saveLocalMeta(); renderSettings(); showToast(`✅ Foto für ${member.split(' ')[0]} gespeichert`);
+  };
+  r.readAsDataURL(file);
+}
+
+function setPaypal(m,v) {
+  if (!state.paypal) state.paypal={};
+  state.paypal[m]=v.trim(); saveState();
+}
+
+// ═══════════════════════════════════════════
+// ABEND SPEICHERN
+// ═══════════════════════════════════════════
+function abendSpeichern() {
+  const total=calcTotalStrafen();
+  showModal('Abend speichern',
+    `<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
+    doSave, '💾 Speichern', 'btn-green');
+}
+function doSave() {
+  const total=calcTotalStrafen();
+  if (!state.history) state.history=[];
+  state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
+  if (!state.kasse) state.kasse=[];
+  if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:'ein',date:today()});
+  state.anwesenheit={}; state.strafen={};
+  saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
+}
+
+// ═══════════════════════════════════════════
+// EXPORT / RESET
+// ═══════════════════════════════════════════
+function exportData() {
+  const blob=new Blob([JSON.stringify({state,localMeta},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`riverperlen_${today()}.json`; a.click();
+  showToast('📤 Daten exportiert');
+}
+function confirmReset() {
+  showModal('Daten zurücksetzen',
+    `<p class="modal-text">Was soll zurückgesetzt werden?</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetKasse"> Kasse</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetHistory"> Gesamte Historie</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetEvents"> Events</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label>
+    </div>`,
+    () => {
+      if (document.getElementById('resetStrafen')?.checked) { state.strafen={}; state.anwesenheit={}; }
+      if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
+      if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
+      if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
+      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; }
+      saveState(); renderDashboard();
+      showToast('✅ Ausgewählte Daten zurückgesetzt');
+    }
+  );
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+function init() {
+  if (localMeta.logo) document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;
+  if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
+  else { setSyncStatus('error','Nicht verbunden'); }
+  renderDashboard();
+  initLogin();
+}
+
+// ═══════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════
+let currentUser = sessionStorage.getItem('rp_user') || null;
+
+function initLogin() {
+  const sel = document.getElementById('loginName');
+  sel.innerHTML = '<option value="">Name wählen…</option>' +
+    getMembers().map(m=>`<option value="${m}">${m}</option>`).join('');
+  if (currentUser) {
+    document.getElementById('loginScreen').style.display = 'none';
+  }
+}
+
+function doLogin() {
+  const name = document.getElementById('loginName').value;
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginError');
+  if (!name) { err.textContent = 'Bitte Namen wählen'; return; }
+  const correctPw = state.appPassword || '1234';
+  if (pw !== correctPw) { err.textContent = '❌ Falsches Kennwort'; return; }
+  currentUser = name;
+  sessionStorage.setItem('rp_user', name);
+  document.getElementById('loginScreen').style.display = 'none';
+  err.textContent = '';
+}
+
+function logout() {
+  currentUser = null;
+  sessionStorage.removeItem('rp_user');
+  document.getElementById('loginPw').value = '';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════
+function renderChat() {
+  const msgs = state.chatMessages || [];
+  document.getElementById('chatMessages').innerHTML = msgs.length === 0
+    ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>'
+    : msgs.map((m,i) => {
+        const isMe = m.author === currentUser;
+        const d = new Date(m.ts);
+        const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+        return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
+          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
+        </div>`;
+      }).join('');
+  // scroll to bottom
+  const box = document.getElementById('chatMessages');
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendChat() {
+  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!state.chatMessages) state.chatMessages = [];
+  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
+  // Keep last 100 messages
+  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+  inp.value = '';
+  saveState(); renderChat();
+}
+
+// ═══════════════════════════════════════════
+// MEMBERS MANAGEMENT
+// ═══════════════════════════════════════════
+function renderMemberManagement() {
+  const members = getMembers();
+  document.getElementById('memberMgmtList').innerHTML = members.map((m,i) => {
+    const bday = (state.memberBdays||{})[m] || '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${m}</div>
+        <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : 'Kein Geburtstag'}</div>
+      </div>
+      <input type="date" value="${bday}" onchange="setBday('${m}',this.value)" style="font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);width:130px">
+      ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function formatBday(str) {
+  if (!str) return '';
+  const [y,mo,d] = str.split('-');
+  return `${d}.${mo}.${y}`;
+}
+
+function addMember() {
+  const name = document.getElementById('newMemberName').value.trim();
+  if (!name) { showToast('❌ Name eingeben'); return; }
+  if (!state.members) state.members = [...DEFAULT_MEMBERS];
+  if (state.members.includes(name)) { showToast('❌ Bereits vorhanden'); return; }
+  state.members.push(name);
+  document.getElementById('newMemberName').value = '';
+  saveState(); renderMemberManagement(); renderAnwesenheit();
+  showToast(`✅ ${name} hinzugefügt`);
+}
+
+function removeMember(name) {
+  showModal('Mitglied entfernen', `<p class="modal-text">„${name}" wirklich entfernen? Alle zugehörigen Daten bleiben in der Historie.</p>`, () => {
+    if (!state.members) state.members = [...DEFAULT_MEMBERS];
+    state.members = state.members.filter(m=>m!==name);
+    saveState(); renderMemberManagement(); renderAnwesenheit();
+    showToast(`🗑️ ${name} entfernt`);
+  });
+}
+
+function setBday(name, val) {
+  if (!state.memberBdays) state.memberBdays = {};
+  state.memberBdays[name] = val;
+  saveState(); renderMemberManagement(); renderDashboard();
+}
+
+function getBirthdaysNextTwoMonths() {
+  const now = new Date();
+  const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
+  const bdays = state.memberBdays || {};
+  const result = [];
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const [y,mo,d] = bdays[m].split('-').map(Number);
+    // This year's birthday
+    let bd = new Date(now.getFullYear(), mo-1, d);
+    if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
+    if (bd <= twoMonths) {
+      const age = bd.getFullYear() - y;
+      result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
+    }
+  });
+  return result.sort((a,b)=>a.date-b.date);
+}
+
+init();
+</script>
+
+</body>
+</html>
+
+```
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="dashKasse">€0</div><div class="stat-label">Kassenstand</div></div>
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="dashAnwesend">0</div><div class="stat-label">Heute dabei</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="dashOffen" style="color:var(--red)">€0</div><div class="stat-label">Offen heute</div></div>
+    <div class="stat-card"><div class="stat-icon">🎉</div><div class="stat-val" id="dashEvents">0</div><div class="stat-label">Aktive Events</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚡ Schnellzugriff</div>
+    <div class="quick-grid">
+      <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
+      <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
+      <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
+      <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
+</div>
+
+<!-- ANWESENHEIT -->
+<div class="page" id="page-anwesenheit">
+  <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
+  <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
+  <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
+</div>
+
+<!-- STRAFEN -->
+<div class="page" id="page-strafen">
+  <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
+  <div class="card mb-8">
+    <div class="card-title">Mitglied auswählen</div>
+    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:15px" onclick="openFreieModal()">💸 Freie Strafe (individueller Betrag)</button>
+    <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
+    <div id="strafeList"></div>
+  </div>
+</div>
+
+<!-- ABSCHLUSS -->
+<div class="page" id="page-abschluss">
+  <div class="section-title"><span class="accent">📋</span> Abschluss</div>
+  <div id="abschlussContent"></div>
+  <div class="card mt-12">
+    <div class="card-title">Gesamt heute</div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="color:var(--text2)">Alle Strafen</span>
+      <span style="font-family:'Barlow Condensed';font-weight:900;font-size:24px;color:var(--red)" id="abschlussTotal">€ 0,00</span>
+    </div>
+  </div>
+  <button class="btn btn-green mt-12" onclick="abendSpeichern()">💾 Abend speichern &amp; Kasse aktualisieren</button>
+</div>
+
+<!-- KASSE -->
+<div class="page" id="page-kasse">
+  <div class="section-title"><span class="accent">💰</span> Kasse</div>
+  <div class="card" style="text-align:center"><div class="kasse-total" id="kasseTotalDisplay">€ 0,00</div><div class="kasse-label">Kassenstand</div></div>
+  <div class="card">
+    <div class="card-title">Eintrag hinzufügen</div>
+    <div class="gap-8">
+      <div><label>Beschreibung</label><input type="text" id="kasseDesc" placeholder="z.B. Vereinskosten, Einnahme…"></div>
+      <div class="flex-row">
+        <div><label>Betrag (€)</label><input type="number" id="kasseBetrag" placeholder="0.00" step="0.01"></div>
+        <div><label>Typ</label><select id="kasseTyp"><option value="ein">+ Einnahme</option><option value="aus">− Ausgabe</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="kasseEintrag()">Eintrag speichern</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">Buchungshistorie</div><div id="kasseHistory"></div></div>
+</div>
+
+<!-- EVENTS -->
+<div class="page" id="page-events">
+  <div class="section-title"><span class="accent">🎉</span> Special Events</div>
+  <div class="card">
+    <div class="card-title">Neues Event</div>
+    <div class="gap-8">
+      <div><label>Event-Name</label><input type="text" id="eventName" placeholder="z.B. Jahresturnier, Grillabend…"></div>
+      <div class="flex-row">
+        <div><label>Datum</label><input type="date" id="eventDate"></div>
+        <div><label>Einsatz (€)</label><input type="number" id="eventEinsatz" placeholder="0" step="0.50"></div>
+      </div>
+      <div><label>Beschreibung</label><input type="text" id="eventDesc" placeholder="Kurze Beschreibung…"></div>
+      <button class="btn btn-primary" onclick="eventHinzufuegen()">🎉 Event erstellen</button>
+    </div>
+  </div>
+  <div id="eventsList"></div>
+</div>
+
+<!-- TERMINE -->
+<div class="page" id="page-termine">
+  <div class="section-title"><span class="accent">📆</span> Termine</div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-title" style="margin-bottom:0">🎳 Kegelabende (alle 28 Tage)</div>
+      <span style="font-size:10px;color:var(--text3)">ab 05.03.2026</span>
+    </div>
+    <div id="termineList"></div>
+    <button class="load-more-btn" onclick="termineShowMore()">↓ Weitere Termine anzeigen</button>
+  </div>
+  <div class="card mt-12">
+    <div class="card-title">➕ Zusatztermin anlegen</div>
+    <div class="gap-8">
+      <div><label>Bezeichnung</label><input type="text" id="extraName" placeholder="z.B. Grillabend, Ausflug…"></div>
+      <div class="flex-row">
+        <div><label>Datum</label><input type="date" id="extraDate"></div>
+        <div><label>Uhrzeit</label><input type="text" id="extraZeit" placeholder="19:30 Uhr"></div>
+      </div>
+      <div><label>Ort (optional)</label><input type="text" id="extraOrt" placeholder="z.B. Kegelbahn Müller"></div>
+      <button class="btn btn-primary" onclick="extraTerminAdd()">📌 Termin hinzufügen</button>
+    </div>
+  </div>
+  <div id="extraTermineList"></div>
+</div>
+
+<!-- STATS -->
+<div class="page" id="page-stats">
+  <div class="section-title"><span class="accent">📊</span> Statistiken</div>
+  <div class="card"><div class="card-title">🏆 Strafen-Gesamtranking</div><div id="statsRanking"></div></div>
+  <div class="card mt-12"><div class="card-title">📅 Abende gesamt</div><div id="statsAbende" style="font-family:'Barlow Condensed';font-weight:900;font-size:36px;color:var(--gold)"></div></div>
+  <div class="card mt-12"><div class="card-title">⚠️ Häufigste Strafen</div><div id="statsStrafenTop"></div></div>
+  <div class="card mt-12"><div class="card-title">💰 Kassenstand gesamt</div><div id="statsKasse" style="font-family:'Barlow Condensed';font-weight:900;font-size:36px;color:var(--green)"></div></div>
+</div>
+
+<!-- SETTINGS -->
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="section-title"><span class="accent">💬</span> Gruppen-Chat</div>
+  <div style="display:flex;flex-direction:column;height:calc(100vh - 200px)">
+    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:4px 0;margin-bottom:10px"></div>
+    <div style="display:flex;gap:8px;padding:8px;background:var(--card);border-radius:14px;border:1px solid var(--border)">
+      <input type="text" id="chatInput" placeholder="Nachricht…" style="flex:1;border:none;background:transparent;color:var(--text);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sendChat()">
+      <button onclick="sendChat()" style="background:var(--gold);border:none;border-radius:10px;padding:8px 14px;font-weight:700;color:#000;cursor:pointer;font-size:16px">➤</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-settings">
+  <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
+
+  <div class="card">
+    <div class="card-title">🔗 Firebase Echtzeit-Synchronisation</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
+      Trage deine Firebase-Zugangsdaten ein, damit alle Mitglieder live synchronisiert werden.
+      Kostenlos unter <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold);text-decoration:none">console.firebase.google.com</a> einrichten.<br>
+      <strong style="color:var(--text)">Kurzanleitung:</strong> Neues Projekt → Realtime Database erstellen → Regeln auf <code style="color:var(--gold)">true</code> setzen → URL kopieren.
+    </div>
+    <div class="gap-8">
+      <div><label>Database URL</label><input type="text" id="fbUrl" placeholder="https://mein-club-default-rtdb.firebaseio.com"></div>
+      <div><label>API Key</label><input type="text" id="fbKey" placeholder="AIzaSy…"></div>
+      <div><label>Project ID</label><input type="text" id="fbProjId" placeholder="mein-club-12345"></div>
+      <button class="btn btn-primary" onclick="fbConnect()">🔗 Verbinden &amp; synchronisieren</button>
+      <div id="fbStatus" style="font-size:12px;color:var(--text2);text-align:center;min-height:16px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">➕ Neue Strafe anlegen</div>
+    <div class="gap-8">
+      <div><label>Name der Strafe</label><input type="text" id="newStrafeName" placeholder="z.B. Handy klingelt…"></div>
+      <div class="flex-row">
+        <div><label>Preis (€)</label><input type="number" id="newStrafePrice" placeholder="1.00" step="0.50" min="0.50"></div>
+        <div><label>Modus</label><select id="newStrafeMode"><option value="einzel">👤 Einzelperson</option><option value="alle">🔔 Alle bekommen</option></select></div>
+      </div>
+      <button class="btn btn-primary" onclick="addStrafe()">➕ Strafe hinzufügen</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Strafen verwalten &amp; Modus</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+      <strong style="color:var(--purple)">🔔 Alle bekommen:</strong> Beim Eintragen dieser Strafe bekommt sie jeder Anwesende automatisch. Du wählst nur die Ausnahmen aus.
+    </div>
+    <div id="strafenModeList"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📷 Club-Logo</div>
+    <div class="photo-upload-area" onclick="document.getElementById('logoUpload').click()">
+      <div style="font-size:32px;margin-bottom:6px">🎳</div>
+      <div style="font-size:13px;font-weight:600">Logo hochladen</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">JPG oder PNG – wird oben im Header angezeigt</div>
+      <input type="file" id="logoUpload" accept="image/*" onchange="uploadLogo(event)">
+    </div>
+  </div>
+
+  <div class="card"><div class="card-title">👤 Mitglieder-Fotos</div><div id="memberPhotoList"></div></div>
+  <div class="card"><div class="card-title">💳 PayPal Benutzernamen</div><div id="paypalSettings"></div></div>
+
+  <div class="card">
+    <div class="card-title">👥 Mitglieder verwalten</div>
+    <div id="memberMgmtList"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <input type="text" id="newMemberName" placeholder="Neues Mitglied…" style="flex:1">
+      <button class="btn btn-primary" style="width:auto;padding:10px 14px" onclick="addMember()">➕</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔐 Kennwort ändern</div>
+    <div class="gap-8">
+      <div><label>Aktuelles Kennwort</label><input type="password" id="pwOld" placeholder="••••••••"></div>
+      <div><label>Neues Kennwort</label><input type="password" id="pwNew" placeholder="••••••••"></div>
+      <div><label>Neues Kennwort bestätigen</label><input type="password" id="pwNew2" placeholder="••••••••"></div>
+      <button class="btn btn-primary" onclick="changePassword()">🔐 Kennwort ändern</button>
+    </div>
+  </div>
+
+  <div class="card mt-12">
+    <div class="card-title">⚠️ Daten</div>
+    <div class="gap-8">
+      <button class="btn btn-secondary" onclick="exportData()">📤 Daten exportieren (JSON)</button>
+      <button class="btn btn-danger" onclick="confirmReset()">🗑️ Alle Daten zurücksetzen</button>
+    </div>
+  </div>
+  <div class="card mt-12" style="text-align:center;color:var(--text3);font-size:11px">
+    Pegelclub Riverperlen · Kegelabend Manager v2.0<br>Firebase Realtime Sync · Offline-fähig
+  </div>
+</div>
+```
+
+  </div><!-- /pages -->
+
+  <div class="save-bar">
+    <button class="btn btn-primary" onclick="abendSpeichern()">💾 Abend speichern</button>
+  </div>
+</div>
+
+<!-- GENERIC CONFIRM MODAL -->
+
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-actions" id="modalActions">
+      <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALLE-BEKOMMEN MODAL -->
+
+<div class="modal-overlay" id="alleModal" style="display:none" onclick="if(event.target===this)closeAlleModal()">
+  <div class="modal">
+    <div class="modal-title" id="alleMTitle">🔔 Alle bekommen die Strafe!</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Tippe auf ein Mitglied, um es <strong style="color:var(--red)">auszunehmen</strong>:</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Nur anwesende Mitglieder werden berücksichtigt.</div>
+    <div class="member-check-list" id="alleliste"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAlleModal()">Abbrechen</button>
+      <button class="btn btn-purple" onclick="alleBestaetigen()">✅ Strafen jetzt verteilen</button>
+    </div>
+  </div>
+</div>
+
+<!-- FREIE STRAFE MODAL -->
+
+<div class="modal-overlay" id="freieModal" style="display:none" onclick="if(event.target===this)closeFreieModal()">
+  <div class="modal">
+    <div class="modal-title">💸 Freie Strafe</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Betrag frei wählen – für alle oder einzelne Mitglieder.</div>
+    <div class="gap-8" style="margin-bottom:12px">
+      <div><label>Bezeichnung (optional)</label><input type="text" id="freieLabel" placeholder="z.B. Schiedsrichterentscheidung…"></div>
+      <div><label>Betrag (€)</label><input type="number" id="freieBetrag" placeholder="0.50" step="0.50" min="0.50" style="font-size:22px;font-weight:700;text-align:center"></div>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">Wer bekommt die Strafe?</div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tippe auf Mitglieder zum Auswählen / Abwählen:</div>
+    <div class="member-check-list" id="freieListe"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
+      <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════
+const DEFAULT_MEMBERS = [
+  'Jens Wolters','Simon Haßmann','Marcus Schmele','Patrick Jentges','Tilo Hase',
+  'Nico Foppe','Sascha Franke','Stefan Hermann Thien','Marcel Albers','Hendrik Pötter'
+];
+function getMembers() { return (state && state.members && state.members.length) ? state.members : DEFAULT_MEMBERS; }
+// Backward compat alias
+Object.defineProperty(window,'MEMBERS',{get:getMembers});
+
+const DEFAULT_STRAFEN = [
+  {id:'ratte',    name:'Ratte',                 price:1.00},
+  {id:'tunnel',   name:'Tunnel',                price:5.00},
+  {id:'schnur',   name:'Schnur berühren',       price:1.00},
+  {id:'bahn',     name:'Bahn betreten',         price:10.00},
+  {id:'unp',      name:'Unpünktlich',           price:5.00},
+  {id:'klamotte', name:'Ohne Clubklamotte',     price:5.00},
+  {id:'wuerfel',  name:'Würfel liegt vor einem',price:2.00},
+  {id:'betrug',   name:'Betrugsversuch',        price:1.00},
+  {id:'klingeln', name:'Klingeln',              price:1.00},
+  {id:'unabgem',  name:'Unabgemeldet fehlen',   price:10.00},
+  {id:'lust',     name:'Lustwurf',              price:1.00}
+];
+function getStrafen() { return (state && state.strafenListe && state.strafenListe.length) ? state.strafenListe : DEFAULT_STRAFEN; }
+
+const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+const TERMIN_START = new Date('2026-03-05T00:00:00');
+
+// ═══════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════
+function defaultState() {
+  return {
+    anwesenheit:{}, strafen:{}, kasse:[], kasseStart:0,
+    events:[], extraTermine:[], history:[],
+    paypal:{}, strafenModes:{klingeln:'alle'},
+    members: null,      // null = use MEMBERS constant
+    memberBdays: {},    // {name: 'YYYY-MM-DD'}
+    bezahlt: {},        // {name: amount_paid}
+    chatMessages: [],   // [{author,text,ts}]
+    appPassword: '1234' // default password, can be changed
+  };
+}
+
+// Local state (photos/logo stored separately – too big for Firebase)
+let localMeta = JSON.parse(localStorage.getItem('rp_meta')||'{}'); // {photos, logo}
+let state = loadLocalState();
+
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem('rp_state_v3');
+    if (raw) return {...defaultState(),...JSON.parse(raw)};
+  } catch(e){}
+  return defaultState();
+}
+function saveLocalState() {
+  localStorage.setItem('rp_state_v3', JSON.stringify(state));
+}
+function saveLocalMeta() {
+  localStorage.setItem('rp_meta', JSON.stringify(localMeta));
+}
+
+// ═══════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════
+let fbCfg = null;
+let fbApp = null;
+let fbRef = null;
+let isConnected = false;
+let ignoreNextRemote = false;
+
+(function loadFbCfg() {
+  try { fbCfg = JSON.parse(localStorage.getItem('rp_fbcfg')||'null'); } catch(e){}
+  // Prefill with club defaults if nothing saved yet
+  if (!fbCfg) {
+    fbCfg = {
+      databaseURL: 'https://riverperlen-440c1-default-rtdb.europe-west1.firebasedatabase.app',
+      apiKey: 'AIzaSyBr0rO8xKa5HlfKiAoOzuvtAg4j1PZAzaU',
+      projectId: 'riverperlen-440c1'
+    };
+    localStorage.setItem('rp_fbcfg', JSON.stringify(fbCfg));
+  }
+})();
+
+function fbConnect() {
+  const url    = document.getElementById('fbUrl').value.trim();
+  const apiKey = document.getElementById('fbKey').value.trim();
+  const projId = document.getElementById('fbProjId').value.trim();
+  if (!url||!apiKey||!projId) { showToast('❌ Bitte alle Felder ausfüllen'); return; }
+  fbCfg = {databaseURL:url, apiKey, projectId:projId};
+  localStorage.setItem('rp_fbcfg', JSON.stringify(fbCfg));
+  document.getElementById('fbStatus').textContent = '🔄 Verbinde…';
+  initFb();
+}
+
+async function initFb() {
+  if (!fbCfg) { setSyncStatus("error","Nicht konfiguriert"); return; }
+  setSyncStatus("syncing","Lade Firebase...");
+  const fbLoaded = await window._firebaseReady;
+  if (!fbLoaded || typeof firebase === "undefined") {
+    setSyncStatus("error","Kein Internet");
+    const s = document.getElementById("fbStatus");
+    if (s) s.textContent = "Fehler: Firebase konnte nicht geladen werden. Internet pruefen.";
+    return;
+  }
+  try {
+    try { fbApp = firebase.app("rp"); }
+    catch(e) {
+      fbApp = firebase.initializeApp({
+        apiKey: fbCfg.apiKey,
+        databaseURL: fbCfg.databaseURL,
+        projectId: fbCfg.projectId,
+        appId: "1:000000000000:web:riverperlen"
+      }, "rp");
+    }
+    const db = firebase.database(fbApp);
+    fbRef = db.ref("riverperlen/state");
+    setSyncStatus("syncing","Verbinde...");
+    fbRef.on("value", snap => {
+      const remote = snap.val();
+      if (remote && !ignoreNextRemote) {
+        state = {...defaultState(),...remote};
+        saveLocalState();
+        refreshCurrentPage();
+        updateHeader();
+      }
+      ignoreNextRemote = false;
+      setSyncStatus("connected","Synchron");
+      isConnected = true;
+      updateSyncBanner();
+      const s = document.getElementById("fbStatus");
+      if (s) s.textContent = "Verbunden und synchron";
+    }, err => {
+      setSyncStatus("error","Fehler");
+      isConnected = false;
+      updateSyncBanner();
+      const s = document.getElementById("fbStatus");
+      if (s) s.textContent = "Fehler: " + err.message;
+    });
+  } catch(err) {
+    setSyncStatus("error","Init-Fehler");
+    const s = document.getElementById("fbStatus");
+    if (s) s.textContent = "Fehler: " + err.message;
+    console.error(err);
+  }
+}
+
+
+function pushFb() {
+  if (!fbRef) return;
+  setSyncStatus('syncing','Speichert…');
+  ignoreNextRemote = true;
+  fbRef.set(state).then(()=>{
+    setSyncStatus('connected','Synchron');
+  }).catch(err=>{
+    setSyncStatus('error','Sync-Fehler');
+    console.error(err);
+    showToast('⚠️ Sync fehlgeschlagen – Daten lokal gespeichert');
+  });
+}
+
+function saveState() {
+  saveLocalState();
+  pushFb();
+}
+
+function setSyncStatus(cls, label) {
+  document.getElementById('syncDot').className = 'sync-dot ' + cls;
+  document.getElementById('syncLbl').textContent = label;
+}
+
+function updateSyncBanner() {
+  const el = document.getElementById('syncBanner');
+  if (!el) return;
+  if (!fbCfg) {
+    el.innerHTML = `<div class="sync-banner warn"><span style="font-size:20px">🔗</span><div><strong>Sync nicht eingerichtet.</strong> Unter ⚙️ Einstellungen Firebase konfigurieren, damit alle Mitglieder live synchronisiert werden.</div></div>`;
+  } else if (!isConnected) {
+    el.innerHTML = `<div class="sync-banner off"><span style="font-size:20px">📵</span><div><strong>Offline</strong> – Änderungen werden lokal gespeichert und beim nächsten Verbindungsaufbau synchronisiert.</div></div>`;
+  } else {
+    el.innerHTML = `<div class="sync-banner ok"><span style="font-size:20px">🟢</span><div><strong>Live-Sync aktiv</strong> – Alle Änderungen sind sofort für alle Mitglieder sichtbar.</div></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════
+let currentPage = 'dashboard';
+
+function refreshCurrentPage() { renderPage(currentPage); }
+
 
 // ═══════════════════════════════════════════
 // HELPERS
@@ -1361,14 +2741,150 @@ function confirmReset() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-function init() {
-  if (localMeta.logo) document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;
-  if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
-  else { setSyncStatus('error','Nicht verbunden'); }
-  renderDashboard();
+
+
+
+
+// ═══════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════
+let currentUser = sessionStorage.getItem('rp_user') || null;
+
+function initLogin() {
+  const sel = document.getElementById('loginName');
+  sel.innerHTML = '<option value="">Name wählen…</option>' +
+    getMembers().map(m=>`<option value="${m}">${m}</option>`).join('');
+  if (currentUser) {
+    document.getElementById('loginScreen').style.display = 'none';
+  }
 }
 
-init();
+function doLogin() {
+  const name = document.getElementById('loginName').value;
+  const pw = document.getElementById('loginPw').value;
+  const err = document.getElementById('loginError');
+  if (!name) { err.textContent = 'Bitte Namen wählen'; return; }
+  const correctPw = state.appPassword || '1234';
+  if (pw !== correctPw) { err.textContent = '❌ Falsches Kennwort'; return; }
+  currentUser = name;
+  sessionStorage.setItem('rp_user', name);
+  document.getElementById('loginScreen').style.display = 'none';
+  err.textContent = '';
+}
+
+function logout() {
+  currentUser = null;
+  sessionStorage.removeItem('rp_user');
+  document.getElementById('loginPw').value = '';
+  document.getElementById('loginName').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ═══════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════
+function renderChat() {
+  const msgs = state.chatMessages || [];
+  document.getElementById('chatMessages').innerHTML = msgs.length === 0
+    ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>'
+    : msgs.map((m,i) => {
+        const isMe = m.author === currentUser;
+        const d = new Date(m.ts);
+        const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+        return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
+          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
+        </div>`;
+      }).join('');
+  // scroll to bottom
+  const box = document.getElementById('chatMessages');
+  box.scrollTop = box.scrollHeight;
+}
+
+function sendChat() {
+  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!state.chatMessages) state.chatMessages = [];
+  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
+  // Keep last 100 messages
+  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+  inp.value = '';
+  saveState(); renderChat();
+}
+
+// ═══════════════════════════════════════════
+// MEMBERS MANAGEMENT
+// ═══════════════════════════════════════════
+function renderMemberManagement() {
+  const members = getMembers();
+  document.getElementById('memberMgmtList').innerHTML = members.map((m,i) => {
+    const bday = (state.memberBdays||{})[m] || '';
+    return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${m}</div>
+        <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : 'Kein Geburtstag'}</div>
+      </div>
+      <input type="date" value="${bday}" onchange="setBday('${m}',this.value)" style="font-size:11px;padding:4px 6px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text);width:130px">
+      ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
+    </div>`;
+  }).join('');
+}
+
+function formatBday(str) {
+  if (!str) return '';
+  const [y,mo,d] = str.split('-');
+  return `${d}.${mo}.${y}`;
+}
+
+function addMember() {
+  const name = document.getElementById('newMemberName').value.trim();
+  if (!name) { showToast('❌ Name eingeben'); return; }
+  if (!state.members) state.members = [...DEFAULT_MEMBERS];
+  if (state.members.includes(name)) { showToast('❌ Bereits vorhanden'); return; }
+  state.members.push(name);
+  document.getElementById('newMemberName').value = '';
+  saveState(); renderMemberManagement(); renderAnwesenheit();
+  showToast(`✅ ${name} hinzugefügt`);
+}
+
+function removeMember(name) {
+  showModal('Mitglied entfernen', `<p class="modal-text">„${name}" wirklich entfernen? Alle zugehörigen Daten bleiben in der Historie.</p>`, () => {
+    if (!state.members) state.members = [...DEFAULT_MEMBERS];
+    state.members = state.members.filter(m=>m!==name);
+    saveState(); renderMemberManagement(); renderAnwesenheit();
+    showToast(`🗑️ ${name} entfernt`);
+  });
+}
+
+function setBday(name, val) {
+  if (!state.memberBdays) state.memberBdays = {};
+  state.memberBdays[name] = val;
+  saveState(); renderMemberManagement(); renderDashboard();
+}
+
+function getBirthdaysNextTwoMonths() {
+  const now = new Date();
+  const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
+  const bdays = state.memberBdays || {};
+  const result = [];
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const [y,mo,d] = bdays[m].split('-').map(Number);
+    // This year's birthday
+    let bd = new Date(now.getFullYear(), mo-1, d);
+    if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
+    if (bd <= twoMonths) {
+      const age = bd.getFullYear() - y;
+      result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
+    }
+  });
+  return result.sort((a,b)=>a.date-b.date);
+}
+
+
 </script>
 
 </body>
