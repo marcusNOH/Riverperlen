@@ -274,56 +274,6 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 }
 </style>
 
-<script>
-// Name selection - stored in window var (survives iOS keyboard repaint)
-function selectLoginName(btn, name) {
-  window._rp_selected = name;
-  document.querySelectorAll('#loginBtnGrid .nm-btn').forEach(function(b) { b.classList.remove('sel'); });
-  if (btn) btn.classList.add('sel');
-  var el = document.getElementById('loginSelectedName');
-  if (el) el.textContent = '✅ ' + name;
-}
-
-// Login - defined early so EINLOGGEN button works immediately
-function doLogin() {
-  var name = window._rp_selected || '';
-  var pw   = document.getElementById('loginPw').value;
-  var err  = document.getElementById('loginError');
-  if (!name) { err.textContent = '❌ Bitte erst Namen antippen'; return; }
-
-  // Check password: accept '1234' always, or whatever is stored
-  var correctPw = localStorage.getItem('rp_pw') || '1234';
-  if (pw !== '1234' && pw !== correctPw) {
-    err.textContent = '❌ Falsches Kennwort'; return;
-  }
-
-  // Save to sessionStorage
-  try { sessionStorage.setItem('rp_user', name); } catch(e) {}
-
-  // Hide login screen
-  var ls = document.getElementById('loginScreen');
-  if (ls) { ls.style.display = 'none'; ls.style.pointerEvents = 'none'; }
-
-  // Activate app - wait for main JS if needed
-  // Set currentUser globally and refresh UI
-  window.currentUser = name;
-  // Remove login screen from DOM
-  var ls2 = document.getElementById('loginScreen');
-  if (ls2 && ls2.parentNode) ls2.parentNode.removeChild(ls2);
-  // Wait for main JS then refresh
-  function activate() {
-    if (typeof updateHeader === 'function') {
-      updateHeader();
-      if (typeof renderDashboard === 'function') renderDashboard();
-      if (typeof initPresence === 'function') setTimeout(initPresence, 1000);
-    } else {
-      setTimeout(activate, 50);
-    }
-  }
-  activate();
-}
-</script>
-
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
     <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent">🔄 Aktualisieren</button>
@@ -334,16 +284,16 @@ function doLogin() {
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
     <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px" id="loginBtnGrid">
-      <button class="nm-btn" onclick="selectLoginName(this,'Jens Wolters')">Jens W.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Simon Haßmann')">Simon H.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Marcus Schmele')">Marcus S.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Patrick Jentges')">Patrick J.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Tilo Hase')">Tilo H.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Nico Foppe')">Nico F.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Sascha Franke')">Sascha F.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Stefan Hermann Thien')">Stefan T.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Marcel Albers')">Marcel A.</button>
-      <button class="nm-btn" onclick="selectLoginName(this,'Hendrik Pötter')">Hendrik P.</button>
+      <button class="nm-btn" data-name="Jens Wolters" onclick="selectLoginName(this)">Jens W.</button>
+      <button class="nm-btn" data-name="Simon Haßmann" onclick="selectLoginName(this)">Simon H.</button>
+      <button class="nm-btn" data-name="Marcus Schmele" onclick="selectLoginName(this)">Marcus S.</button>
+      <button class="nm-btn" data-name="Patrick Jentges" onclick="selectLoginName(this)">Patrick J.</button>
+      <button class="nm-btn" data-name="Tilo Hase" onclick="selectLoginName(this)">Tilo H.</button>
+      <button class="nm-btn" data-name="Nico Foppe" onclick="selectLoginName(this)">Nico F.</button>
+      <button class="nm-btn" data-name="Sascha Franke" onclick="selectLoginName(this)">Sascha F.</button>
+      <button class="nm-btn" data-name="Stefan Hermann Thien" onclick="selectLoginName(this)">Stefan T.</button>
+      <button class="nm-btn" data-name="Marcel Albers" onclick="selectLoginName(this)">Marcel A.</button>
+      <button class="nm-btn" data-name="Hendrik Pötter" onclick="selectLoginName(this)">Hendrik P.</button>
     </div>
     <div id="loginSelectedName" style="text-align:center;font-size:13px;color:#f0a500;min-height:22px;margin-bottom:10px;font-weight:700;background:rgba(240,165,0,.08);border-radius:6px;padding:4px 8px">Bitte Name antippen ☝️</div>
     <div style="margin-bottom:10px">
@@ -1304,22 +1254,22 @@ function kegelbahnKosten() {
 // MEMBER PROFILES (persönliche Daten)
 // ═══════════════════════════════════════════
 function renderMyProfile() {
-  if (!window.currentUser) {
+  if (!currentUser) {
     document.getElementById('myProfileContent').innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px">Bitte erst einloggen</div>';
     return;
   }
-  const p = (state.memberProfiles||{})[window.currentUser] || {};
-  const bday = (state.memberBdays||{})[window.currentUser] || '';
-  const pp = (state.paypal||{})[window.currentUser] || '';
+  const p = (state.memberProfiles||{})[currentUser] || {};
+  const bday = (state.memberBdays||{})[currentUser] || '';
+  const pp = (state.paypal||{})[currentUser] || '';
 
   document.getElementById('myProfileContent').innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
       <div class="member-avatar" style="width:56px;height:56px;font-size:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;flex-shrink:0;overflow:hidden" onclick="document.getElementById('myPhotoUpload').click()">
-        ${(localMeta.photos?.[window.currentUser]) ? `<img src="${localMeta.photos[window.currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(window.currentUser)}
-        <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${window.currentUser}',event)">
+        ${(localMeta.photos?.[currentUser]) ? `<img src="${localMeta.photos[currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(currentUser)}
+        <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${currentUser}',event)">
       </div>
       <div>
-        <div style="font-weight:700;font-size:17px">${window.currentUser}</div>
+        <div style="font-weight:700;font-size:17px">${currentUser}</div>
         <div style="font-size:12px;color:var(--text3)">Tippe auf das Foto um es zu ändern</div>
       </div>
     </div>
@@ -1351,17 +1301,17 @@ function renderMyProfile() {
 }
 
 function saveMyField(field, value) {
-if (!window.currentUser) return;
+if (!currentUser) return;
 if (field === ‘bday’) {
 if (!state.memberBdays) state.memberBdays = {};
-state.memberBdays[window.currentUser] = value;
+state.memberBdays[currentUser] = value;
 } else if (field === ‘paypal’) {
 if (!state.paypal) state.paypal = {};
-state.paypal[window.currentUser] = value;
+state.paypal[currentUser] = value;
 } else {
 if (!state.memberProfiles) state.memberProfiles = {};
-if (!state.memberProfiles[window.currentUser]) state.memberProfiles[window.currentUser] = {};
-state.memberProfiles[window.currentUser][field] = value;
+if (!state.memberProfiles[currentUser]) state.memberProfiles[currentUser] = {};
+state.memberProfiles[currentUser][field] = value;
 }
 saveState();
 showToast(‘✅ Gespeichert’);
@@ -1460,8 +1410,8 @@ const dayZusagen = zusagen[dateKey] || {};
 // Count responses for future dates
 const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
 const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
-const myStatus = window.currentUser ? (dayZusagen[window.currentUser]?.status || null) : null;
-const myGrund = window.currentUser ? (dayZusagen[window.currentUser]?.grund || '') : '';
+const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
+const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
 
 // Build participant list for future dates
 let participantHtml = '';
@@ -1476,7 +1426,7 @@ if (isFuture || isToday) {
     </div>`;
 
   // Action buttons only if logged in and future/today
-  if (window.currentUser) {
+  if (currentUser) {
     participantHtml += `
       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
         <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
@@ -1554,15 +1504,15 @@ state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast(‘🗑�
 }
 
 function terminZusage(dateKey, status) {
-if (!window.currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
+if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
 if (!state.terminZusagen) state.terminZusagen = {};
 if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-const prev = state.terminZusagen[dateKey][window.currentUser]?.status;
+const prev = state.terminZusagen[dateKey][currentUser]?.status;
 // Toggle off if same
 if (prev === status) {
-delete state.terminZusagen[dateKey][window.currentUser];
+delete state.terminZusagen[dateKey][currentUser];
 } else {
-state.terminZusagen[dateKey][window.currentUser] = { status, grund: ‘’ };
+state.terminZusagen[dateKey][currentUser] = { status, grund: ‘’ };
 }
 saveState(); renderTermine();
 if (status === ‘zusage’ && prev !== ‘zusage’) showToast(‘✅ Zusage gespeichert!’);
@@ -1570,11 +1520,11 @@ if (status === ‘absage’ && prev !== ‘absage’) showToast(‘❌ Absage ge
 }
 
 function terminGrund(dateKey, grund) {
-if (!window.currentUser) return;
+if (!currentUser) return;
 if (!state.terminZusagen) state.terminZusagen = {};
 if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-if (!state.terminZusagen[dateKey][window.currentUser]) state.terminZusagen[dateKey][window.currentUser] = { status: ‘absage’, grund: ‘’ };
-state.terminZusagen[dateKey][window.currentUser].grund = grund;
+if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: ‘absage’, grund: ‘’ };
+state.terminZusagen[dateKey][currentUser].grund = grund;
 saveState(); renderTermine();
 }
 
@@ -1763,12 +1713,12 @@ let onlineRef = null;
 let onlineUsers = {};
 
 function initPresence() {
-if (!window.currentUser || !fbApp) return;
+if (!currentUser || !fbApp) return;
 try {
 const db = firebase.database(fbApp);
-const myRef = db.ref(‘riverperlen/online/’ + window.currentUser.replace(/[.#$[]]/g,’_’));
+const myRef = db.ref(‘riverperlen/online/’ + currentUser.replace(/[.#$[]]/g,’_’));
 // Set online
-myRef.set({ name: window.currentUser, ts: Date.now() });
+myRef.set({ name: currentUser, ts: Date.now() });
 // Remove on disconnect
 myRef.onDisconnect().remove();
 // Listen to all online users
@@ -1782,7 +1732,7 @@ renderOnlineIndicator();
 if (document.getElementById(‘page-termine’)?.classList.contains(‘active’)) renderTermine();
 });
 // Heartbeat every 2 min
-setInterval(() => myRef.set({ name: window.currentUser, ts: Date.now() }), 120000);
+setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
 } catch(e) { console.warn(‘Presence error:’, e); }
 }
 
@@ -1804,7 +1754,7 @@ if (names.length === 0) {
 tel.innerHTML = ‘<span style="color:var(--text3)">Niemand gerade online</span>’;
 } else {
 tel.innerHTML = names.map(n => {
-const isMe = n === window.currentUser;
+const isMe = n === currentUser;
 return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border-radius:20px;padding:4px 10px;margin:2px;font-size:12px"> <span style="color:var(--green);font-size:9px">●</span> <span style="font-weight:${isMe?'700':'400'};color:${isMe?'var(--gold)':'var(--text)'}">${n.split(' ')[0]}${isMe?' (du)':''}</span> </span>`;
 }).join(’’);
 }
@@ -1912,16 +1862,44 @@ checkBdayNotifs();
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
-window.currentUser = (function(){ try { return sessionStorage.getItem(‘rp_user’); } catch(e) { return null; } })() || null;
+let currentUser = null; // set by doLogin() or initLogin()
+
+function selectLoginName(btn) {
+var name = btn.getAttribute(‘data-name’);
+window._rp_selected = name;
+document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) { b.classList.remove(‘sel’); });
+btn.classList.add(‘sel’);
+var el = document.getElementById(‘loginSelectedName’);
+if (el) el.textContent = ’✅ ’ + name;
+}
+
+function doLogin() {
+var name = window._rp_selected || ‘’;
+var pw   = document.getElementById(‘loginPw’).value;
+var err  = document.getElementById(‘loginError’);
+if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
+var correctPw = (state && state.appPassword) ? state.appPassword : ‘1234’;
+if (pw !== correctPw && pw !== ‘1234’) { err.textContent = ‘❌ Falsches Kennwort’; return; }
+currentUser = name;
+try { sessionStorage.setItem(‘rp_user’, name); } catch(e) {}
+var ls = document.getElementById(‘loginScreen’);
+if (ls && ls.parentNode) ls.parentNode.removeChild(ls);
+updateHeader();
+renderDashboard();
+setTimeout(initPresence, 1000);
+}
 
 function initLogin() {
-if (window.currentUser) {
-// Logged in – remove login screen completely from DOM
+// Restore session
+var saved = null;
+try { saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
+if (saved) {
+currentUser = saved;
 var ls = document.getElementById(‘loginScreen’);
-if (ls) ls.parentNode.removeChild(ls);
-setTimeout(() => initPresence(), 2000);
+if (ls && ls.parentNode) ls.parentNode.removeChild(ls);
+setTimeout(initPresence, 2000);
 }
-// Add extra member buttons if any
+// Add extra member buttons if state has custom members
 const defaults = [‘Jens Wolters’,‘Simon Haßmann’,‘Marcus Schmele’,‘Patrick Jentges’,
 ‘Tilo Hase’,‘Nico Foppe’,‘Sascha Franke’,‘Stefan Hermann Thien’,‘Marcel Albers’,‘Hendrik Pötter’];
 const extra = getMembers().filter(m => !defaults.includes(m));
@@ -1930,21 +1908,18 @@ const grid = document.getElementById(‘loginBtnGrid’);
 if (grid) extra.forEach(function(m) {
 const b = document.createElement(‘button’);
 b.className = ‘nm-btn’;
+b.setAttribute(‘data-name’, m);
 b.textContent = m.split(’ ‘)[0] + ’ ’ + (m.split(’ ‘)[1]||’’).charAt(0) + ‘.’;
-b.onclick = function() { selectLoginName(this, m); };
+b.onclick = function() { selectLoginName(this); };
 grid.appendChild(b);
 });
 }
 updateHeader();
 }
 
-// selectLoginName and doLogin are defined in the early inline script above
-
 function logout() {
-window.currentUser = null;
+currentUser = null;
 try { sessionStorage.removeItem(‘rp_user’); } catch(e) {}
-localStorage.removeItem(‘rp_login_name’);
-// Reload page – cleanest way to show login screen again
 location.reload();
 }
 
@@ -1956,7 +1931,7 @@ const msgs = state.chatMessages || [];
 document.getElementById(‘chatMessages’).innerHTML = msgs.length === 0
 ? ‘<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>’
 : msgs.map((m,i) => {
-const isMe = m.author === window.currentUser;
+const isMe = m.author === currentUser;
 const d = new Date(m.ts);
 const time = d.getHours().toString().padStart(2,‘0’)+’:’+d.getMinutes().toString().padStart(2,‘0’);
 return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px"> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div> <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div> </div>`;
@@ -1967,18 +1942,18 @@ box.scrollTop = box.scrollHeight;
 }
 
 function sendChat() {
-if (!window.currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
+if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
 const inp = document.getElementById(‘chatInput’);
 const text = inp.value.trim();
 if (!text) return;
 if (!state.chatMessages) state.chatMessages = [];
-state.chatMessages.push({ author: window.currentUser, text, ts: Date.now() });
+state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
 // Keep last 100 messages
 if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
 inp.value = ‘’;
 saveState(); renderChat();
 // Notify others
-sendNotif(’💬 Neue Nachricht von ’ + window.currentUser, text, ‘chat’);
+sendNotif(’💬 Neue Nachricht von ’ + currentUser, text, ‘chat’);
 }
 
 // ═══════════════════════════════════════════
@@ -1988,7 +1963,7 @@ function renderMemberManagement() {
 const members = getMembers();
 document.getElementById(‘memberMgmtList’).innerHTML = members.map((m,i) => {
 const bday = (state.memberBdays||{})[m] || ‘’;
-const isMe = m === window.currentUser;
+const isMe = m === currentUser;
 const prof = (state.memberProfiles||{})[m] || {};
 return `<div style="padding:8px 0;border-bottom:1px solid var(--border)"> <div style="display:flex;align-items:center;gap:8px"> <div style="flex:1"> <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div> <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} ${prof.email?'· '+prof.email:''}</div> </div> ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''} </div> </div>`;
 }).join(’’);
