@@ -273,6 +273,20 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 }
 </style>
 
+<script>
+// Defined here so it's available immediately when buttons are clicked,
+// before the main script block loads
+function selectLoginName(btn, name) {
+  localStorage.setItem('rp_login_name', name);
+  document.querySelectorAll('#loginBtnGrid .nm-btn').forEach(function(b) {
+    b.classList.remove('sel');
+  });
+  if (btn) btn.classList.add('sel');
+  var el = document.getElementById('loginSelectedName');
+  if (el) el.textContent = '✅ ' + name;
+}
+</script>
+
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
   <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
     <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent">🔄 Aktualisieren</button>
