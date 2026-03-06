@@ -510,6 +510,11 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   </div>
 
   <div class="card">
+    <div class="card-title">🔔 Push-Benachrichtigungen</div>
+    <div id="notifSettings"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">🔐 Kennwort ändern</div>
     <div class="gap-8">
       <div><label>Aktuelles Kennwort</label><input type="password" id="pwOld" placeholder="••••••••"></div>
@@ -828,12 +833,7 @@ function showModal(title, bodyHtml, onConfirm, confirmTxt='Bestätigen', confirm
 }
 function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
 
-function updateHeader() {
-  document.getElementById('headerAmount').textContent = fmt(calcKasse());
-  if (localMeta.logo) document.getElementById('logoCircle').innerHTML = `<img src="${localMeta.logo}">`;
-  const hu = document.getElementById('headerUser');
-  if (hu) hu.textContent = currentUser || 'Nicht angemeldet';
-}
+
 
 function calcKasse() {
   let t = state.kasseStart||0;
@@ -974,6 +974,10 @@ function renderStrafen() {
 function strafeCount(m, id, delta) {
   if (!state.strafen[m]) state.strafen[m]={};
   state.strafen[m][id] = Math.max(0,(state.strafen[m][id]||0)+delta);
+  if (delta > 0) {
+    const s = getStrafen().find(x=>x.id===id);
+    sendNotif('⚠️ Strafe für ' + m.split(' ')[0], (s?.name||'Strafe') + ' – ' + fmt(s?.price||0), 'strafe');
+  }
   saveState(); renderStrafen(); updateHeader();
 }
 
@@ -1314,6 +1318,7 @@ function renderSettings() {
   }
 
   renderMemberManagement();
+  renderNotifSettings();
 
   // Strafen-Modi + Verwaltung
   const modes=state.strafenModes||{};
@@ -1485,12 +1490,108 @@ function confirmReset() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
+
+// ═══════════════════════════════════════════
+// PUSH BENACHRICHTIGUNGEN
+// ═══════════════════════════════════════════
+const NOTIF_KEY = 'rp_notif_prefs';
+
+function getNotifPrefs() {
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||'{}'); } catch(e) { return {}; }
+}
+function saveNotifPrefs(prefs) {
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
+}
+
+async function requestNotifPermission() {
+  if (!('Notification' in window)) {
+    showToast('❌ Dein Browser unterstützt keine Push-Benachrichtigungen');
+    return false;
+  }
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') {
+    showToast('❌ Benachrichtigungen blockiert – bitte in Safari-Einstellungen erlauben');
+    return false;
+  }
+  const result = await Notification.requestPermission();
+  return result === 'granted';
+}
+
+async function toggleNotif(key) {
+  const prefs = getNotifPrefs();
+  const newVal = !prefs[key];
+  if (newVal) {
+    const ok = await requestNotifPermission();
+    if (!ok) return;
+  }
+  prefs[key] = newVal;
+  saveNotifPrefs(prefs);
+  renderNotifSettings();
+  showToast(newVal ? '🔔 Benachrichtigung aktiviert' : '🔕 Benachrichtigung deaktiviert');
+}
+
+function sendNotif(title, body, tag) {
+  const prefs = getNotifPrefs();
+  if (!prefs[tag]) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '🎳', tag });
+  } catch(e) {}
+}
+
+function renderNotifSettings() {
+  const prefs = getNotifPrefs();
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--gold)';
+  const permText = perm === 'granted' ? '✅ Erlaubt' : perm === 'denied' ? '❌ Blockiert' : perm === 'unsupported' ? '⚠️ Nicht unterstützt' : '⏳ Nicht angefragt';
+
+  const items = [
+    { key: 'chat',    icon: '💬', label: 'Neue Chat-Nachricht' },
+    { key: 'strafe',  icon: '⚠️', label: 'Strafe eingetragen' },
+    { key: 'bday',    icon: '🎂', label: 'Geburtstag heute' },
+    { key: 'abend',   icon: '🎳', label: 'Kegelabend-Erinnerung' },
+  ];
+
+  const el = document.getElementById('notifSettings');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+      Status: <span style="color:${permColor};font-weight:600">${permText}</span>
+      ${perm === 'denied' ? '<br><span style="font-size:11px;color:var(--text3)">In Safari: Einstellungen → Safari → Erweitert → Webseiten-Einstellungen</span>' : ''}
+    </div>
+    ${items.map(it => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:20px">${it.icon}</span>
+        <div style="flex:1;font-size:14px;font-weight:500">${it.label}</div>
+        <div class="toggle-btn ${prefs[it.key]?'on':''}" onclick="toggleNotif('${it.key}')"></div>
+      </div>`).join('')}
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">⚠️ Push-Benachrichtigungen funktionieren nur wenn die App im Safari-Browser geöffnet ist (nicht als Homescreen-App auf iOS).</div>
+  `;
+}
+
+// Check birthdays daily and send notification
+function checkBdayNotifs() {
+  const today = new Date();
+  const todayStr = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const bdays = state.memberBdays || {};
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const mmdd = bdays[m].slice(5); // YYYY-MM-DD → MM-DD
+    if (mmdd === todayStr) {
+      const [y] = bdays[m].split('-');
+      const age = today.getFullYear() - parseInt(y);
+      sendNotif('🎂 Geburtstag!', `${m} wird heute ${age} Jahre alt!`, 'bday');
+    }
+  });
+}
+
 function init() {
   if (localMeta.logo) document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;
   if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
   else { setSyncStatus('error','Nicht verbunden'); }
   renderDashboard();
   initLogin();
+  checkBdayNotifs();
 }
 
 // ═══════════════════════════════════════════
@@ -1505,6 +1606,7 @@ function initLogin() {
   if (currentUser) {
     document.getElementById('loginScreen').style.display = 'none';
   }
+  updateHeader();
 }
 
 function doLogin() {
@@ -1518,6 +1620,8 @@ function doLogin() {
   sessionStorage.setItem('rp_user', name);
   document.getElementById('loginScreen').style.display = 'none';
   err.textContent = '';
+  updateHeader();
+  renderDashboard();
 }
 
 function logout() {
@@ -1561,6 +1665,8 @@ function sendChat() {
   if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
   inp.value = '';
   saveState(); renderChat();
+  // Notify others
+  sendNotif('💬 Neue Nachricht von ' + currentUser, text, 'chat');
 }
 
 // ═══════════════════════════════════════════
