@@ -285,6 +285,31 @@ function selectLoginName(btn, name) {
   var el = document.getElementById('loginSelectedName');
   if (el) el.textContent = '✅ ' + name;
 }
+
+function doLogin() {
+  var name = localStorage.getItem('rp_login_name') || '';
+  var pw   = document.getElementById('loginPw').value;
+  var err  = document.getElementById('loginError');
+  if (!name) { err.textContent = '❌ Bitte erst Namen antippen'; return; }
+  // Password check – state may not be loaded yet, fall back to '1234'
+  var correctPw = (typeof state !== 'undefined' && state.appPassword) ? state.appPassword : (localStorage.getItem('rp_pw') || '1234');
+  if (pw !== correctPw) { err.textContent = '❌ Falsches Kennwort'; return; }
+  // Store login
+  sessionStorage.setItem('rp_user', name);
+  localStorage.removeItem('rp_login_name');
+  document.getElementById('loginScreen').style.display = 'none';
+  err.textContent = '';
+  // If main JS already loaded, call its functions; otherwise page reload will pick up session
+  if (typeof currentUser !== 'undefined') {
+    currentUser = name;
+    if (typeof updateHeader === 'function') updateHeader();
+    if (typeof renderDashboard === 'function') renderDashboard();
+    if (typeof initPresence === 'function') setTimeout(initPresence, 1500);
+  } else {
+    // Main script not yet ready – set a flag and let init() handle it
+    window._pendingLogin = name;
+  }
+}
 </script>
 
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -1851,6 +1876,14 @@ function init() {
 if (localMeta.logo) document.getElementById(‘logoCircle’).innerHTML=`<img src="${localMeta.logo}">`;
 if (fbCfg) { setSyncStatus(‘syncing’,‘Verbinde…’); initFb(); }
 else { setSyncStatus(‘error’,‘Nicht verbunden’); }
+// Save current password to localStorage so early doLogin() can check it
+localStorage.setItem(‘rp_pw’, state.appPassword || ‘1234’);
+// Handle login that happened before main JS was ready
+if (window._pendingLogin) {
+currentUser = window._pendingLogin;
+sessionStorage.setItem(‘rp_user’, currentUser);
+window._pendingLogin = null;
+}
 renderDashboard();
 initLogin();
 checkBdayNotifs();
@@ -1904,23 +1937,7 @@ if (btn) btn.classList.add(‘sel’);
 document.getElementById(‘loginSelectedName’).textContent = ’✅ ’ + name;
 }
 
-function doLogin() {
-// Read name from localStorage (survives iOS focus/scroll events)
-const name = localStorage.getItem(‘rp_login_name’) || ‘’;
-const pw   = document.getElementById(‘loginPw’).value;
-const err  = document.getElementById(‘loginError’);
-if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
-const correctPw = state.appPassword || ‘1234’;
-if (pw !== correctPw) { err.textContent = ‘❌ Falsches Kennwort’; return; }
-currentUser = name;
-sessionStorage.setItem(‘rp_user’, name);
-localStorage.removeItem(‘rp_login_name’);
-document.getElementById(‘loginScreen’).style.display = ‘none’;
-err.textContent = ‘’;
-updateHeader();
-renderDashboard();
-initPresence();
-}
+// doLogin is defined in the early inline script above
 
 function logout() {
 currentUser = null;
