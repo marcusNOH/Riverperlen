@@ -248,10 +248,12 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
 <body>
 <div id="app">
 
-<!-- LOGIN SCREEN -->
+<!-- LOGIN SCREEN – radio-based, zero JS needed for name selection -->
 
 <style>
-#loginScreen .nm-btn {
+.nm-radio { display:none; }
+.nm-btn {
+  display:block;
   padding:12px 8px;
   background:#1e2230;
   border:2px solid #2a2f42;
@@ -266,12 +268,14 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   font-family:sans-serif;
   -webkit-tap-highlight-color:transparent;
   transition:border-color .1s, background .1s;
+  user-select:none;
 }
-#loginScreen .nm-btn.sel {
+.nm-radio:checked + .nm-btn {
   border-color:#f0a500 !important;
   background:#2d2000 !important;
   color:#f0a500 !important;
 }
+.nm-label { display:block; }
 </style>
 
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
@@ -283,19 +287,48 @@ label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
   <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
     <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px" id="loginBtnGrid">
-      <button class="nm-btn" data-name="Jens Wolters" onclick="selectLoginName(this)">Jens W.</button>
-      <button class="nm-btn" data-name="Simon Haßmann" onclick="selectLoginName(this)">Simon H.</button>
-      <button class="nm-btn" data-name="Marcus Schmele" onclick="selectLoginName(this)">Marcus S.</button>
-      <button class="nm-btn" data-name="Patrick Jentges" onclick="selectLoginName(this)">Patrick J.</button>
-      <button class="nm-btn" data-name="Tilo Hase" onclick="selectLoginName(this)">Tilo H.</button>
-      <button class="nm-btn" data-name="Nico Foppe" onclick="selectLoginName(this)">Nico F.</button>
-      <button class="nm-btn" data-name="Sascha Franke" onclick="selectLoginName(this)">Sascha F.</button>
-      <button class="nm-btn" data-name="Stefan Hermann Thien" onclick="selectLoginName(this)">Stefan T.</button>
-      <button class="nm-btn" data-name="Marcel Albers" onclick="selectLoginName(this)">Marcel A.</button>
-      <button class="nm-btn" data-name="Hendrik Pötter" onclick="selectLoginName(this)">Hendrik P.</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px" id="loginBtnGrid">
+      <label class="nm-label" for="nm_Jens_Wolters">
+        <input type="radio" name="loginName" id="nm_Jens_Wolters" value="Jens Wolters" class="nm-radio">
+        <span class="nm-btn">Jens W.</span>
+      </label>
+      <label class="nm-label" for="nm_Simon_Hassmann">
+        <input type="radio" name="loginName" id="nm_Simon_Hassmann" value="Simon Haßmann" class="nm-radio">
+        <span class="nm-btn">Simon H.</span>
+      </label>
+      <label class="nm-label" for="nm_Marcus_Schmele">
+        <input type="radio" name="loginName" id="nm_Marcus_Schmele" value="Marcus Schmele" class="nm-radio">
+        <span class="nm-btn">Marcus S.</span>
+      </label>
+      <label class="nm-label" for="nm_Patrick_Jentges">
+        <input type="radio" name="loginName" id="nm_Patrick_Jentges" value="Patrick Jentges" class="nm-radio">
+        <span class="nm-btn">Patrick J.</span>
+      </label>
+      <label class="nm-label" for="nm_Tilo_Hase">
+        <input type="radio" name="loginName" id="nm_Tilo_Hase" value="Tilo Hase" class="nm-radio">
+        <span class="nm-btn">Tilo H.</span>
+      </label>
+      <label class="nm-label" for="nm_Nico_Foppe">
+        <input type="radio" name="loginName" id="nm_Nico_Foppe" value="Nico Foppe" class="nm-radio">
+        <span class="nm-btn">Nico F.</span>
+      </label>
+      <label class="nm-label" for="nm_Sascha_Franke">
+        <input type="radio" name="loginName" id="nm_Sascha_Franke" value="Sascha Franke" class="nm-radio">
+        <span class="nm-btn">Sascha F.</span>
+      </label>
+      <label class="nm-label" for="nm_Stefan_Hermann_Thien">
+        <input type="radio" name="loginName" id="nm_Stefan_Hermann_Thien" value="Stefan Hermann Thien" class="nm-radio">
+        <span class="nm-btn">Stefan T.</span>
+      </label>
+      <label class="nm-label" for="nm_Marcel_Albers">
+        <input type="radio" name="loginName" id="nm_Marcel_Albers" value="Marcel Albers" class="nm-radio">
+        <span class="nm-btn">Marcel A.</span>
+      </label>
+      <label class="nm-label" for="nm_Hendrik_Poetter">
+        <input type="radio" name="loginName" id="nm_Hendrik_Poetter" value="Hendrik Pötter" class="nm-radio">
+        <span class="nm-btn">Hendrik P.</span>
+      </label>
     </div>
-    <div id="loginSelectedName" style="text-align:center;font-size:13px;color:#f0a500;min-height:22px;margin-bottom:10px;font-weight:700;background:rgba(240,165,0,.08);border-radius:6px;padding:4px 8px">Bitte Name antippen ☝️</div>
     <div style="margin-bottom:10px">
       <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
       <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password"
@@ -1864,17 +1897,12 @@ checkBdayNotifs();
 // ═══════════════════════════════════════════
 let currentUser = null; // set by doLogin() or initLogin()
 
-function selectLoginName(btn) {
-var name = btn.getAttribute(‘data-name’);
-window._rp_selected = name;
-document.querySelectorAll(’#loginBtnGrid .nm-btn’).forEach(function(b) { b.classList.remove(‘sel’); });
-btn.classList.add(‘sel’);
-var el = document.getElementById(‘loginSelectedName’);
-if (el) el.textContent = ’✅ ’ + name;
-}
+// Name selection handled by radio inputs (CSS only)
 
 function doLogin() {
-var name = window._rp_selected || ‘’;
+// Read selected name from radio input – no JS state needed
+var checked = document.querySelector(’#loginBtnGrid input[name=“loginName”]:checked’);
+var name = checked ? checked.value : ‘’;
 var pw   = document.getElementById(‘loginPw’).value;
 var err  = document.getElementById(‘loginError’);
 if (!name) { err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
