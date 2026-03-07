@@ -259,6 +259,37 @@ const DEFAULT_STRAFEN = [
 ];
 function getStrafen() { return (state && state.strafenListe && state.strafenListe.length) ? state.strafenListe : DEFAULT_STRAFEN; }
 
+// Alle definierten Berechtigungen mit Seite, Key, Label
+const ALLE_BERECHTIGUNGEN = [
+  // Dashboard
+  { seite:'🏠 Start',      key:'dash.trinkroulette',    label:'Trinkroulette starten' },
+  { seite:'🏠 Start',      key:'dash.abstimmung',       label:'Abstimmungen erstellen' },
+  { seite:'🏠 Start',      key:'dash.notiz',            label:'Abend-Notiz bearbeiten' },
+  // Anwesenheit
+  { seite:'👥 Heute',      key:'anw.toggle',            label:'Anwesenheit umschalten' },
+  // Strafen
+  { seite:'⚠️ Strafen',    key:'str.eintragen',         label:'Strafen eintragen' },
+  { seite:'⚠️ Strafen',    key:'str.bahnkosten',        label:'Bahnkosten aufteilen' },
+  // Abschluss
+  { seite:'📋 Abschluss',  key:'abs.speichern',         label:'Abend speichern' },
+  // Kasse
+  { seite:'💰 Kasse',      key:'kas.seite',             label:'Kassen-Seite sehen' },
+  { seite:'💰 Kasse',      key:'kas.bearbeiten',        label:'Einträge hinzufügen/löschen' },
+  // Events
+  { seite:'🎉 Events',     key:'evt.seite',             label:'Events-Seite sehen' },
+  { seite:'🎉 Events',     key:'evt.bearbeiten',        label:'Events anlegen/bearbeiten' },
+  // Termine
+  { seite:'📆 Termine',    key:'ter.zusatz',            label:'Zusatztermine anlegen/löschen' },
+  // Stats
+  { seite:'📊 Stats',      key:'sta.seite',             label:'Stats-Seite sehen' },
+  // Spielideen
+  { seite:'🎳 Spiele',     key:'spi.seite',             label:'Spielideen-Seite sehen' },
+  // Chat
+  { seite:'💬 Chat',       key:'cha.schreiben',         label:'Chat-Nachrichten senden' },
+  // Profil
+  { seite:'👤 Profil',     key:'pro.bearbeiten',        label:'Eigenes Profil bearbeiten' },
+];
+
 const MON = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 const TERMIN_START = new Date('2026-03-05T00:00:00');
 
@@ -2621,36 +2652,6 @@ function spinRoulette() {
 // BERECHTIGUNGS-SYSTEM
 // ═══════════════════════════════════════════
 
-// Alle definierten Berechtigungen mit Seite, Key, Label
-const ALLE_BERECHTIGUNGEN = [
-  // Dashboard
-  { seite:'🏠 Start',      key:'dash.trinkroulette',    label:'Trinkroulette starten' },
-  { seite:'🏠 Start',      key:'dash.abstimmung',       label:'Abstimmungen erstellen' },
-  { seite:'🏠 Start',      key:'dash.notiz',            label:'Abend-Notiz bearbeiten' },
-  // Anwesenheit
-  { seite:'👥 Heute',      key:'anw.toggle',            label:'Anwesenheit umschalten' },
-  // Strafen
-  { seite:'⚠️ Strafen',    key:'str.eintragen',         label:'Strafen eintragen' },
-  { seite:'⚠️ Strafen',    key:'str.bahnkosten',        label:'Bahnkosten aufteilen' },
-  // Abschluss
-  { seite:'📋 Abschluss',  key:'abs.speichern',         label:'Abend speichern' },
-  // Kasse
-  { seite:'💰 Kasse',      key:'kas.seite',             label:'Kassen-Seite sehen' },
-  { seite:'💰 Kasse',      key:'kas.bearbeiten',        label:'Einträge hinzufügen/löschen' },
-  // Events
-  { seite:'🎉 Events',     key:'evt.seite',             label:'Events-Seite sehen' },
-  { seite:'🎉 Events',     key:'evt.bearbeiten',        label:'Events anlegen/bearbeiten' },
-  // Termine
-  { seite:'📆 Termine',    key:'ter.zusatz',            label:'Zusatztermine anlegen/löschen' },
-  // Stats
-  { seite:'📊 Stats',      key:'sta.seite',             label:'Stats-Seite sehen' },
-  // Spielideen
-  { seite:'🎳 Spiele',     key:'spi.seite',             label:'Spielideen-Seite sehen' },
-  // Chat
-  { seite:'💬 Chat',       key:'cha.schreiben',         label:'Chat-Nachrichten senden' },
-  // Profil
-  { seite:'👤 Profil',     key:'pro.bearbeiten',        label:'Eigenes Profil bearbeiten' },
-];
 
 // Check if current user has a permission (default: allowed)
 function canDo(key) {
@@ -2916,6 +2917,7 @@ function init() {
         <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinSubmit()" onclick="pinSubmit()" style="background:linear-gradient(135deg,#f0a500,#ffc84a);color:#000;border-color:#f0a500;font-size:18px">✓</button>
       </div>
       <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px"></div>
+      <button type="button" onclick="location.reload()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:1px solid #2a2f42;border-radius:10px;color:#8a90a8;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 App aktualisieren</button>
     </div>
     <div id="loginStepAdmin" style="display:none">
       <div style="font-size:14px;font-weight:700;color:#f0a500;margin-bottom:16px;text-align:center">⚙️ Admin – PINs verwalten</div>
