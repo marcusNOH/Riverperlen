@@ -1549,35 +1549,68 @@ function sendNotif(title, body, tag) {
 }
 
 // Called from Firebase listener – detects NEW messages from OTHER users
-// Set of ts values already notified – prevents duplicate notifications
-var _notifiedChatTs = new Set();
+// _chatWatermarkReady: true only after user logged in AND watermark is set.
+// Until then, Firebase updates are silently absorbed – never trigger notifications.
+var _chatWatermarkReady = false;
+
+// _notifiedChatTs: persisted in sessionStorage so app re-opens don't re-fire old messages
+var _notifiedChatTs = (() => {
+  try {
+    const raw = sessionStorage.getItem('rp_chat_notified');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e) { return new Set(); }
+})();
+
+function _persistNotifiedTs() {
+  try {
+    const arr = [..._notifiedChatTs].sort((a,b)=>a-b).slice(-300);
+    sessionStorage.setItem('rp_chat_notified', JSON.stringify(arr));
+  } catch(e) {}
+}
+
+function initChatWatermark() {
+  // Called at login. Set watermark = newest existing message timestamp.
+  // Pre-seed _notifiedChatTs with ALL current messages → nothing old can ever fire.
+  const msgs = state.chatMessages || [];
+  _lastChatTs = msgs.length > 0
+    ? Math.max(...msgs.map(m => m.ts))
+    : Date.now();
+  msgs.forEach(m => _notifiedChatTs.add(m.ts));
+  _persistNotifiedTs();
+  _chatWatermarkReady = true;
+}
 
 function checkIncomingChatNotif(messages) {
   if (!messages || !Array.isArray(messages) || messages.length === 0) return;
+  const maxTs = Math.max(...messages.map(m => m.ts));
+
+  // Block: not logged in yet, or watermark not initialised → absorb silently
+  if (!_chatWatermarkReady || !currentUser) {
+    if (maxTs > _lastChatTs) _lastChatTs = maxTs;
+    messages.forEach(m => _notifiedChatTs.add(m.ts));
+    _persistNotifiedTs();
+    return;
+  }
+
   const prefs = getNotifPrefs();
-  if (!prefs['chat']) return;
-  if (Notification.permission !== 'granted') return;
-  // Only messages newer than login time, from others, not yet notified
+  if (!prefs['chat']) { if (maxTs > _lastChatTs) _lastChatTs = maxTs; return; }
+  if (Notification.permission !== 'granted') { if (maxTs > _lastChatTs) _lastChatTs = maxTs; return; }
+
+  // Only fire for: newer than watermark + from someone else + not already notified
   const newMsgs = messages.filter(m =>
     m.ts > _lastChatTs &&
     m.author !== currentUser &&
     !_notifiedChatTs.has(m.ts)
   );
+
   if (newMsgs.length > 0) {
-    // Show only the latest message as one notification
     const last = newMsgs[newMsgs.length - 1];
-    const countHint = newMsgs.length > 1 ? ` (+${newMsgs.length - 1} weitere)` : '';
-    sendNotif('💬 ' + last.author + countHint, last.text, 'chat');
-    // Mark all as notified
+    const hint = newMsgs.length > 1 ? ` (+${newMsgs.length - 1} weitere)` : '';
+    sendNotif('💬 ' + last.author + hint, last.text, 'chat');
     newMsgs.forEach(m => _notifiedChatTs.add(m.ts));
-    // Keep Set from growing unbounded – only keep last 200
-    if (_notifiedChatTs.size > 200) {
-      const arr = [..._notifiedChatTs].sort((a,b) => a-b);
-      _notifiedChatTs = new Set(arr.slice(-200));
-    }
+    _persistNotifiedTs();
   }
-  // Advance watermark
-  const maxTs = Math.max(...messages.map(m => m.ts));
+
   if (maxTs > _lastChatTs) _lastChatTs = maxTs;
 }
 
@@ -2164,10 +2197,8 @@ function pinSubmit() {
     updateHeader();
     renderDashboard();
     setTimeout(initPresence, 1000);
-    // Init chat watermark so we don't fire notifs for old messages
-    if (state.chatMessages && state.chatMessages.length > 0) {
-      _lastChatTs = Math.max(...state.chatMessages.map(m => m.ts));
-    }
+    // Init chat watermark – must happen BEFORE any Firebase update fires notifs
+    initChatWatermark();
     // Start termin reminder scheduler
     startReminderLoop();
   } else {
@@ -2226,10 +2257,8 @@ function initLogin() {
     updateHeader();
     renderDashboard();
     setTimeout(initPresence, 2000);
-    // Init chat watermark so we don't fire notifs for old messages
-    if (state.chatMessages && state.chatMessages.length > 0) {
-      _lastChatTs = Math.max(...state.chatMessages.map(m => m.ts));
-    }
+    // Init chat watermark – must happen BEFORE any Firebase update fires notifs
+    initChatWatermark();
     // Start termin reminder scheduler
     startReminderLoop();
     return;
