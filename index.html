@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Pegelclub Riverperlen – Kegelabend Manager v0306-2219</title>
+<title>Pegelclub Riverperlen – Kegelabend Manager v07.03</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
 // Load Firebase dynamically so the app still works offline if scripts fail
@@ -35,6 +35,7 @@ window._firebaseReady = (async () => {
   }
 })();
 </script>
+
 <style>
   :root {
     --bg:#0d0f14;--bg2:#161921;--bg3:#1e2230;--card:#1a1d28;--border:#2a2f42;
@@ -46,617 +47,203 @@ window._firebaseReady = (async () => {
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden}
   #app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto}
 
-/* HEADER */
-header{background:linear-gradient(135deg,#0a0c11,#1a1d28);border-bottom:1px solid var(–border);padding:10px 16px 8px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:10}
-.logo-circle{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(–gold),var(–gold2));display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:14px;color:#000;flex-shrink:0;overflow:hidden}
-.logo-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.header-text{flex:1}
-.header-title{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:17px;letter-spacing:.5px;color:var(–gold);line-height:1}
-.header-sub{font-size:10px;color:var(–text2);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
-.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-.header-amount{font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:20px;color:var(–green)}
-.sync-row{display:flex;align-items:center;gap:4px}
-.sync-dot{width:7px;height:7px;border-radius:50%;background:var(–text3);transition:background .3s}
-.sync-dot.connected{background:var(–green)}
-.sync-dot.syncing{background:var(–gold);animation:pulse .8s infinite}
-.sync-dot.error{background:var(–red)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.sync-lbl{font-size:9px;color:var(–text3)}
+  /* HEADER */
+  header{background:linear-gradient(135deg,#0a0c11,#1a1d28);border-bottom:1px solid var(--border);padding:10px 16px 8px;display:flex;align-items:center;gap:10px;flex-shrink:0;z-index:10}
+  .logo-circle{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:14px;color:#000;flex-shrink:0;overflow:hidden}
+  .logo-circle img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .header-text{flex:1}
+  .header-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:17px;letter-spacing:.5px;color:var(--gold);line-height:1}
+  .header-sub{font-size:10px;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+  .header-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .header-amount{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:20px;color:var(--green)}
+  .sync-row{display:flex;align-items:center;gap:4px}
+  .sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);transition:background .3s}
+  .sync-dot.connected{background:var(--green)}
+  .sync-dot.syncing{background:var(--gold);animation:pulse .8s infinite}
+  .sync-dot.error{background:var(--red)}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .sync-lbl{font-size:9px;color:var(--text3)}
 
-/* NAV */
-nav{background:var(–bg2);border-bottom:1px solid var(–border);display:flex;overflow-x:auto;gap:2px;padding:6px 8px;flex-shrink:0;scrollbar-width:none}
-nav::-webkit-scrollbar{display:none}
-.nav-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:none;background:transparent;color:var(–text2);cursor:pointer;font-family:‘Barlow’,sans-serif;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .18s}
-.nav-btn.active{background:var(–gold);color:#000}
-.nav-btn:not(.active):hover{background:var(–bg3);color:var(–text)}
+  /* NAV */
+  nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;gap:2px;padding:6px 8px;flex-shrink:0;scrollbar-width:none}
+  nav::-webkit-scrollbar{display:none}
+  .nav-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .18s}
+  .nav-btn.active{background:var(--gold);color:#000}
+  .nav-btn:not(.active):hover{background:var(--bg3);color:var(--text)}
 
-/* PAGES */
-#pages{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;scrollbar-width:none}
-#pages::-webkit-scrollbar{display:none}
-.page{display:none;animation:fadeIn .2s ease}
-.page.active{display:block}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  /* PAGES */
+  #pages{flex:1;overflow-y:auto;overflow-x:hidden;padding:14px;scrollbar-width:none}
+  #pages::-webkit-scrollbar{display:none}
+  .page{display:none;animation:fadeIn .2s ease}
+  .page.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* CARDS */
-.card{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);padding:14px;margin-bottom:12px}
-.card-title{font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(–text2);margin-bottom:10px}
+  /* CARDS */
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px}
+  .card-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);margin-bottom:10px}
 
-/* STATS GRID */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.stat-card{background:var(–card);border:1px solid var(–border);border-radius:var(–radius);padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.stat-icon{font-size:20px}
-.stat-val{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:26px;color:var(–gold);line-height:1}
-.stat-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(–text2);text-align:center}
+  /* STATS GRID */
+  .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .stat-icon{font-size:20px}
+  .stat-val{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:26px;color:var(--gold);line-height:1}
+  .stat-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text2);text-align:center}
 
-/* QUICK */
-.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.quick-btn{background:var(–bg3);border:1px solid var(–border);border-radius:var(–radius);padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .18s;text-align:center}
-.quick-btn:active{transform:scale(.96);background:var(–border)}
-.quick-btn .qi{font-size:22px}.quick-btn .ql{font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:14px;color:var(–text)}.quick-btn .qd{font-size:11px;color:var(–text2)}
+  /* QUICK */
+  .quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .quick-btn{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:all .18s;text-align:center}
+  .quick-btn:active{transform:scale(.96);background:var(--border)}
+  .quick-btn .qi{font-size:22px}.quick-btn .ql{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;color:var(--text)}.quick-btn .qd{font-size:11px;color:var(--text2)}
 
-/* MEMBER */
-.member-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(–border)}
-.member-item:last-child{border-bottom:none}
-.member-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(–bg3),var(–border));display:flex;align-items:center;justify-content:center;font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:13px;color:var(–gold);flex-shrink:0;overflow:hidden}
-.member-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
-.member-name{flex:1;font-weight:600;font-size:14px}
-.member-sub{font-size:11px;color:var(–text2)}
+  /* MEMBER */
+  .member-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .member-item:last-child{border-bottom:none}
+  .member-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--bg3),var(--border));display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;color:var(--gold);flex-shrink:0;overflow:hidden}
+  .member-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+  .member-name{flex:1;font-weight:600;font-size:14px}
+  .member-sub{font-size:11px;color:var(--text2)}
 
-/* TOGGLE */
-.toggle-btn{width:36px;height:20px;border-radius:10px;border:1.5px solid var(–border);background:var(–bg3);cursor:pointer;position:relative;transition:all .2s;flex-shrink:0}
-.toggle-btn::after{content:’’;position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(–text3);transition:all .2s}
-.toggle-btn.on{background:var(–green);border-color:var(–green)}
-.toggle-btn.on::after{left:19px;background:#fff}
+  /* TOGGLE */
+  .toggle-btn{width:36px;height:20px;border-radius:10px;border:1.5px solid var(--border);background:var(--bg3);cursor:pointer;position:relative;transition:all .2s;flex-shrink:0}
+  .toggle-btn::after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:var(--text3);transition:all .2s}
+  .toggle-btn.on{background:var(--green);border-color:var(--green)}
+  .toggle-btn.on::after{left:19px;background:#fff}
 
-/* STRAFEN */
-.strafe-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(–border)}
-.strafe-item:last-child{border-bottom:none}
-.strafe-name{flex:1}
-.strafe-label{font-weight:600;font-size:14px}
-.strafe-price{font-size:12px;color:var(–gold)}
-.badge-alle{background:rgba(167,139,250,.18);color:var(–purple);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700;display:inline-block;margin-top:2px}
-.counter-wrap{display:flex;align-items:center;gap:8px}
-.cnt-btn{width:28px;height:28px;border-radius:8px;border:none;background:var(–bg3);color:var(–text);cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.cnt-btn:active{transform:scale(.88)}
-.cnt-btn.plus{background:var(–gold);color:#000}
-.cnt-btn.minus{background:var(–red);color:#fff}
-.cnt-btn.alle-plus{background:var(–purple);color:#fff;font-size:13px}
-.cnt-val{font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:18px;min-width:24px;text-align:center}
+  /* STRAFEN */
+  .strafe-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .strafe-item:last-child{border-bottom:none}
+  .strafe-name{flex:1}
+  .strafe-label{font-weight:600;font-size:14px}
+  .strafe-price{font-size:12px;color:var(--gold)}
+  .badge-alle{background:rgba(167,139,250,.18);color:var(--purple);font-size:10px;padding:1px 7px;border-radius:8px;font-weight:700;display:inline-block;margin-top:2px}
+  .counter-wrap{display:flex;align-items:center;gap:8px}
+  .cnt-btn{width:28px;height:28px;border-radius:8px;border:none;background:var(--bg3);color:var(--text);cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  .cnt-btn:active{transform:scale(.88)}
+  .cnt-btn.plus{background:var(--gold);color:#000}
+  .cnt-btn.minus{background:var(--red);color:#fff}
+  .cnt-btn.alle-plus{background:var(--purple);color:#fff;font-size:13px}
+  .cnt-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;min-width:24px;text-align:center}
 
-/* TABS */
-.strafe-member-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
-.strafe-member-tabs::-webkit-scrollbar{display:none}
-.strafe-tab{flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(–border);background:var(–bg3);color:var(–text2);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
-.strafe-tab.active{border-color:var(–gold);background:rgba(240,165,0,.12);color:var(–gold)}
+  /* TABS */
+  .strafe-member-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px;scrollbar-width:none}
+  .strafe-member-tabs::-webkit-scrollbar{display:none}
+  .strafe-tab{flex-shrink:0;padding:6px 12px;border-radius:16px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;font-size:12px;font-weight:600;transition:all .15s}
+  .strafe-tab.active{border-color:var(--gold);background:rgba(240,165,0,.12);color:var(--gold)}
 
-/* ABSCHLUSS */
-.abschluss-member{background:var(–bg3);border-radius:var(–radius-sm);padding:12px;margin-bottom:8px}
-.abschluss-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.abschluss-name{font-weight:700;font-size:15px}
-.abschluss-total{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:20px;color:var(–red)}
-.abschluss-detail{font-size:12px;color:var(–text2)}
-.paypal-btn{display:inline-flex;align-items:center;gap:6px;background:#003087;color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;margin-top:8px;transition:all .15s}
-.paypal-btn:active{transform:scale(.95)}
+  /* ABSCHLUSS */
+  .abschluss-member{background:var(--bg3);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px}
+  .abschluss-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .abschluss-name{font-weight:700;font-size:15px}
+  .abschluss-total{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--red)}
+  .abschluss-detail{font-size:12px;color:var(--text2)}
+  .paypal-btn{display:inline-flex;align-items:center;gap:6px;background:#003087;color:#fff;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;text-decoration:none;margin-top:8px;transition:all .15s}
+  .paypal-btn:active{transform:scale(.95)}
 
-/* KASSE */
-.kasse-total{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:42px;color:var(–green);text-align:center;line-height:1}
-.kasse-label{text-align:center;font-size:12px;color:var(–text2);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
-.kasse-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(–border);font-size:13px}
-.kasse-row:last-child{border-bottom:none}
-.kasse-pos{color:var(–green);font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:16px}
-.kasse-neg{color:var(–red);font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:16px}
+  /* KASSE */
+  .kasse-total{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:42px;color:var(--green);text-align:center;line-height:1}
+  .kasse-label{text-align:center;font-size:12px;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+  .kasse-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+  .kasse-row:last-child{border-bottom:none}
+  .kasse-pos{color:var(--green);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px}
+  .kasse-neg{color:var(--red);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px}
 
-/* EVENTS */
-.event-card{background:var(–bg3);border:1px solid var(–border);border-radius:var(–radius-sm);padding:12px;margin-bottom:8px}
-.event-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-top:6px}
-.badge-active{background:rgba(61,214,140,.15);color:var(–green)}
-.badge-done{background:rgba(90,96,128,.3);color:var(–text3)}
+  /* EVENTS */
+  .event-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px}
+  .event-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700;letter-spacing:.5px;margin-top:6px}
+  .badge-active{background:rgba(61,214,140,.15);color:var(--green)}
+  .badge-done{background:rgba(90,96,128,.3);color:var(--text3)}
 
-/* TERMINE */
-.termin-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(–border)}
-.termin-item:last-child{border-bottom:none}
-.termin-date{background:var(–gold);color:#000;border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
-.termin-day{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:18px;line-height:1}
-.termin-mon{font-size:9px;font-weight:700;text-transform:uppercase}
-.termin-info{flex:1}
-.termin-title{font-weight:600;font-size:14px}
-.termin-sub{font-size:12px;color:var(–text2)}
-.termin-past{opacity:.35}
+  /* TERMINE */
+  .termin-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .termin-item:last-child{border-bottom:none}
+  .termin-date{background:var(--gold);color:#000;border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+  .termin-day{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;line-height:1}
+  .termin-mon{font-size:9px;font-weight:700;text-transform:uppercase}
+  .termin-info{flex:1}
+  .termin-title{font-weight:600;font-size:14px}
+  .termin-sub{font-size:12px;color:var(--text2)}
+  .termin-past{opacity:.35}
 
-/* RANKING */
-.ranking-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(–border)}
-.ranking-item:last-child{border-bottom:none}
-.rank-pos{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:18px;color:var(–text3);width:24px;text-align:center}
-.rank-1{color:#ffd700}.rank-2{color:#c0c0c0}.rank-3{color:#cd7f32}
-.rank-name{flex:1;font-weight:600;font-size:14px}
-.rank-amount{font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:18px;color:var(–red)}
+  /* RANKING */
+  .ranking-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+  .ranking-item:last-child{border-bottom:none}
+  .rank-pos{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--text3);width:24px;text-align:center}
+  .rank-1{color:#ffd700}.rank-2{color:#c0c0c0}.rank-3{color:#cd7f32}
+  .rank-name{flex:1;font-weight:600;font-size:14px}
+  .rank-amount{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;color:var(--red)}
 
-/* BUTTONS */
-.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(–radius-sm);border:none;font-family:‘Barlow Condensed’,sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .18s;width:100%;letter-spacing:.5px}
-.btn-primary{background:var(–gold);color:#000}.btn-primary:active{transform:scale(.97)}
-.btn-danger{background:var(–red);color:#fff}.btn-danger:active{transform:scale(.97)}
-.btn-secondary{background:var(–bg3);color:var(–text);border:1px solid var(–border)}.btn-secondary:active{transform:scale(.97)}
-.btn-green{background:var(–green);color:#000}.btn-green:active{transform:scale(.97)}
-.btn-purple{background:var(–purple);color:#fff}
-.btn-gold{background:var(–gold);color:#111;font-weight:700}.btn-purple:active{transform:scale(.97)}
+  /* BUTTONS */
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 20px;border-radius:var(--radius-sm);border:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;cursor:pointer;transition:all .18s;width:100%;letter-spacing:.5px}
+  .btn-primary{background:var(--gold);color:#000}.btn-primary:active{transform:scale(.97)}
+  .btn-danger{background:var(--red);color:#fff}.btn-danger:active{transform:scale(.97)}
+  .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-secondary:active{transform:scale(.97)}
+  .btn-green{background:var(--green);color:#000}.btn-green:active{transform:scale(.97)}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-gold{background:var(--gold);color:#111;font-weight:700}.btn-purple:active{transform:scale(.97)}
 
-.section-title{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:22px;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.section-title .accent{color:var(–gold)}
+  .section-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .section-title .accent{color:var(--gold)}
 
-/* MODAL – slides up from bottom */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s}
-.modal{background:var(–card);border:1px solid var(–border);border-radius:var(–radius) var(–radius) 0 0;padding:20px;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
-@keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-.modal-title{font-family:‘Barlow Condensed’,sans-serif;font-weight:900;font-size:20px;margin-bottom:10px}
-.modal-text{font-size:14px;color:var(–text2);margin-bottom:16px;line-height:1.5}
-.modal-actions{display:flex;gap:8px;margin-top:16px}
-.modal-actions .btn{flex:1}
+  /* MODAL – slides up from bottom */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s}
+  .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:20px;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
+  @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .modal-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;margin-bottom:10px}
+  .modal-text{font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.5}
+  .modal-actions{display:flex;gap:8px;margin-top:16px}
+  .modal-actions .btn{flex:1}
 
-/* ALLE-BEKOMMEN MEMBER LIST */
-.member-check-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}
-.member-check-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:var(–bg3);border:1.5px solid var(–border);cursor:pointer;transition:all .15s;user-select:none}
-.member-check-item.gegeben{border-color:var(–green);background:rgba(61,214,140,.08)}
-.member-check-item.ausgenommen{border-color:var(–red);background:rgba(232,64,64,.07);opacity:.7}
-.chk-icon{font-size:17px;width:22px;text-align:center}
-.chk-name{flex:1;font-weight:600;font-size:14px}
-.chk-status{font-size:11px;color:var(–text2)}
+  /* ALLE-BEKOMMEN MEMBER LIST */
+  .member-check-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+  .member-check-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;background:var(--bg3);border:1.5px solid var(--border);cursor:pointer;transition:all .15s;user-select:none}
+  .member-check-item.gegeben{border-color:var(--green);background:rgba(61,214,140,.08)}
+  .member-check-item.ausgenommen{border-color:var(--red);background:rgba(232,64,64,.07);opacity:.7}
+  .chk-icon{font-size:17px;width:22px;text-align:center}
+  .chk-name{flex:1;font-weight:600;font-size:14px}
+  .chk-status{font-size:11px;color:var(--text2)}
 
-/* SETTINGS */
-.settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(–border)}
-.settings-row:last-child{border-bottom:none}
-.settings-label{font-weight:600;font-size:14px}
-.settings-sub{font-size:12px;color:var(–text2);margin-top:1px}
-.settings-input{padding:8px 10px;border-radius:var(–radius-sm);background:var(–bg3);border:1px solid var(–border);color:var(–text);font-size:13px;font-family:‘Barlow’,sans-serif;width:160px}
+  /* SETTINGS */
+  .settings-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border)}
+  .settings-row:last-child{border-bottom:none}
+  .settings-label{font-weight:600;font-size:14px}
+  .settings-sub{font-size:12px;color:var(--text2);margin-top:1px}
+  .settings-input{padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px;font-family:'Barlow',sans-serif;width:160px}
 
-/* TOAST */
-.toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:var(–bg3);border:1px solid var(–border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;z-index:300;animation:toastIn .2s ease;white-space:nowrap;box-shadow:var(–shadow)}
-@keyframes toastIn{from{opacity:0;bottom:62px}to{opacity:1;bottom:72px}}
+  /* TOAST */
+  .toast{position:fixed;bottom:72px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:20px;padding:10px 20px;font-size:13px;font-weight:600;z-index:300;animation:toastIn .2s ease;white-space:nowrap;box-shadow:var(--shadow)}
+  @keyframes toastIn{from{opacity:0;bottom:62px}to{opacity:1;bottom:72px}}
 
-.chip{display:inline-flex;align-items:center;gap:4px;background:rgba(240,165,0,.15);border:1px solid rgba(240,165,0,.3);color:var(–gold);border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700}
+  .chip{display:inline-flex;align-items:center;gap:4px;background:rgba(240,165,0,.15);border:1px solid rgba(240,165,0,.3);color:var(--gold);border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700}
 
-.save-bar{padding:10px 14px;background:var(–bg2);border-top:1px solid var(–border);flex-shrink:0}
+  .save-bar{padding:10px 14px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
 
-input[type=text],input[type=number],input[type=date],input[type=password],textarea,select{background:var(–bg3);border:1px solid var(–border);color:var(–text);border-radius:var(–radius-sm);padding:10px 12px;font-family:‘Barlow’,sans-serif;font-size:14px;width:100%;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(–gold)}
-select{appearance:none}
-label{font-size:12px;color:var(–text2);margin-bottom:4px;display:block}
+  input[type=text],input[type=number],input[type=date],input[type=password],textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;width:100%;outline:none}
+  input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+  select{appearance:none}
+  label{font-size:12px;color:var(--text2);margin-bottom:4px;display:block}
 
-.gap-8{display:flex;flex-direction:column;gap:8px}
-.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mb-8{margin-bottom:8px}
-.flex-row{display:flex;gap:8px}.flex-row>*{flex:1}
+  .gap-8{display:flex;flex-direction:column;gap:8px}
+  .mt-8{margin-top:8px}.mt-12{margin-top:12px}.mb-8{margin-bottom:8px}
+  .flex-row{display:flex;gap:8px}.flex-row>*{flex:1}
 
-.progress-bar{height:6px;background:var(–border);border-radius:3px;overflow:hidden;margin-top:4px}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(–gold),var(–gold2));border-radius:3px;transition:width .4s}
+  .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .4s}
 
-.photo-upload-area{border:2px dashed var(–border);border-radius:var(–radius);padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
-.photo-upload-area:hover{border-color:var(–gold)}
-.photo-upload-area input{display:none}
+  .photo-upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
+  .photo-upload-area:hover{border-color:var(--gold)}
+  .photo-upload-area input{display:none}
 
-.sync-banner{border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;line-height:1.4}
-.sync-banner.ok{background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.25)}
-.sync-banner.warn{background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.25)}
-.sync-banner.off{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.25)}
+  .sync-banner{border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;line-height:1.4}
+  .sync-banner.ok{background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.25)}
+  .sync-banner.warn{background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.25)}
+  .sync-banner.off{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.25)}
 
-.load-more-btn{width:100%;padding:10px;border-radius:8px;border:1px dashed var(–border);background:transparent;color:var(–text2);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;font-family:‘Barlow’,sans-serif;transition:all .15s}
-.load-more-btn:hover{border-color:var(–gold);color:var(–gold)}
+  .load-more-btn{width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;font-family:'Barlow',sans-serif;transition:all .15s}
+  .load-more-btn:hover{border-color:var(--gold);color:var(--gold)}
 
-.strafe-mode-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(–border)}
-.strafe-mode-row:last-child{border-bottom:none}
+  .strafe-mode-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+  .strafe-mode-row:last-child{border-bottom:none}
 </style>
-
-</head>
-<body>
-<div id="app">
-
-<!-- LOGIN SCREEN -->
-
-<style>
-.nm-radio{display:none}
-.nm-btn{display:block;padding:12px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;font-family:sans-serif;-webkit-tap-highlight-color:transparent}
-.nm-radio:checked+.nm-btn{border-color:#f0a500;background:#2d2000;color:#f0a500}
-.nm-label{display:block}
-</style>
-
-<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
-  <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 Aktualisieren</button>
-  </div>
-  <div style="font-size:52px;margin-bottom:6px">🎳</div>
-  <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
-  <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
-  <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
-    <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px" id="loginBtnGrid">
-      <label class="nm-label" for="nm_Jens_Wolters"><input type="radio" name="loginName" id="nm_Jens_Wolters" value="Jens Wolters" class="nm-radio"><span class="nm-btn">Jens W.</span></label>
-      <label class="nm-label" for="nm_Simon_Haßmann"><input type="radio" name="loginName" id="nm_Simon_Haßmann" value="Simon Haßmann" class="nm-radio"><span class="nm-btn">Simon H.</span></label>
-      <label class="nm-label" for="nm_Marcus_Schmele"><input type="radio" name="loginName" id="nm_Marcus_Schmele" value="Marcus Schmele" class="nm-radio"><span class="nm-btn">Marcus S.</span></label>
-      <label class="nm-label" for="nm_Patrick_Jentges"><input type="radio" name="loginName" id="nm_Patrick_Jentges" value="Patrick Jentges" class="nm-radio"><span class="nm-btn">Patrick J.</span></label>
-      <label class="nm-label" for="nm_Tilo_Hase"><input type="radio" name="loginName" id="nm_Tilo_Hase" value="Tilo Hase" class="nm-radio"><span class="nm-btn">Tilo H.</span></label>
-      <label class="nm-label" for="nm_Nico_Foppe"><input type="radio" name="loginName" id="nm_Nico_Foppe" value="Nico Foppe" class="nm-radio"><span class="nm-btn">Nico F.</span></label>
-      <label class="nm-label" for="nm_Sascha_Franke"><input type="radio" name="loginName" id="nm_Sascha_Franke" value="Sascha Franke" class="nm-radio"><span class="nm-btn">Sascha F.</span></label>
-      <label class="nm-label" for="nm_Stefan_Hermann_Thien"><input type="radio" name="loginName" id="nm_Stefan_Hermann_Thien" value="Stefan Hermann Thien" class="nm-radio"><span class="nm-btn">Stefan T.</span></label>
-      <label class="nm-label" for="nm_Marcel_Albers"><input type="radio" name="loginName" id="nm_Marcel_Albers" value="Marcel Albers" class="nm-radio"><span class="nm-btn">Marcel A.</span></label>
-      <label class="nm-label" for="nm_Hendrik_Pötter"><input type="radio" name="loginName" id="nm_Hendrik_Pötter" value="Hendrik Pötter" class="nm-radio"><span class="nm-btn">Hendrik P.</span></label>
-    </div>
-    <div style="margin-bottom:10px">
-      <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
-      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
-    </div>
-    <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
-    <button type="button" id="loginSubmitBtn" ontouchend="event.preventDefault();doLogin();" onclick="doLogin();" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
-  </div>
-</div>
-<script>
-// Self-contained login - reads password from localStorage, no dependency on main script
-window.doLogin = function() {
-  var checked = document.querySelector('input[name="loginName"]:checked');
-  var name = checked ? checked.value : '';
-  var pw = (document.getElementById('loginPw') || {}).value || '';
-  var err = document.getElementById('loginError');
-  if (!name) { if(err) err.textContent = '❌ Bitte erst Namen antippen'; return; }
-  // Get password from localStorage (written by main script on init, default 1234)
-  var correctPw = '1234';
-  try {
-    var raw = localStorage.getItem('rp_state_v3');
-    if (raw) { var s = JSON.parse(raw); if (s.appPassword) correctPw = s.appPassword; }
-  } catch(e) {}
-  if (pw !== correctPw && pw !== '1234') { if(err) err.textContent = '❌ Falsches Kennwort'; return; }
-  if(err) err.textContent = '';
-  // Save session
-  try { sessionStorage.setItem('rp_user', name); } catch(e) {}
-  window._loginUser = name;
-  // Hide login screen (more reliable than removeChild on iOS)
-  hideLoginScreen();
-  // Tell main script who logged in (if it's ready)
-  if (typeof window._onLoginDone === 'function') window._onLoginDone(name);
-};
-</script>
-
-  <header>
-    <div class="logo-circle" id="logoCircle"><span>PR</span></div>
-    <div class="header-text">
-      <div class="header-title">PEGELCLUB RIVERPERLEN</div>
-      <div class="header-sub">Kegelabend Manager</div>
-    </div>
-    <div class="header-right">
-      <div class="header-amount" id="headerAmount">€ 0,00</div>
-      <div class="sync-row">
-        <div class="sync-dot" id="syncDot"></div>
-        <span class="sync-lbl" id="syncLbl">Offline</span>
-      </div>
-    </div>
-  </header>
-
-  <div style="display:flex;align-items:center;padding:3px 12px 3px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
-    <span style="font-size:11px;color:var(--text2)">👤 <span id="headerUser">–</span></span>
-    <div id="onlineIndicator" style="display:none;align-items:center;gap:4px;margin-left:10px;flex:1"></div>
-    <button onclick="logout()" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px">Abmelden ↩</button>
-  </div>
-  <nav>
-    <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard',this)">🏠 Start</button>
-    <button class="nav-btn" data-page="anwesenheit" onclick="showPage('anwesenheit',this)">👥 Heute</button>
-    <button class="nav-btn" data-page="strafen" onclick="showPage('strafen',this)">⚠️ Strafen</button>
-    <button class="nav-btn" data-page="abschluss" onclick="showPage('abschluss',this)">📋 Abschluss</button>
-    <button class="nav-btn" data-page="kasse" onclick="showPage('kasse',this)">💰 Kasse</button>
-    <button class="nav-btn" data-page="events" onclick="showPage('events',this)">🎉 Events</button>
-    <button class="nav-btn" data-page="termine" onclick="showPage('termine',this)">📆 Termine</button>
-    <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">📊 Stats</button>
-    <button class="nav-btn" data-page="chat" onclick="showPage('chat',this)">💬</button>
-    <button class="nav-btn" data-page="profil" onclick="showPage('profil',this)">👤</button>
-    <button class="nav-btn" data-page="settings" onclick="showPage('settings',this)">⚙️</button>
-  </nav>
-
-  <div id="pages">
-
-```
-<!-- DASHBOARD -->
-<div class="page active" id="page-dashboard">
-  <div id="syncBanner"></div>
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="dashKasse">€0</div><div class="stat-label">Kassenstand</div></div>
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="dashAnwesend">0</div><div class="stat-label">Heute dabei</div></div>
-    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="dashOffen" style="color:var(--red)">€0</div><div class="stat-label">Offen heute</div></div>
-    <div class="stat-card"><div class="stat-icon">🎉</div><div class="stat-val" id="dashEvents">0</div><div class="stat-label">Aktive Events</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">⚡ Schnellzugriff</div>
-    <div class="quick-grid">
-      <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
-      <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
-      <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
-      <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
-    </div>
-  </div>
-  <div class="stats-grid" style="margin-top:0">
-    <div class="stat-card" style="grid-column:span 2;background:linear-gradient(135deg,rgba(232,64,64,.15),rgba(232,64,64,.05));border:1px solid rgba(232,64,64,.3)">
-      <div class="stat-icon">💳</div>
-      <div class="stat-val" id="dashOffenGesamt" style="color:var(--red)">€0</div>
-      <div class="stat-label">Gesamt offen (alle Mitglieder)</div>
-    </div>
-  </div>
-  <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
-  <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
-  <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v06.03.2025</div>
-</div>
-
-<!-- ANWESENHEIT -->
-<div class="page" id="page-anwesenheit">
-  <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
-  <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
-  <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
-</div>
-
-<!-- STRAFEN -->
-<div class="page" id="page-strafen">
-  <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
-  <div class="card mb-8">
-    <div class="card-title">Mitglied auswählen</div>
-    <button class="btn btn-gold" style="width:100%;margin-bottom:10px;font-size:15px" onclick="openFreieModal()">💸 Freie Strafe (individueller Betrag)</button>
-    <button class="btn btn-primary" style="width:100%;margin-bottom:10px;font-size:15px;background:linear-gradient(135deg,#3a6fd8,#2255bb)" onclick="kegelbahnKosten()">🎳 Kegelbahnkosten aufteilen (€ 20,00 ÷ Anwesende)</button>
-    <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
-    <div id="strafeList"></div>
-  </div>
-</div>
-
-<!-- ABSCHLUSS -->
-<div class="page" id="page-abschluss">
-  <div class="section-title"><span class="accent">📋</span> Abschluss</div>
-  <div id="abschlussContent"></div>
-  <div class="card mt-12">
-    <div class="card-title">Gesamt heute</div>
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="color:var(--text2)">Alle Strafen</span>
-      <span style="font-family:'Barlow Condensed';font-weight:900;font-size:24px;color:var(--red)" id="abschlussTotal">€ 0,00</span>
-    </div>
-  </div>
-  <button class="btn btn-green mt-12" onclick="abendSpeichern()">💾 Abend speichern &amp; Kasse aktualisieren</button>
-</div>
-
-<!-- KASSE -->
-<div class="page" id="page-kasse">
-  <div class="section-title"><span class="accent">💰</span> Kasse</div>
-  <div class="card" style="text-align:center"><div class="kasse-total" id="kasseTotalDisplay">€ 0,00</div><div class="kasse-label">Kassenstand</div></div>
-  <div class="card">
-    <div class="card-title">Eintrag hinzufügen</div>
-    <div class="gap-8">
-      <div><label>Beschreibung</label><input type="text" id="kasseDesc" placeholder="z.B. Vereinskosten, Einnahme…"></div>
-      <div class="flex-row">
-        <div><label>Betrag (€)</label><input type="number" id="kasseBetrag" placeholder="0.00" step="0.01"></div>
-        <div><label>Typ</label><select id="kasseTyp"><option value="ein">+ Einnahme</option><option value="aus">− Ausgabe</option></select></div>
-      </div>
-      <button class="btn btn-primary" onclick="kasseEintrag()">Eintrag speichern</button>
-    </div>
-  </div>
-  <div class="card"><div class="card-title">Buchungshistorie</div><div id="kasseHistory"></div></div>
-</div>
-
-<!-- EVENTS -->
-<div class="page" id="page-events">
-  <div class="section-title"><span class="accent">🎉</span> Special Events</div>
-  <div class="card">
-    <div class="card-title">Neues Event</div>
-    <div class="gap-8">
-      <div><label>Event-Name</label><input type="text" id="eventName" placeholder="z.B. Jahresturnier, Grillabend…"></div>
-      <div class="flex-row">
-        <div><label>Datum</label><input type="date" id="eventDate"></div>
-        <div><label>Einsatz (€)</label><input type="number" id="eventEinsatz" placeholder="0" step="0.50"></div>
-      </div>
-      <div><label>Beschreibung</label><input type="text" id="eventDesc" placeholder="Kurze Beschreibung…"></div>
-      <button class="btn btn-primary" onclick="eventHinzufuegen()">🎉 Event erstellen</button>
-    </div>
-  </div>
-  <div id="eventsList"></div>
-</div>
-
-<!-- TERMINE -->
-<div class="page" id="page-termine">
-  <div class="section-title"><span class="accent">📆</span> Termine</div>
-  <div class="card" style="margin-bottom:8px">
-    <div class="card-title">🟢 Gerade online</div>
-    <div id="termineOnlineList" style="font-size:13px;color:var(--text2)">Niemand online</div>
-  </div>
-  <div class="card">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-title" style="margin-bottom:0">🎳 Kegelabende (alle 28 Tage)</div>
-      <span style="font-size:10px;color:var(--text3)">ab 05.03.2026</span>
-    </div>
-    <div id="termineList"></div>
-    <button class="load-more-btn" onclick="termineShowMore()">↓ Weitere Termine anzeigen</button>
-  </div>
-  <div class="card mt-12">
-    <div class="card-title">➕ Zusatztermin anlegen</div>
-    <div class="gap-8">
-      <div><label>Bezeichnung</label><input type="text" id="extraName" placeholder="z.B. Grillabend, Ausflug…"></div>
-      <div class="flex-row">
-        <div><label>Datum</label><input type="date" id="extraDate"></div>
-        <div><label>Uhrzeit</label><input type="text" id="extraZeit" placeholder="19:30 Uhr"></div>
-      </div>
-      <div><label>Ort (optional)</label><input type="text" id="extraOrt" placeholder="z.B. Kegelbahn Müller"></div>
-      <button class="btn btn-primary" onclick="extraTerminAdd()">📌 Termin hinzufügen</button>
-    </div>
-  </div>
-  <div id="extraTermineList"></div>
-</div>
-
-<!-- STATS -->
-<div class="page" id="page-stats">
-  <div class="section-title"><span class="accent">📊</span> Statistiken</div>
-  <div class="card"><div class="card-title">🏆 Strafen-Gesamtranking</div><div id="statsRanking"></div></div>
-  <div class="card mt-12"><div class="card-title">📅 Abende gesamt</div><div id="statsAbende" style="font-family:'Barlow Condensed';font-weight:900;font-size:36px;color:var(--gold)"></div></div>
-  <div class="card mt-12"><div class="card-title">⚠️ Häufigste Strafen</div><div id="statsStrafenTop"></div></div>
-  <div class="card mt-12"><div class="card-title">💰 Kassenstand gesamt</div><div id="statsKasse" style="font-family:'Barlow Condensed';font-weight:900;font-size:36px;color:var(--green)"></div></div>
-</div>
-
-<!-- SETTINGS -->
-<!-- CHAT -->
-<div class="page" id="page-chat">
-  <div class="section-title"><span class="accent">💬</span> Gruppen-Chat</div>
-  <div style="display:flex;flex-direction:column;height:calc(100vh - 200px)">
-    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:4px 0;margin-bottom:10px"></div>
-    <div style="display:flex;gap:8px;padding:8px;background:var(--card);border-radius:14px;border:1px solid var(--border)">
-      <input type="text" id="chatInput" placeholder="Nachricht…" style="flex:1;border:none;background:transparent;color:var(--text);font-size:14px;outline:none" onkeydown="if(event.key==='Enter')sendChat()">
-      <button onclick="sendChat()" style="background:var(--gold);border:none;border-radius:10px;padding:8px 14px;font-weight:700;color:#000;cursor:pointer;font-size:16px">➤</button>
-    </div>
-  </div>
-</div>
-
-<!-- MEIN PROFIL -->
-<div class="page" id="page-profil">
-  <div class="section-title"><span class="accent">👤</span> Mein Profil</div>
-  <div class="card">
-    <div class="card-title">✏️ Persönliche Daten</div>
-    <div id="myProfileContent"></div>
-  </div>
-</div>
-
-<div class="page" id="page-settings">
-  <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
-
-  <div class="card">
-    <div class="card-title">🔗 Firebase Echtzeit-Synchronisation</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px;line-height:1.6">
-      Trage deine Firebase-Zugangsdaten ein, damit alle Mitglieder live synchronisiert werden.
-      Kostenlos unter <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold);text-decoration:none">console.firebase.google.com</a> einrichten.<br>
-      <strong style="color:var(--text)">Kurzanleitung:</strong> Neues Projekt → Realtime Database erstellen → Regeln auf <code style="color:var(--gold)">true</code> setzen → URL kopieren.
-    </div>
-    <div class="gap-8">
-      <div><label>Database URL</label><input type="text" id="fbUrl" placeholder="https://mein-club-default-rtdb.firebaseio.com"></div>
-      <div><label>API Key</label><input type="text" id="fbKey" placeholder="AIzaSy…"></div>
-      <div><label>Project ID</label><input type="text" id="fbProjId" placeholder="mein-club-12345"></div>
-      <button class="btn btn-primary" onclick="fbConnect()">🔗 Verbinden &amp; synchronisieren</button>
-      <div id="fbStatus" style="font-size:12px;color:var(--text2);text-align:center;min-height:16px"></div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">➕ Neue Strafe anlegen</div>
-    <div class="gap-8">
-      <div><label>Name der Strafe</label><input type="text" id="newStrafeName" placeholder="z.B. Handy klingelt…"></div>
-      <div class="flex-row">
-        <div><label>Preis (€)</label><input type="number" id="newStrafePrice" placeholder="1.00" step="0.50" min="0.50"></div>
-        <div><label>Modus</label><select id="newStrafeMode"><option value="einzel">👤 Einzelperson</option><option value="alle">🔔 Alle bekommen</option></select></div>
-      </div>
-      <button class="btn btn-primary" onclick="addStrafe()">➕ Strafe hinzufügen</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">⚠️ Strafen verwalten &amp; Modus</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
-      <strong style="color:var(--purple)">🔔 Alle bekommen:</strong> Beim Eintragen dieser Strafe bekommt sie jeder Anwesende automatisch. Du wählst nur die Ausnahmen aus.
-    </div>
-    <div id="strafenModeList"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">📷 Club-Logo</div>
-    <div class="photo-upload-area" onclick="document.getElementById('logoUpload').click()">
-      <div style="font-size:32px;margin-bottom:6px">🎳</div>
-      <div style="font-size:13px;font-weight:600">Logo hochladen</div>
-      <div style="font-size:11px;color:var(--text2);margin-top:3px">JPG oder PNG – wird oben im Header angezeigt</div>
-      <input type="file" id="logoUpload" accept="image/*" onchange="uploadLogo(event)">
-    </div>
-  </div>
-
-  <div class="card" style="border:1px solid rgba(240,165,0,.3)">
-    <div class="card-title">👤 Persönliche Daten &amp; Fotos</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.6">Foto, PayPal, Geburtstag, E-Mail und mehr kann jedes Mitglied unter <strong style="color:var(--gold)">„👤 Mein Profil"</strong> selbst einstellen – nur für den eigenen Account.</div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">👥 Mitglieder verwalten</div>
-    <div id="memberMgmtList"></div>
-    <div style="display:flex;gap:8px;margin-top:12px">
-      <input type="text" id="newMemberName" placeholder="Neues Mitglied…" style="flex:1">
-      <button class="btn btn-primary" style="width:auto;padding:10px 14px" onclick="addMember()">➕</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">🔔 Push-Benachrichtigungen</div>
-    <div id="notifSettings"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">🔐 Kennwort ändern</div>
-    <div class="gap-8">
-      <div><label>Aktuelles Kennwort</label><input type="password" id="pwOld" placeholder="••••••••"></div>
-      <div><label>Neues Kennwort</label><input type="password" id="pwNew" placeholder="••••••••"></div>
-      <div><label>Neues Kennwort bestätigen</label><input type="password" id="pwNew2" placeholder="••••••••"></div>
-      <button class="btn btn-primary" onclick="changePassword()">🔐 Kennwort ändern</button>
-    </div>
-  </div>
-
-  <div class="card mt-12">
-    <div class="card-title">⚠️ Daten</div>
-    <div class="gap-8">
-      <button class="btn btn-secondary" onclick="exportData()">📤 Daten exportieren (JSON)</button>
-      <button class="btn btn-danger" onclick="confirmReset()">🗑️ Alle Daten zurücksetzen</button>
-    </div>
-  </div>
-  <div class="card mt-12" style="text-align:center;color:var(--text3);font-size:11px">
-    Pegelclub Riverperlen · Kegelabend Manager v2.0<br>Firebase Realtime Sync · Offline-fähig
-  </div>
-</div>
-```
-
-  </div><!-- /pages -->
-
-  <div class="save-bar">
-    <button class="btn btn-primary" onclick="abendSpeichern()">💾 Abend speichern</button>
-  </div>
-</div>
-
-<!-- GENERIC CONFIRM MODAL -->
-
-<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-title" id="modalTitle"></div>
-    <div id="modalBody"></div>
-    <div class="modal-actions" id="modalActions">
-      <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
-      <button class="btn btn-danger" id="modalConfirmBtn">Bestätigen</button>
-    </div>
-  </div>
-</div>
-
-<!-- ALLE-BEKOMMEN MODAL -->
-
-<div class="modal-overlay" id="alleModal" style="display:none" onclick="if(event.target===this)closeAlleModal()">
-  <div class="modal">
-    <div class="modal-title" id="alleMTitle">🔔 Alle bekommen die Strafe!</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:4px">Tippe auf ein Mitglied, um es <strong style="color:var(--red)">auszunehmen</strong>:</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Nur anwesende Mitglieder werden berücksichtigt.</div>
-    <div class="member-check-list" id="alleliste"></div>
-    <div class="modal-actions">
-      <button class="btn btn-secondary" onclick="closeAlleModal()">Abbrechen</button>
-      <button class="btn btn-purple" onclick="alleBestaetigen()">✅ Strafen jetzt verteilen</button>
-    </div>
-  </div>
-</div>
-
-<!-- FREIE STRAFE MODAL -->
-
-<div class="modal-overlay" id="freieModal" style="display:none" onclick="if(event.target===this)closeFreieModal()">
-  <div class="modal">
-    <div class="modal-title">💸 Freie Strafe</div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:12px">Betrag frei wählen – für alle oder einzelne Mitglieder.</div>
-    <div class="gap-8" style="margin-bottom:12px">
-      <div><label>Bezeichnung (optional)</label><input type="text" id="freieLabel" placeholder="z.B. Schiedsrichterentscheidung…"></div>
-      <div><label>Betrag (€)</label><input type="number" id="freieBetrag" placeholder="0.50" step="0.50" min="0.50" style="font-size:22px;font-weight:700;text-align:center"></div>
-    </div>
-    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">Wer bekommt die Strafe?</div>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Tippe auf Mitglieder zum Auswählen / Abwählen:</div>
-    <div class="member-check-list" id="freieListe"></div>
-    <div class="modal-actions">
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px;cursor:pointer">
-        <input type="checkbox" id="freiAddKasse" checked style="width:16px;height:16px">
-        In Gesamtkasse addieren
-      </label>
-      <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
-      <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
-    </div>
-  </div>
-</div>
 
 <script>
 // ── One-time password reset to 1234 ──────
@@ -1897,41 +1484,42 @@ ls.style.opacity = ‘0’;
 try { ls.parentNode.removeChild(ls); } catch(e) {}
 }
 
-// Called by early doLogin script after login screen removed
-window._onLoginDone = function(name) {
+function doLogin() {
+var checked = document.querySelector(‘input[name=“loginName”]:checked’);
+var name = checked ? checked.value : ‘’;
+var pw = (document.getElementById(‘loginPw’) || {}).value || ‘’;
+var err = document.getElementById(‘loginError’);
+if (!name) { if (err) err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
+var correctPw = ‘1234’;
 try {
+var raw = localStorage.getItem(‘rp_state_v3’);
+if (raw) { var s = JSON.parse(raw); if (s.appPassword) correctPw = s.appPassword; }
+} catch(e) {}
+if (pw !== correctPw && pw !== ‘1234’) { if (err) err.textContent = ‘❌ Falsches Kennwort’; return; }
+if (err) err.textContent = ‘’;
 currentUser = name;
+try { sessionStorage.setItem(‘rp_user’, name); } catch(e) {}
 hideLoginScreen();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 1000);
-} catch(e) {
-document.body.innerHTML += ‘<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-size:12px;word-break:break-all">LOGIN ERROR: ’ + e.message + ‘<br>’ + (e.stack||’’).split(”\n”).slice(0,4).join(”<br>”) + ‘</div>’;
 }
-};
-
-// doLogin handled by early script (see before <header>)
 
 function initLogin() {
-// Check if early login script already logged someone in
-var saved = window._loginUser || null;
-try { if (!saved) saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
+// Restore previous session
+var saved = null;
+try { saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
 if (saved) {
-try {
 currentUser = saved;
-window._loginUser = null;
 hideLoginScreen();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 2000);
-} catch(e) {
-document.body.innerHTML += ‘<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-size:12px;word-break:break-all">INIT ERROR: ’ + e.message + ‘<br>’ + (e.stack||’’).split(”\n”).slice(0,4).join(”<br>”) + ‘</div>’;
-}
 return;
 }
-// Not logged in yet - bind enter key (button already has onclick)
+// Bind Enter key (button already has onclick=“doLogin()”)
 var pwEl = document.getElementById(‘loginPw’);
-if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) window.doLogin(); });
+if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
 updateHeader();
 }
 
@@ -2054,6 +1642,315 @@ return result.sort((a,b)=>a.date-b.date);
 
 init();
 </script>
+
+<body>
+<div id="app">
+
+<!-- LOGIN SCREEN -->
+
+<style>
+.nm-radio{display:none}
+.nm-btn{display:block;padding:12px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;font-family:sans-serif;-webkit-tap-highlight-color:transparent}
+.nm-radio:checked+.nm-btn{border-color:#f0a500;background:#2d2000;color:#f0a500}
+.nm-label{display:block}
+</style>
+
+<div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+  <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
+    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 Aktualisieren</button>
+  </div>
+  <div style="font-size:52px;margin-bottom:6px">🎳</div>
+  <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
+  <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
+  <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
+    <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px" id="loginBtnGrid">
+      <label class="nm-label" for="nm_0"><input type="radio" name="loginName" id="nm_0" value="Jens Wolters" class="nm-radio"><span class="nm-btn">Jens W.</span></label>
+      <label class="nm-label" for="nm_1"><input type="radio" name="loginName" id="nm_1" value="Simon Haßmann" class="nm-radio"><span class="nm-btn">Simon H.</span></label>
+      <label class="nm-label" for="nm_2"><input type="radio" name="loginName" id="nm_2" value="Marcus Schmele" class="nm-radio"><span class="nm-btn">Marcus S.</span></label>
+      <label class="nm-label" for="nm_3"><input type="radio" name="loginName" id="nm_3" value="Patrick Jentges" class="nm-radio"><span class="nm-btn">Patrick J.</span></label>
+      <label class="nm-label" for="nm_4"><input type="radio" name="loginName" id="nm_4" value="Tilo Hase" class="nm-radio"><span class="nm-btn">Tilo H.</span></label>
+      <label class="nm-label" for="nm_5"><input type="radio" name="loginName" id="nm_5" value="Nico Foppe" class="nm-radio"><span class="nm-btn">Nico F.</span></label>
+      <label class="nm-label" for="nm_6"><input type="radio" name="loginName" id="nm_6" value="Sascha Franke" class="nm-radio"><span class="nm-btn">Sascha F.</span></label>
+      <label class="nm-label" for="nm_7"><input type="radio" name="loginName" id="nm_7" value="Stefan Hermann Thien" class="nm-radio"><span class="nm-btn">Stefan T.</span></label>
+      <label class="nm-label" for="nm_8"><input type="radio" name="loginName" id="nm_8" value="Marcel Albers" class="nm-radio"><span class="nm-btn">Marcel A.</span></label>
+      <label class="nm-label" for="nm_9"><input type="radio" name="loginName" id="nm_9" value="Hendrik Pötter" class="nm-radio"><span class="nm-btn">Hendrik P.</span></label>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
+      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
+    </div>
+    <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
+    <button type="button" onclick="doLogin()" ontouchend="event.preventDefault();doLogin();" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
+  </div>
+</div>
+
+  <header>
+    <div class="logo-circle" id="logoCircle"><span>PR</span></div>
+    <div class="header-text">
+      <div class="header-title">PEGELCLUB RIVERPERLEN</div>
+      <div class="header-sub">Kegelabend Manager</div>
+    </div>
+    <div class="header-right">
+      <div class="header-amount" id="headerAmount">€ 0,00</div>
+      <div class="sync-row">
+        <div class="sync-dot" id="syncDot"></div>
+        <span class="sync-lbl" id="syncLbl">Offline</span>
+      </div>
+    </div>
+  </header>
+
+  <div style="display:flex;align-items:center;padding:3px 12px 3px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
+    <span style="font-size:11px;color:var(--text2)">👤 <span id="headerUser">–</span></span>
+    <div id="onlineIndicator" style="display:none;align-items:center;gap:4px;margin-left:10px;flex:1"></div>
+    <button onclick="logout()" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px">Abmelden ↩</button>
+  </div>
+  <nav>
+    <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard',this)">🏠 Start</button>
+    <button class="nav-btn" data-page="anwesenheit" onclick="showPage('anwesenheit',this)">👥 Heute</button>
+    <button class="nav-btn" data-page="strafen" onclick="showPage('strafen',this)">⚠️ Strafen</button>
+    <button class="nav-btn" data-page="abschluss" onclick="showPage('abschluss',this)">📋 Abschluss</button>
+    <button class="nav-btn" data-page="kasse" onclick="showPage('kasse',this)">💰 Kasse</button>
+    <button class="nav-btn" data-page="events" onclick="showPage('events',this)">🎉 Events</button>
+    <button class="nav-btn" data-page="termine" onclick="showPage('termine',this)">📆 Termine</button>
+    <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">📊 Stats</button>
+    <button class="nav-btn" data-page="chat" onclick="showPage('chat',this)">💬</button>
+    <button class="nav-btn" data-page="profil" onclick="showPage('profil',this)">👤</button>
+    <button class="nav-btn" data-page="settings" onclick="showPage('settings',this)">⚙️</button>
+  </nav>
+
+  <div id="pages">
+
+```
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div id="syncBanner"></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="dashKasse">€0</div><div class="stat-label">Kassenstand</div></div>
+    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="dashAnwesend">0</div><div class="stat-label">Heute dabei</div></div>
+    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="dashOffen" style="color:var(--red)">€0</div><div class="stat-label">Offen heute</div></div>
+    <div class="stat-card"><div class="stat-icon">🎉</div><div class="stat-val" id="dashEvents">0</div><div class="stat-label">Aktive Events</div></div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚡ Schnellzugriff</div>
+    <div class="quick-grid">
+      <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
+      <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
+      <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
+      <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
+    </div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,rgba(240,165,0,.08),rgba(240,165,0,.03));border-color:rgba(240,165,0,.2)">
+    <div class="card-title">💰 Gesamtkasse</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="dashOffenGesamt">€ 0,00</div>
+      <div style="font-size:12px;color:var(--text2);text-align:right">Gesamt offen<br>(alle Mitglieder)</div>
+    </div>
+  </div>
+  <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
+  <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
+  <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v07.03.2026</div>
+</div>
+
+<!-- ANWESENHEIT -->
+<div class="page" id="page-anwesenheit">
+  <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
+  <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
+  <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
+</div>
+
+<!-- STRAFEN -->
+<div class="page" id="page-strafen">
+  <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
+  <div class="strafe-tabs" id="strafeMemberTabs"></div>
+  <div id="strafeList"></div>
+</div>
+
+<!-- ABSCHLUSS -->
+<div class="page" id="page-abschluss">
+  <div class="section-title"><span class="accent">📋</span> Abschluss</div>
+  <div class="card">
+    <div class="card-title">Abrechnung</div>
+    <div id="abschlussContent"></div>
+    <div style="border-top:2px solid var(--gold);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700">Gesamt</span>
+      <span id="abschlussTotal" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--gold)">€ 0,00</span>
+    </div>
+  </div>
+  <button class="btn btn-gold" onclick="kegelbahnSplit()" style="width:100%;margin-bottom:10px">🎳 Kegelbahnkosten aufteilen</button>
+  <button class="btn btn-danger" onclick="abenAbschliessen()" style="width:100%">✅ Abend abschließen</button>
+</div>
+
+<!-- KASSE -->
+<div class="page" id="page-kasse">
+  <div class="section-title"><span class="accent">💰</span> Kasse</div>
+  <div class="card">
+    <div class="card-title">Kassenstand</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="kasseTotal">€ 0,00</div>
+      <button class="btn btn-gold" onclick="openKasseModal()">+ Eintrag</button>
+    </div>
+    <div id="kasseList"></div>
+  </div>
+</div>
+
+<!-- EVENTS -->
+<div class="page" id="page-events">
+  <div class="section-title"><span class="accent">🎉</span> Special Events</div>
+  <div class="card">
+    <div class="card-title">Aktive Events</div>
+    <div id="eventList"></div>
+    <button class="btn btn-gold" onclick="openEventModal()" style="width:100%;margin-top:10px">+ Neues Event</button>
+  </div>
+</div>
+
+<!-- TERMINE -->
+<div class="page" id="page-termine">
+  <div class="section-title"><span class="accent">📆</span> Termine</div>
+  <div id="termineList"></div>
+</div>
+
+<!-- STATS -->
+<div class="page" id="page-stats">
+  <div class="section-title"><span class="accent">📊</span> Statistiken</div>
+  <div class="card"><div class="card-title">🏆 Gesamt-Ranking</div><div id="statsRanking"></div></div>
+  <div class="card">
+    <div class="card-title">📋 Überblick</div>
+    <div class="kasse-row"><span>Kegelabende</span><span id="statsAbende">0</span></div>
+    <div class="kasse-row"><span>Kassenstand</span><span id="statsKasse">€ 0,00</span></div>
+  </div>
+  <div class="card"><div class="card-title">⚠️ Top Strafen</div><div id="statsStrafenTop"></div></div>
+</div>
+
+<!-- CHAT -->
+<div class="page" id="page-chat">
+  <div class="section-title"><span class="accent">💬</span> Chat</div>
+  <div class="card" style="padding:0">
+    <div id="chatMessages" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:10px">
+    <input id="chatInput" type="text" placeholder="Nachricht…" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px" onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="btn btn-gold" onclick="sendChat()">Senden</button>
+  </div>
+</div>
+
+<!-- PROFIL -->
+<div class="page" id="page-profil">
+  <div class="section-title"><span class="accent">👤</span> Mein Profil</div>
+  <div class="card" id="myProfileContent"></div>
+</div>
+
+<!-- EINSTELLUNGEN -->
+<div class="page" id="page-settings">
+  <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
+  <div class="card">
+    <div class="card-title">🔐 App-Kennwort ändern</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="newPwInput" type="password" placeholder="Neues Kennwort" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
+      <button class="btn btn-gold" onclick="changePw()">Speichern</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">👥 Mitglieder verwalten</div>
+    <div id="memberManagement"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
+      <button class="btn btn-gold" onclick="addMember()">+</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">⚠️ Strafen-Einstellungen</div>
+    <div id="strafenModeList"></div>
+    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">EIGENE STRAFE HINZUFÜGEN</div>
+      <div style="display:flex;gap:8px;margin-bottom:6px">
+        <input id="newStrafeName" type="text" placeholder="Name" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+        <input id="newStrafePrice" type="number" placeholder="€" step="0.50" min="0.50" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+      </div>
+      <button class="btn btn-gold" onclick="addCustomStrafe()" style="width:100%">+ Strafe hinzufügen</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">💳 PayPal Benutzernamen</div>
+    <div id="paypalSettings"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🔔 Benachrichtigungen</div>
+    <div id="notifSettings"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">🖼️ Club-Logo</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="logo-circle" id="logoPreview" style="width:56px;height:56px;font-size:20px"><span>PR</span></div>
+      <div>
+        <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="uploadLogo(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()">Logo hochladen</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title" style="color:var(--red)">⚠️ Daten zurücksetzen</div>
+    <button class="btn btn-danger" onclick="resetData()" style="width:100%">Alle Daten löschen</button>
+  </div>
+</div>
+```
+
+  </div><!-- end #pages -->
+
+</div><!-- end #app -->
+
+<!-- MODALS -->
+
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="alleModalOverlay" style="display:none" onclick="closeAlleModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">🔔 Für alle eintragen</div>
+    <div id="alleModalBody">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Für wen soll die Strafe eingetragen werden?</div>
+      <div class="member-check-list" id="alleCheckList"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAlleModal()">Abbrechen</button>
+      <button class="btn btn-gold" onclick="alleBestaetigen()">✅ Eintragen</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="freieModalOverlay" style="display:none" onclick="closeFreieModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-title">💸 Freie Strafe</div>
+    <div id="freieModalBody">
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Bezeichnung</div>
+        <input id="freieLabel" type="text" placeholder="z.B. Zu spät bezahlt" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
+      </div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Betrag (€)</div>
+        <input id="freieBetrag" type="number" placeholder="0.00" step="0.50" min="0" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Für wen?</div>
+      <div class="member-check-list" id="freieListe"></div>
+      <div class="modal-actions">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px;cursor:pointer">
+          <input type="checkbox" id="freiAddKasse" checked style="width:16px;height:16px">
+          In Gesamtkasse addieren
+        </label>
+        <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
+        <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
