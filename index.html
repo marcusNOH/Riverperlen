@@ -6,7 +6,6 @@
 <title>Pegelclub Riverperlen – Kegelabend Manager v07.03</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
-// Load Firebase dynamically so the app still works offline if scripts fail
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -161,7 +160,6 @@ window._firebaseReady = (async () => {
   .termin-info{flex:1}
   .termin-title{font-weight:600;font-size:14px}
   .termin-sub{font-size:12px;color:var(--text2)}
-  .termin-past{opacity:.35}
 
   /* RANKING */
   .ranking-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
@@ -177,13 +175,13 @@ window._firebaseReady = (async () => {
   .btn-danger{background:var(--red);color:#fff}.btn-danger:active{transform:scale(.97)}
   .btn-secondary{background:var(--bg3);color:var(--text);border:1px solid var(--border)}.btn-secondary:active{transform:scale(.97)}
   .btn-green{background:var(--green);color:#000}.btn-green:active{transform:scale(.97)}
-  .btn-purple{background:var(--purple);color:#fff}
-  .btn-gold{background:var(--gold);color:#111;font-weight:700}.btn-purple:active{transform:scale(.97)}
+  .btn-purple{background:var(--purple);color:#fff}.btn-purple:active{transform:scale(.97)}
+  .btn-gold{background:var(--gold);color:#111;font-weight:700}.btn-gold:active{transform:scale(.97)}
 
   .section-title{font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
   .section-title .accent{color:var(--gold)}
 
-  /* MODAL – slides up from bottom */
+  /* MODAL – FIX: use .modal not .modal-sheet */
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:100;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .15s}
   .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:20px;width:100%;max-width:480px;animation:slideUp .25s ease;max-height:88vh;overflow-y:auto}
   @keyframes slideUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
@@ -214,8 +212,6 @@ window._firebaseReady = (async () => {
 
   .chip{display:inline-flex;align-items:center;gap:4px;background:rgba(240,165,0,.15);border:1px solid rgba(240,165,0,.3);color:var(--gold);border-radius:12px;padding:3px 10px;font-size:11px;font-weight:700}
 
-  .save-bar{padding:10px 14px;background:var(--bg2);border-top:1px solid var(--border);flex-shrink:0}
-
   input[type=text],input[type=number],input[type=date],input[type=password],textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-family:'Barlow',sans-serif;font-size:14px;width:100%;outline:none}
   input:focus,select:focus,textarea:focus{border-color:var(--gold)}
   select{appearance:none}
@@ -228,36 +224,16 @@ window._firebaseReady = (async () => {
   .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:4px}
   .progress-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--gold2));border-radius:3px;transition:width .4s}
 
-  .photo-upload-area{border:2px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;cursor:pointer;transition:border-color .2s}
-  .photo-upload-area:hover{border-color:var(--gold)}
-  .photo-upload-area input{display:none}
-
   .sync-banner{border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:12px;line-height:1.4}
   .sync-banner.ok{background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.25)}
   .sync-banner.warn{background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.25)}
   .sync-banner.off{background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.25)}
 
-  .load-more-btn{width:100%;padding:10px;border-radius:8px;border:1px dashed var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;font-family:'Barlow',sans-serif;transition:all .15s}
-  .load-more-btn:hover{border-color:var(--gold);color:var(--gold)}
-
   .strafe-mode-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
   .strafe-mode-row:last-child{border-bottom:none}
 </style>
-<script>
-// ── One-time password reset to 1234 ──────
-// Remove this block after testing is done
-(function(){
-  try {
-    var raw = localStorage.getItem('rp_state_v3');
-    if (raw) {
-      var s = JSON.parse(raw);
-      s.appPassword = '1234';
-      localStorage.setItem('rp_state_v3', JSON.stringify(s));
-    }
-    localStorage.setItem('rp_pw', '1234');
-  } catch(e) {}
-})();
 
+<script>
 // ═══════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════
@@ -266,7 +242,6 @@ const DEFAULT_MEMBERS = [
   'Nico Foppe','Sascha Franke','Stefan Hermann Thien','Marcel Albers','Hendrik Pötter'
 ];
 function getMembers() { try { return (state && state.members && state.members.length) ? state.members : DEFAULT_MEMBERS; } catch(e) { return DEFAULT_MEMBERS; } }
-// Backward compat alias
 Object.defineProperty(window,'MEMBERS',{get:getMembers});
 
 const DEFAULT_STRAFEN = [
@@ -295,20 +270,19 @@ function defaultState() {
     anwesenheit:{}, strafen:{}, kasse:[], kasseStart:0,
     events:[], extraTermine:[], history:[],
     paypal:{}, strafenModes:{klingeln:'alle'},
-    members: null,      // null = use MEMBERS constant
-    memberBdays: {},    // {name: 'YYYY-MM-DD'}
-    bezahlt: {},        // {name: amount_paid}
-    chatMessages: [],   // [{author,text,ts}]
-    appPassword: '1234', // legacy – kept for compat
-    memberPasswords: {}, // {name: pin_string}
-    terminZusagen: {},  // {'2026-03-05': {name: {status:'zusage'|'absage', grund:'...'}}}
-    freieStrafen: {},   // {member: [{label, betrag, addToKasse, ts}]}
-    memberProfiles: {}  // {name: {email, adresse, vorlieben, notizen, ...}}
+    members: null,
+    memberBdays: {},
+    bezahlt: {},
+    chatMessages: [],
+    appPassword: '1234',
+    memberPasswords: {},
+    terminZusagen: {},
+    freieStrafen: {},
+    memberProfiles: {}
   };
 }
 
-// Local state (photos/logo stored separately – too big for Firebase)
-let localMeta = JSON.parse(localStorage.getItem('rp_meta')||'{}'); // {photos, logo}
+let localMeta = JSON.parse(localStorage.getItem('rp_meta')||'{}');
 var state = null; state = loadLocalState();
 
 function loadLocalState() {
@@ -336,7 +310,6 @@ let ignoreNextRemote = false;
 
 (function loadFbCfg() {
   try { fbCfg = JSON.parse(localStorage.getItem('rp_fbcfg')||'null'); } catch(e){}
-  // Prefill with club defaults if nothing saved yet
   if (!fbCfg) {
     fbCfg = {
       databaseURL: 'https://riverperlen-440c1-default-rtdb.europe-west1.firebasedatabase.app',
@@ -354,7 +327,8 @@ function fbConnect() {
   if (!url||!apiKey||!projId) { showToast('❌ Bitte alle Felder ausfüllen'); return; }
   fbCfg = {databaseURL:url, apiKey, projectId:projId};
   localStorage.setItem('rp_fbcfg', JSON.stringify(fbCfg));
-  document.getElementById('fbStatus').textContent = '🔄 Verbinde…';
+  const s = document.getElementById('fbStatus');
+  if (s) s.textContent = '🔄 Verbinde…';
   initFb();
 }
 
@@ -365,7 +339,7 @@ async function initFb() {
   if (!fbLoaded || typeof firebase === "undefined") {
     setSyncStatus("error","Kein Internet");
     const s = document.getElementById("fbStatus");
-    if (s) s.textContent = "Fehler: Firebase konnte nicht geladen werden. Internet pruefen.";
+    if (s) s.textContent = "Fehler: Firebase konnte nicht geladen werden.";
     return;
   }
   try {
@@ -394,7 +368,7 @@ async function initFb() {
       isConnected = true;
       updateSyncBanner();
       const s = document.getElementById("fbStatus");
-      if (s) s.textContent = "Verbunden und synchron";
+      if (s) s.textContent = "🟢 Verbunden und synchron";
     }, err => {
       setSyncStatus("error","Fehler");
       isConnected = false;
@@ -409,7 +383,6 @@ async function initFb() {
     console.error(err);
   }
 }
-
 
 function pushFb() {
   if (!fbRef) return;
@@ -430,19 +403,21 @@ function saveState() {
 }
 
 function setSyncStatus(cls, label) {
-  document.getElementById('syncDot').className = 'sync-dot ' + cls;
-  document.getElementById('syncLbl').textContent = label;
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLbl');
+  if (dot) dot.className = 'sync-dot ' + cls;
+  if (lbl) lbl.textContent = label;
 }
 
 function updateSyncBanner() {
   const el = document.getElementById('syncBanner');
   if (!el) return;
   if (!fbCfg) {
-    el.innerHTML = `<div class="sync-banner warn"><span style="font-size:20px">🔗</span><div><strong>Sync nicht eingerichtet.</strong> Unter ⚙️ Einstellungen Firebase konfigurieren, damit alle Mitglieder live synchronisiert werden.</div></div>`;
+    el.innerHTML = `<div class="sync-banner warn"><span style="font-size:20px">🔗</span><div><strong>Sync nicht eingerichtet.</strong> Unter ⚙️ Einstellungen Firebase konfigurieren.</div></div>`;
   } else if (!isConnected) {
-    el.innerHTML = `<div class="sync-banner off"><span style="font-size:20px">📵</span><div><strong>Offline</strong> – Änderungen werden lokal gespeichert und beim nächsten Verbindungsaufbau synchronisiert.</div></div>`;
+    el.innerHTML = `<div class="sync-banner off"><span style="font-size:20px">📵</span><div><strong>Offline</strong> – Änderungen werden lokal gespeichert.</div></div>`;
   } else {
-    el.innerHTML = `<div class="sync-banner ok"><span style="font-size:20px">🟢</span><div><strong>Live-Sync aktiv</strong> – Alle Änderungen sind sofort für alle Mitglieder sichtbar.</div></div>`;
+    el.innerHTML = `<div class="sync-banner ok"><span style="font-size:20px">🟢</span><div><strong>Live-Sync aktiv</strong> – Alle Änderungen sind sofort für alle sichtbar.</div></div>`;
   }
 }
 
@@ -453,7 +428,8 @@ let currentPage = 'dashboard';
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  const pg = document.getElementById('page-'+id);
+  if (pg) pg.classList.add('active');
   if (btn) btn.classList.add('active');
   currentPage = id;
   renderPage(id);
@@ -489,6 +465,7 @@ function showToast(msg, dur=2400) {
   setTimeout(()=>t.remove(), dur);
 }
 
+// FIX: Modal uses class "modal" consistently
 function showModal(title, bodyHtml, onConfirm, confirmTxt='Bestätigen', confirmCls='btn-danger') {
   document.getElementById('modalTitle').textContent = title;
   document.getElementById('modalBody').innerHTML = bodyHtml;
@@ -499,8 +476,6 @@ function showModal(title, bodyHtml, onConfirm, confirmTxt='Bestätigen', confirm
 }
 function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
 
-
-
 function calcKasse() {
   let t = state.kasseStart||0;
   (state.kasse||[]).forEach(e=>{ t += e.typ==='ein' ? e.betrag : -e.betrag; });
@@ -509,7 +484,6 @@ function calcKasse() {
 function calcMemberStrafen(m) {
   let t=0; const ms=state.strafen[m]||{};
   getStrafen().forEach(s=>t+=(ms[s.id]||0)*s.price);
-  // Add one-time freie strafen
   (state.freieStrafen?.[m]||[]).forEach(f=>t+=f.betrag);
   return t;
 }
@@ -527,27 +501,24 @@ function updateHeader() {
   var u = document.getElementById('headerUser');
   if (u) u.textContent = currentUser || '–';
   var a = document.getElementById('headerAmount');
-  if (a) {
-    var total = 0;
-    try {
-      var kasse = (state && state.kasse) ? state.kasse : [];
-      kasse.forEach(function(e){ total += (e.betrag||0); });
-      total += (state && state.kasseStart) ? state.kasseStart : 0;
-    } catch(ex){}
-    a.textContent = '€ ' + total.toFixed(2).replace('.',',');
-  }
+  if (a) a.textContent = fmt(calcKasse());
 }
 
 function renderDashboard() {
   updateHeader(); updateSyncBanner();
-  document.getElementById('dashKasse').textContent    = fmt(calcKasse());
-  document.getElementById('dashAnwesend').textContent = MEMBERS.filter(m=>state.anwesenheit[m]?.present).length;
-  document.getElementById('dashOffen').textContent    = fmt(calcTotalStrafen());
-  document.getElementById('dashEvents').textContent   = (state.events||[]).filter(e=>e.active).length;
+  const dashKasse = document.getElementById('dashKasse');
+  const dashAnwesend = document.getElementById('dashAnwesend');
+  const dashOffen = document.getElementById('dashOffen');
+  const dashEvents = document.getElementById('dashEvents');
+  if (dashKasse) dashKasse.textContent = fmt(calcKasse());
+  if (dashAnwesend) dashAnwesend.textContent = MEMBERS.filter(m=>state.anwesenheit[m]?.present).length;
+  if (dashOffen) dashOffen.textContent = fmt(calcTotalStrafen());
+  if (dashEvents) dashEvents.textContent = (state.events||[]).filter(e=>e.active).length;
 
   const ranking = getMembers().map(m=>({name:m,total:calcMemberStrafen(m)})).sort((a,b)=>b.total-a.total).slice(0,5);
   const maxV = ranking[0]?.total||1;
-  document.getElementById('dashRanking').innerHTML = ranking.map((r,i)=>`
+  const dashRanking = document.getElementById('dashRanking');
+  if (dashRanking) dashRanking.innerHTML = ranking.map((r,i)=>`
     <div class="ranking-item">
       <div class="rank-pos rank-${i+1}">${i+1}</div>
       <div style="flex:1"><div class="rank-name">${r.name.split(' ')[0]}</div>
@@ -555,12 +526,10 @@ function renderDashboard() {
       <div class="rank-amount">${fmt(r.total)}</div>
     </div>`).join('');
 
-  // Total open amount across all members
   const totalOffen = getMembers().reduce((sum,m)=>sum+Math.max(0,calcMemberStrafen(m)-(state.bezahlt?.[m]||0)),0);
   const dashOffenEl = document.getElementById('dashOffenGesamt');
   if (dashOffenEl) dashOffenEl.textContent = fmt(totalOffen);
 
-  // Birthdays next 2 months
   const bdays = getBirthdaysNextTwoMonths();
   const bdayEl = document.getElementById('dashBirthdays');
   if (bdayEl) {
@@ -620,9 +589,12 @@ function setGrund(m,g) {
 // ═══════════════════════════════════════════
 // STRAFEN
 // ═══════════════════════════════════════════
-let selMember = MEMBERS[0];
+let selMember = null;
+function getSelMember() { return selMember || MEMBERS[0]; }
 
 function renderStrafen() {
+  if (!selMember) selMember = MEMBERS[0];
+  // FIX: correct ID "strafeMemberTabs"
   document.getElementById('strafeMemberTabs').innerHTML = MEMBERS.map(m=>{
     const t = calcMemberStrafen(m);
     return `<div class="strafe-tab ${m===selMember?'active':''}" onclick="selMember='${m}';renderStrafen()">
@@ -649,13 +621,12 @@ function renderStrafen() {
         <button class="cnt-btn minus" onclick="strafeCount('${selMember}','${s.id}',-1)">−</button>
         <div class="cnt-val">${count}</div>
         ${isAlle
-          ? `<button class="cnt-btn alle-plus" onclick="openAlleModal('${s.id}')" title="Alle bekommen diese Strafe">🔔</button>`
+          ? `<button class="cnt-btn alle-plus" onclick="openAlleModal('${s.id}')">🔔</button>`
           : `<button class="cnt-btn plus" onclick="strafeCount('${selMember}','${s.id}',1)">+</button>`}
       </div>
     </div>`;
   }).join('');
 
-  // One-time freie strafen section
   const freieHtml = freieList.length === 0 ? '' : `
     <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)">
       <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">💸 EINMALIGE STRAFEN</div>
@@ -673,6 +644,13 @@ function renderStrafen() {
     </div>`;
 
   document.getElementById('strafeList').innerHTML = strafeHtml + freieHtml;
+}
+
+function delFreieStrafe(m, i) {
+  if (!state.freieStrafen?.[m]) return;
+  state.freieStrafen[m].splice(i, 1);
+  saveState(); renderStrafen(); updateHeader();
+  showToast('🗑️ Einmalige Strafe gelöscht');
 }
 
 function strafeCount(m, id, delta) {
@@ -743,7 +721,7 @@ function alleBestaetigen() {
 let freieSel = new Set();
 
 function openFreieModal() {
-  freieSel = new Set(getAlleTargets()); // default: alle anwesenden ausgewählt
+  freieSel = new Set(getAlleTargets());
   document.getElementById('freieLabel').value = '';
   document.getElementById('freieBetrag').value = '';
   renderFreieListe();
@@ -798,13 +776,10 @@ function renderAbschluss() {
     const ms=state.strafen[m]||{};
     const det=getStrafen().filter(s=>ms[s.id]>0).map(s=>`${s.name} ×${ms[s.id]} = ${fmt(ms[s.id]*s.price)}`).join(', ');
     const pp=state.paypal?.[m]||'';
-    // PayPal.me with amount pre-filled, fallback to send with note
     const amountStr = total.toFixed(2).replace(',','.');
-    const noteStr = encodeURIComponent('Kegelabend Riverperlen Strafen');
     const link = pp
       ? `https://www.paypal.com/paypalme/${pp}/${amountStr}`
       : `https://paypal.com/paypalme/?amount=${amountStr}&currencyCode=EUR`;
-    // Freie strafen detail
     const freieItems = (state.freieStrafen?.[m]||[]).map(f=>`${f.label} = ${fmt(f.betrag)}`);
     const allDet = [det, ...freieItems].filter(Boolean).join(', ');
     return `<div class="abschluss-member">
@@ -814,7 +789,7 @@ function renderAbschluss() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7.076 21.337H2.47a.641.641 0 01-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 00-.607-.541c-.013.076-.026.175-.041.254-.59 3.025-2.566 4.643-5.813 4.643h-2.189c-.988 0-1.829.716-1.974 1.694l-1.12 7.107h3.786c.432 0 .798-.318.865-.745l.036-.185.685-4.342.044-.24a.875.875 0 01.866-.744h.545c3.528 0 6.29-1.433 7.099-5.58.338-1.733.164-3.181-.182-4.321z"/></svg>
         Jetzt bezahlen – ${fmt(total)}
       </a>
-      <div id="paypalClicked_${m.replace(/\s/g,'_')}" style="display:none;font-size:11px;color:var(--green);text-align:center;margin-top:4px">✅ PayPal geöffnet – Betrag ${fmt(total)} vorausgefüllt</div>
+      <div id="paypalClicked_${m.replace(/\s/g,'_')}" style="display:none;font-size:11px;color:var(--green);text-align:center;margin-top:4px">✅ PayPal geöffnet</div>
     </div>`;
   }).join('');
   document.getElementById('abschlussTotal').textContent=fmt(grand);
@@ -823,14 +798,12 @@ function renderAbschluss() {
 function markPaypalClicked(m, total) {
   const el = document.getElementById('paypalClicked_' + m.replace(/\s/g,'_'));
   if (el) el.style.display = 'block';
-  // Remember in state for tracking
-  if (!state.bezahlt) state.bezahlt = {};
-  // Don't auto-mark as paid, just show confirmation hint
 }
 
 // ═══════════════════════════════════════════
-// KEGELBAHNKOSTEN (geteilte Strafe)
+// KEGELBAHNKOSTEN
 // ═══════════════════════════════════════════
+// FIX: renamed from kegelbahnSplit to kegelbahnKosten (called from HTML as kegelbahnKosten)
 function kegelbahnKosten() {
   const anwesend = getMembers().filter(m => state.anwesenheit[m]?.present);
   if (anwesend.length === 0) { showToast('❌ Niemand als anwesend markiert'); return; }
@@ -853,12 +826,33 @@ function kegelbahnKosten() {
       });
       saveState(); renderStrafen(); updateHeader();
       showToast('🎳 Kegelbahnkosten (je ' + fmt(anteilRound) + ') auf ' + anwesend.length + ' Personen aufgeteilt!');
-    }
+    },
+    '🎳 Aufteilen', 'btn-gold'
   );
 }
 
 // ═══════════════════════════════════════════
-// MEMBER PROFILES (persönliche Daten)
+// ABEND ABSCHLIESSEN
+// ═══════════════════════════════════════════
+// FIX: renamed from abenAbschliessen to abendSpeichern
+function abendSpeichern() {
+  const total=calcTotalStrafen();
+  showModal('Abend speichern',
+    `<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
+    doSave, '💾 Speichern', 'btn-green');
+}
+function doSave() {
+  const total=calcTotalStrafen();
+  if (!state.history) state.history=[];
+  state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
+  if (!state.kasse) state.kasse=[];
+  if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:'ein',date:today()});
+  state.anwesenheit={}; state.strafen={}; state.freieStrafen={};
+  saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
+}
+
+// ═══════════════════════════════════════════
+// MEMBER PROFILES
 // ═══════════════════════════════════════════
 function renderMyProfile() {
   if (!currentUser) {
@@ -924,9 +918,13 @@ function saveMyField(field, value) {
 // KASSE
 // ═══════════════════════════════════════════
 function renderKasse() {
-  document.getElementById('kasseTotalDisplay').textContent=fmt(calcKasse());
+  // FIX: correct IDs kasseTotalDisplay and kasseHistory
+  const totEl = document.getElementById('kasseTotalDisplay');
+  if (totEl) totEl.textContent = fmt(calcKasse());
   const entries=[...(state.kasse||[])].reverse();
-  document.getElementById('kasseHistory').innerHTML = !entries.length
+  const histEl = document.getElementById('kasseHistory');
+  if (!histEl) return;
+  histEl.innerHTML = !entries.length
     ? '<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Einträge</div>'
     : entries.map((e,ri)=>{
         const i=state.kasse.length-1-ri;
@@ -961,15 +959,18 @@ function delKasse(i) {
 // EVENTS
 // ═══════════════════════════════════════════
 function renderEvents() {
-  document.getElementById('eventsList').innerHTML = !(state.events||[]).length
-    ? '<div class="card" style="color:var(--text3);font-size:13px">Noch keine Events erstellt.</div>'
+  // FIX: correct ID "eventsList"
+  const el = document.getElementById('eventsList');
+  if (!el) return;
+  el.innerHTML = !(state.events||[]).length
+    ? '<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Events erstellt.</div>'
     : (state.events||[]).map((e,i)=>`
       <div class="event-card">
         <div style="display:flex;justify-content:space-between;align-items:flex-start">
           <div>
             <div style="font-weight:700;font-size:15px">🎉 ${e.name}</div>
             <div style="font-size:12px;color:var(--text2)">${e.date} · Einsatz: ${fmt(parseFloat(e.einsatz)||0)}</div>
-            <div style="font-size:12px;color:var(--text2);margin-top:2px">${e.desc}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${e.desc||''}</div>
           </div>
           <div style="display:flex;gap:4px">
             <button onclick="toggleEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px">${e.active?'✅':'⭕'}</button>
@@ -988,7 +989,7 @@ function eventHinzufuegen() {
   if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
   if (!state.events) state.events=[];
   state.events.push({name,date,desc,einsatz,active:true});
-  ['eventName','eventDate','eventDesc','eventEinsatz'].forEach(id=>document.getElementById(id).value='');
+  ['eventName','eventDate','eventDesc','eventEinsatz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   saveState(); renderEvents(); showToast('🎉 Event erstellt!');
 }
 function toggleEvent(i) { state.events[i].active=!state.events[i].active; saveState(); renderEvents(); renderDashboard(); }
@@ -999,7 +1000,7 @@ function delEvent(i) {
 }
 
 // ═══════════════════════════════════════════
-// TERMINE – unendlich, 28-Tage-Rhythmus
+// TERMINE
 // ═══════════════════════════════════════════
 let termineCount = 12;
 
@@ -1018,8 +1019,10 @@ function renderTermine() {
   const todayD = new Date(); todayD.setHours(0,0,0,0);
   const termine = getTermine(termineCount);
   const zusagen = state.terminZusagen || {};
+  const el = document.getElementById('termineList');
+  if (!el) return;
 
-  document.getElementById('termineList').innerHTML = termine.map(d=>{
+  el.innerHTML = termine.map(d=>{
     const isPast = d < todayD;
     const isToday = d.toDateString() === todayD.toDateString();
     const isFuture = d > todayD;
@@ -1029,13 +1032,11 @@ function renderTermine() {
     const dateKey = d.toISOString().slice(0,10);
     const dayZusagen = zusagen[dateKey] || {};
 
-    // Count responses for future dates
     const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
     const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
     const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
     const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
 
-    // Build participant list for future dates
     let participantHtml = '';
     if (isFuture || isToday) {
       const zuNames = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
@@ -1046,8 +1047,6 @@ function renderTermine() {
           ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">❌ Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+v.grund+')':'')).join(', ')}</div>`:''}
           ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine Rückmeldungen</div>`:''}
         </div>`;
-
-      // Action buttons only if logged in and future/today
       if (currentUser) {
         participantHtml += `
           <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
@@ -1059,8 +1058,8 @@ function renderTermine() {
             </button>
           </div>
           ${myStatus==='absage'?`
-          <div style="margin-top:6px;display:flex;gap:6px">
-            <select onchange="terminGrund('${dateKey}',this.value)" style="flex:1;padding:6px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text)">
+          <div style="margin-top:6px">
+            <select onchange="terminGrund('${dateKey}',this.value)" style="width:100%;padding:6px;font-size:12px;border-radius:8px">
               <option value="">Grund wählen…</option>
               <option value="Krank" ${myGrund==='Krank'?'selected':''}>🤒 Krank</option>
               <option value="Arbeit" ${myGrund==='Arbeit'?'selected':''}>💼 Arbeit</option>
@@ -1090,6 +1089,7 @@ function renderTermine() {
 
 function renderExtraTermine() {
   const el=document.getElementById('extraTermineList');
+  if (!el) return;
   if (!state.extraTermine||!state.extraTermine.length){el.innerHTML='';return;}
   const sorted=[...state.extraTermine].sort((a,b)=>a.date.localeCompare(b.date));
   el.innerHTML=`<div class="card mt-12">
@@ -1119,7 +1119,7 @@ function extraTerminAdd() {
   if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
   if (!state.extraTermine) state.extraTermine=[];
   state.extraTermine.push({name,date,zeit,ort});
-  ['extraName','extraDate','extraZeit','extraOrt'].forEach(id=>document.getElementById(id).value='');
+  ['extraName','extraDate','extraZeit','extraOrt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   saveState(); renderTermine(); showToast('📌 Termin hinzugefügt');
 }
 
@@ -1134,7 +1134,6 @@ function terminZusage(dateKey, status) {
   if (!state.terminZusagen) state.terminZusagen = {};
   if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
   const prev = state.terminZusagen[dateKey][currentUser]?.status;
-  // Toggle off if same
   if (prev === status) {
     delete state.terminZusagen[dateKey][currentUser];
   } else {
@@ -1168,21 +1167,25 @@ function renderStats() {
 
   const ranking=MEMBERS.map(m=>({name:m,total:all[m]})).sort((a,b)=>b.total-a.total);
   const maxV=ranking[0]?.total||1;
-  document.getElementById('statsRanking').innerHTML=ranking.map((r,i)=>`
+  const srEl = document.getElementById('statsRanking');
+  if (srEl) srEl.innerHTML=ranking.map((r,i)=>`
     <div class="ranking-item">
       <div class="rank-pos rank-${i+1}">${i+1}</div>
       <div style="flex:1"><div class="rank-name">${r.name}</div><div class="progress-bar"><div class="progress-fill" style="width:${r.total/maxV*100}%"></div></div></div>
       <div class="rank-amount">${fmt(r.total)}</div>
     </div>`).join('');
 
-  document.getElementById('statsAbende').textContent=(state.history?.length||0)+' Abende';
-  document.getElementById('statsKasse').textContent=fmt(calcKasse());
+  const saEl = document.getElementById('statsAbende');
+  const skEl = document.getElementById('statsKasse');
+  if (saEl) saEl.textContent=(state.history?.length||0)+' Abende';
+  if (skEl) skEl.textContent=fmt(calcKasse());
 
   const sc={};
   getStrafen().forEach(s=>sc[s.id]=0);
   (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
   MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
-  document.getElementById('statsStrafenTop').innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
+  const stEl = document.getElementById('statsStrafenTop');
+  if (stEl) stEl.innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
     .sort((a,b)=>b.count-a.count).slice(0,5)
     .map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join('');
 }
@@ -1191,27 +1194,30 @@ function renderStats() {
 // SETTINGS
 // ═══════════════════════════════════════════
 function renderSettings() {
-  // Prefill Firebase
+  const fbUrlEl = document.getElementById('fbUrl');
+  const fbKeyEl = document.getElementById('fbKey');
+  const fbProjEl = document.getElementById('fbProjId');
+  const fbStatEl = document.getElementById('fbStatus');
   if (fbCfg) {
-    document.getElementById('fbUrl').value    = fbCfg.databaseURL||'';
-    document.getElementById('fbKey').value    = fbCfg.apiKey||'';
-    document.getElementById('fbProjId').value = fbCfg.projectId||'';
-    document.getElementById('fbStatus').textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
+    if (fbUrlEl) fbUrlEl.value = fbCfg.databaseURL||'';
+    if (fbKeyEl) fbKeyEl.value = fbCfg.apiKey||'';
+    if (fbProjEl) fbProjEl.value = fbCfg.projectId||'';
+    if (fbStatEl) fbStatEl.textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
   }
 
+  // FIX: correct ID "memberMgmtList"
   renderMemberManagement();
   renderNotifSettings();
 
-  // Strafen-Modi + Verwaltung
   const modes=state.strafenModes||{};
   const isCustom = id => !DEFAULT_STRAFEN.find(s=>s.id===id);
-  document.getElementById('strafenModeList').innerHTML=getStrafen().map(s=>{
+  const smlEl = document.getElementById('strafenModeList');
+  if (smlEl) smlEl.innerHTML=getStrafen().map(s=>{
     const mode=modes[s.id]||'einzel';
     return `<div class="strafe-mode-row">
       <div style="flex:1">
         <div style="font-weight:600;font-size:14px">${s.name} ${isCustom(s.id)?'<span style="font-size:10px;background:rgba(74,158,255,.2);color:var(--blue);padding:1px 6px;border-radius:6px;font-weight:700">NEU</span>':''}</div>
         <div style="font-size:11px;color:var(--text2)">${fmt(s.price)} je Strich</div>
-        ${mode==='alle'?`<div style="font-size:10px;color:var(--purple);margin-top:2px">🔔 Beim Eintragen alle außer Ausnahmen</div>`:''}
       </div>
       <div style="display:flex;align-items:center;gap:6px">
         <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px">
@@ -1221,14 +1227,10 @@ function renderSettings() {
         ${isCustom(s.id)?`<button onclick="deleteStrafe('${s.id}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px">🗑️</button>`:''}
       </div>
     </div>`;
-  }).join('')
+  }).join('');
 
-  // Member photos
-  // Photo/PayPal now managed per-user in Profil page
-
-
-  // PayPal
-  document.getElementById('paypalSettings').innerHTML=MEMBERS.map(m=>{
+  const ppEl = document.getElementById('paypalSettings');
+  if (ppEl) ppEl.innerHTML=MEMBERS.map(m=>{
     const pp=state.paypal?.[m]||'';
     return `<div class="settings-row">
       <div class="settings-label">${m.split(' ')[0]}</div>
@@ -1237,29 +1239,15 @@ function renderSettings() {
   }).join('');
 }
 
-function changePassword() {
-  const old = document.getElementById('pwOld').value;
-  const nw = document.getElementById('pwNew').value;
-  const nw2 = document.getElementById('pwNew2').value;
-  const correct = state.appPassword || '1234';
-  if (old !== correct) { showToast('❌ Aktuelles Kennwort falsch'); return; }
-  if (!nw || nw.length < 4) { showToast('❌ Kennwort muss mind. 4 Zeichen lang sein'); return; }
-  if (nw !== nw2) { showToast('❌ Kennwörter stimmen nicht überein'); return; }
-  state.appPassword = nw;
-  ['pwOld','pwNew','pwNew2'].forEach(id=>document.getElementById(id).value='');
-  saveState(); showToast('✅ Kennwort geändert!');
-}
-
+// FIX: addStrafe (was addCustomStrafe in HTML)
 function addStrafe() {
   const name = document.getElementById('newStrafeName').value.trim();
   const price = parseFloat(document.getElementById('newStrafePrice').value);
-  const mode = document.getElementById('newStrafeMode').value;
   if (!name || isNaN(price) || price <= 0) { showToast('❌ Name und Preis erforderlich'); return; }
   if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
   const id = 'custom_' + Date.now();
   state.strafenListe.push({ id, name, price });
   if (!state.strafenModes) state.strafenModes = {};
-  state.strafenModes[id] = mode;
   document.getElementById('newStrafeName').value = '';
   document.getElementById('newStrafePrice').value = '';
   saveState(); renderSettings(); renderStrafen();
@@ -1268,7 +1256,7 @@ function addStrafe() {
 
 function deleteStrafe(id) {
   const s = getStrafen().find(x=>x.id===id);
-  showModal('Strafe löschen', `<p class="modal-text">Strafe "${s?.name}" wirklich löschen? Bereits eingetragene Werte bleiben in der Historie erhalten.</p>`, () => {
+  showModal('Strafe löschen', `<p class="modal-text">Strafe "${s?.name}" wirklich löschen?</p>`, () => {
     if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
     state.strafenListe = state.strafenListe.filter(x=>x.id!==id);
     saveState(); renderSettings(); renderStrafen();
@@ -1287,17 +1275,12 @@ function setMode(id, mode) {
 function uploadLogo(event) {
   const file=event.target.files[0]; if (!file) return;
   const r=new FileReader();
-  r.onload=e=>{localMeta.logo=e.target.result;saveLocalMeta();document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;showToast('✅ Logo hochgeladen');};
-  r.readAsDataURL(file);
-}
-
-function uploadPhoto(member, event) {
-  const file=event.target.files[0]; if (!file) return;
-  const r=new FileReader();
   r.onload=e=>{
-    if (!localMeta.photos) localMeta.photos={};
-    localMeta.photos[member]=e.target.result;
-    saveLocalMeta(); renderSettings(); showToast(`✅ Foto für ${member.split(' ')[0]} gespeichert`);
+    localMeta.logo=e.target.result;
+    saveLocalMeta();
+    const lc = document.getElementById('logoCircle');
+    if (lc) lc.innerHTML=`<img src="${localMeta.logo}">`;
+    showToast('✅ Logo hochgeladen');
   };
   r.readAsDataURL(file);
 }
@@ -1307,27 +1290,32 @@ function setPaypal(m,v) {
   state.paypal[m]=v.trim(); saveState();
 }
 
-// ═══════════════════════════════════════════
-// ABEND SPEICHERN
-// ═══════════════════════════════════════════
-function abendSpeichern() {
-  const total=calcTotalStrafen();
-  showModal('Abend speichern',
-    `<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
-    doSave, '💾 Speichern', 'btn-green');
-}
-function doSave() {
-  const total=calcTotalStrafen();
-  if (!state.history) state.history=[];
-  state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
-  if (!state.kasse) state.kasse=[];
-  if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:'ein',date:today()});
-  state.anwesenheit={}; state.strafen={};
-  saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
+// FIX: confirmReset (was resetData in HTML)
+function confirmReset() {
+  showModal('Daten zurücksetzen',
+    `<p class="modal-text">Was soll zurückgesetzt werden?</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetKasse"> Kasse</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetHistory"> Gesamte Historie</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetEvents"> Events</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label>
+    </div>`,
+    () => {
+      if (document.getElementById('resetStrafen')?.checked) { state.strafen={}; state.anwesenheit={}; state.freieStrafen={}; }
+      if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
+      if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
+      if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
+      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; }
+      saveState(); renderDashboard();
+      showToast('✅ Ausgewählte Daten zurückgesetzt');
+    },
+    '🗑️ Zurücksetzen', 'btn-danger'
+  );
 }
 
 // ═══════════════════════════════════════════
-// EXPORT / RESET
+// EXPORT
 // ═══════════════════════════════════════════
 function exportData() {
   const blob=new Blob([JSON.stringify({state,localMeta},null,2)],{type:'application/json'});
@@ -1335,34 +1323,9 @@ function exportData() {
   a.href=URL.createObjectURL(blob); a.download=`riverperlen_${today()}.json`; a.click();
   showToast('📤 Daten exportiert');
 }
-function confirmReset() {
-  showModal('Daten zurücksetzen',
-    `<p class="modal-text">Was soll zurückgesetzt werden?</p>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetKasse"> Kasse</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetHistory"> Gesamte Historie</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetEvents"> Events</label>
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label>
-    </div>`,
-    () => {
-      if (document.getElementById('resetStrafen')?.checked) { state.strafen={}; state.anwesenheit={}; }
-      if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
-      if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
-      if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
-      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; }
-      saveState(); renderDashboard();
-      showToast('✅ Ausgewählte Daten zurückgesetzt');
-    }
-  );
-}
 
 // ═══════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════
-
-// ═══════════════════════════════════════════
-// ONLINE PRESENCE
+// PRESENCE
 // ═══════════════════════════════════════════
 let onlineRef = null;
 let onlineUsers = {};
@@ -1372,21 +1335,15 @@ function initPresence() {
   try {
     const db = firebase.database(fbApp);
     const myRef = db.ref('riverperlen/online/' + currentUser.replace(/[.#$\[\]]/g,'_'));
-    // Set online
     myRef.set({ name: currentUser, ts: Date.now() });
-    // Remove on disconnect
     myRef.onDisconnect().remove();
-    // Listen to all online users
     onlineRef = db.ref('riverperlen/online');
     onlineRef.on('value', snap => {
       onlineUsers = {};
       const val = snap.val() || {};
       Object.values(val).forEach(u => { if (u.name) onlineUsers[u.name] = u.ts; });
       renderOnlineIndicator();
-      // Re-render termine if on that page
-      if (document.getElementById('page-termine')?.classList.contains('active')) renderTermine();
     });
-    // Heartbeat every 2 min
     setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
   } catch(e) { console.warn('Presence error:', e); }
 }
@@ -1401,46 +1358,19 @@ function renderOnlineIndicator() {
       el.innerHTML = `<span style="font-size:10px;color:var(--green)">● </span><span style="font-size:11px;color:var(--text2)">${names.length} online: ${names.map(n=>n.split(' ')[0]).join(', ')}</span>`;
     }
   }
-  // Also update termine page online list
-  const tel = document.getElementById('termineOnlineList');
-  if (tel) {
-    const names = Object.keys(onlineUsers);
-    if (names.length === 0) {
-      tel.innerHTML = '<span style="color:var(--text3)">Niemand gerade online</span>';
-    } else {
-      tel.innerHTML = names.map(n => {
-        const isMe = n === currentUser;
-        return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border-radius:20px;padding:4px 10px;margin:2px;font-size:12px">
-          <span style="color:var(--green);font-size:9px">●</span>
-          <span style="font-weight:${isMe?'700':'400'};color:${isMe?'var(--gold)':'var(--text)'}">${n.split(' ')[0]}${isMe?' (du)':''}</span>
-        </span>`;
-      }).join('');
-    }
-  }
 }
 
 // ═══════════════════════════════════════════
-// PUSH BENACHRICHTIGUNGEN
+// PUSH NOTIFICATIONS
 // ═══════════════════════════════════════════
 const NOTIF_KEY = 'rp_notif_prefs';
-
-function getNotifPrefs() {
-  try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||'{}'); } catch(e) { return {}; }
-}
-function saveNotifPrefs(prefs) {
-  localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
-}
+function getNotifPrefs() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||'{}'); } catch(e) { return {}; } }
+function saveNotifPrefs(prefs) { localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs)); }
 
 async function requestNotifPermission() {
-  if (!('Notification' in window)) {
-    showToast('❌ Dein Browser unterstützt keine Push-Benachrichtigungen');
-    return false;
-  }
+  if (!('Notification' in window)) { showToast('❌ Browser unterstützt keine Push-Benachrichtigungen'); return false; }
   if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') {
-    showToast('❌ Benachrichtigungen blockiert – bitte in Safari-Einstellungen erlauben');
-    return false;
-  }
+  if (Notification.permission === 'denied') { showToast('❌ Benachrichtigungen blockiert'); return false; }
   const result = await Notification.requestPermission();
   return result === 'granted';
 }
@@ -1448,23 +1378,18 @@ async function requestNotifPermission() {
 async function toggleNotif(key) {
   const prefs = getNotifPrefs();
   const newVal = !prefs[key];
-  if (newVal) {
-    const ok = await requestNotifPermission();
-    if (!ok) return;
-  }
+  if (newVal) { const ok = await requestNotifPermission(); if (!ok) return; }
   prefs[key] = newVal;
   saveNotifPrefs(prefs);
   renderNotifSettings();
-  showToast(newVal ? '🔔 Benachrichtigung aktiviert' : '🔕 Benachrichtigung deaktiviert');
+  showToast(newVal ? '🔔 Benachrichtigung aktiviert' : '🔕 Deaktiviert');
 }
 
 function sendNotif(title, body, tag) {
   const prefs = getNotifPrefs();
   if (!prefs[tag]) return;
   if (Notification.permission !== 'granted') return;
-  try {
-    new Notification(title, { body, icon: '🎳', tag });
-  } catch(e) {}
+  try { new Notification(title, { body, icon: '🎳', tag }); } catch(e) {}
 }
 
 function renderNotifSettings() {
@@ -1472,56 +1397,156 @@ function renderNotifSettings() {
   const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
   const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--gold)';
   const permText = perm === 'granted' ? '✅ Erlaubt' : perm === 'denied' ? '❌ Blockiert' : perm === 'unsupported' ? '⚠️ Nicht unterstützt' : '⏳ Nicht angefragt';
-
   const items = [
-    { key: 'chat',    icon: '💬', label: 'Neue Chat-Nachricht' },
-    { key: 'strafe',  icon: '⚠️', label: 'Strafe eingetragen' },
-    { key: 'bday',    icon: '🎂', label: 'Geburtstag heute' },
-    { key: 'abend',   icon: '🎳', label: 'Kegelabend-Erinnerung' },
+    { key: 'chat', icon: '💬', label: 'Neue Chat-Nachricht' },
+    { key: 'strafe', icon: '⚠️', label: 'Strafe eingetragen' },
+    { key: 'bday', icon: '🎂', label: 'Geburtstag heute' },
+    { key: 'abend', icon: '🎳', label: 'Kegelabend-Erinnerung' },
   ];
-
   const el = document.getElementById('notifSettings');
   if (!el) return;
   el.innerHTML = `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
-      Status: <span style="color:${permColor};font-weight:600">${permText}</span>
-      ${perm === 'denied' ? '<br><span style="font-size:11px;color:var(--text3)">In Safari: Einstellungen → Safari → Erweitert → Webseiten-Einstellungen</span>' : ''}
-    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Status: <span style="color:${permColor};font-weight:600">${permText}</span></div>
     ${items.map(it => `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:20px">${it.icon}</span>
         <div style="flex:1;font-size:14px;font-weight:500">${it.label}</div>
         <div class="toggle-btn ${prefs[it.key]?'on':''}" onclick="toggleNotif('${it.key}')"></div>
       </div>`).join('')}
-    <div style="font-size:11px;color:var(--text3);margin-top:10px">⚠️ Push-Benachrichtigungen funktionieren nur wenn die App im Safari-Browser geöffnet ist (nicht als Homescreen-App auf iOS).</div>
   `;
 }
 
-// Check birthdays daily and send notification
 function checkBdayNotifs() {
-  const today = new Date();
-  const todayStr = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const now = new Date();
+  const todayStr = String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
   const bdays = state.memberBdays || {};
   getMembers().forEach(m => {
     if (!bdays[m]) return;
-    const mmdd = bdays[m].slice(5); // YYYY-MM-DD → MM-DD
+    const mmdd = bdays[m].slice(5);
     if (mmdd === todayStr) {
-      const [y] = bdays[m].split('-');
-      const age = today.getFullYear() - parseInt(y);
+      const y = parseInt(bdays[m].split('-')[0]);
+      const age = now.getFullYear() - y;
       sendNotif('🎂 Geburtstag!', `${m} wird heute ${age} Jahre alt!`, 'bday');
     }
   });
 }
 
-function init() {
-  if (localMeta.logo) document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;
-  if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
-  else { setSyncStatus('error','Nicht verbunden'); }
-  // Sync password to localStorage so early doLogin can read it
-  localStorage.setItem('rp_pw', state.appPassword || '1234');
-  renderDashboard();
-  initLogin();
-  checkBdayNotifs();
+// ═══════════════════════════════════════════
+// MEMBER MANAGEMENT
+// ═══════════════════════════════════════════
+function renderMemberManagement() {
+  const members = getMembers();
+  // FIX: correct ID "memberMgmtList"
+  const el = document.getElementById('memberMgmtList');
+  if (!el) return;
+  el.innerHTML = members.map((m,i) => {
+    const bday = (state.memberBdays||{})[m] || '';
+    const isMe = m === currentUser;
+    const prof = (state.memberProfiles||{})[m] || {};
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div>
+          <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'}</div>
+        </div>
+        ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function uploadMemberPhoto(name, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (!localMeta.photos) localMeta.photos = {};
+    localMeta.photos[name] = e.target.result;
+    localStorage.setItem('rp_meta', JSON.stringify(localMeta));
+    renderMyProfile();
+    showToast('📷 Foto gespeichert');
+  };
+  reader.readAsDataURL(file);
+}
+
+function formatBday(str) {
+  if (!str) return '';
+  const [y,mo,d] = str.split('-');
+  return `${d}.${mo}.${y}`;
+}
+
+function addMember() {
+  // FIX: correct ID "newMemberInput"
+  const el = document.getElementById('newMemberInput');
+  const name = el ? el.value.trim() : '';
+  if (!name) { showToast('❌ Name eingeben'); return; }
+  if (!state.members) state.members = [...DEFAULT_MEMBERS];
+  if (state.members.includes(name)) { showToast('❌ Bereits vorhanden'); return; }
+  state.members.push(name);
+  if (el) el.value = '';
+  saveState(); renderMemberManagement(); renderAnwesenheit();
+  showToast(`✅ ${name} hinzugefügt`);
+}
+
+function removeMember(name) {
+  showModal('Mitglied entfernen', `<p class="modal-text">„${name}" wirklich entfernen?</p>`, () => {
+    if (!state.members) state.members = [...DEFAULT_MEMBERS];
+    state.members = state.members.filter(m=>m!==name);
+    saveState(); renderMemberManagement(); renderAnwesenheit();
+    showToast(`🗑️ ${name} entfernt`);
+  });
+}
+
+function getBirthdaysNextTwoMonths() {
+  const now = new Date();
+  const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
+  const bdays = state.memberBdays || {};
+  const result = [];
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const [y,mo,d] = bdays[m].split('-').map(Number);
+    let bd = new Date(now.getFullYear(), mo-1, d);
+    if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
+    if (bd <= twoMonths) {
+      const age = bd.getFullYear() - y;
+      result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
+    }
+  });
+  return result.sort((a,b)=>a.date-b.date);
+}
+
+// ═══════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════
+function renderChat() {
+  const msgs = state.chatMessages || [];
+  const el = document.getElementById('chatMessages');
+  if (!el) return;
+  el.innerHTML = msgs.length === 0
+    ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>'
+    : msgs.map((m,i) => {
+        const isMe = m.author === currentUser;
+        const d = new Date(m.ts);
+        const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+        return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
+          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
+        </div>`;
+      }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendChat() {
+  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!state.chatMessages) state.chatMessages = [];
+  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
+  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+  inp.value = '';
+  saveState(); renderChat();
+  sendNotif('💬 Neue Nachricht von ' + currentUser, text, 'chat');
 }
 
 // ═══════════════════════════════════════════
@@ -1657,136 +1682,28 @@ function logout() {
 }
 
 // ═══════════════════════════════════════════
-// CHAT
+// INIT
 // ═══════════════════════════════════════════
-function renderChat() {
-  const msgs = state.chatMessages || [];
-  document.getElementById('chatMessages').innerHTML = msgs.length === 0
-    ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>'
-    : msgs.map((m,i) => {
-        const isMe = m.author === currentUser;
-        const d = new Date(m.ts);
-        const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-        return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
-          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
-        </div>`;
-      }).join('');
-  // scroll to bottom
-  const box = document.getElementById('chatMessages');
-  box.scrollTop = box.scrollHeight;
+function init() {
+  if (localMeta.logo) {
+    const lc = document.getElementById('logoCircle');
+    if (lc) lc.innerHTML=`<img src="${localMeta.logo}">`;
+  }
+  if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
+  else { setSyncStatus('error','Nicht verbunden'); }
+  renderDashboard();
+  initLogin();
+  checkBdayNotifs();
 }
-
-function sendChat() {
-  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
-  const inp = document.getElementById('chatInput');
-  const text = inp.value.trim();
-  if (!text) return;
-  if (!state.chatMessages) state.chatMessages = [];
-  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
-  // Keep last 100 messages
-  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-  inp.value = '';
-  saveState(); renderChat();
-  // Notify others
-  sendNotif('💬 Neue Nachricht von ' + currentUser, text, 'chat');
-}
-
-// ═══════════════════════════════════════════
-// MEMBERS MANAGEMENT
-// ═══════════════════════════════════════════
-function renderMemberManagement() {
-  const members = getMembers();
-  document.getElementById('memberMgmtList').innerHTML = members.map((m,i) => {
-    const bday = (state.memberBdays||{})[m] || '';
-    const isMe = m === currentUser;
-    const prof = (state.memberProfiles||{})[m] || {};
-    return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div>
-          <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} ${prof.email?'· '+prof.email:''}</div>
-        </div>
-        ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function uploadMemberPhoto(name, event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    if (!localMeta.photos) localMeta.photos = {};
-    localMeta.photos[name] = e.target.result;
-    localStorage.setItem('rp_meta', JSON.stringify(localMeta));
-    renderMyProfile();
-    showToast('📷 Foto gespeichert');
-  };
-  reader.readAsDataURL(file);
-}
-
-function formatBday(str) {
-  if (!str) return '';
-  const [y,mo,d] = str.split('-');
-  return `${d}.${mo}.${y}`;
-}
-
-function addMember() {
-  const name = document.getElementById('newMemberName').value.trim();
-  if (!name) { showToast('❌ Name eingeben'); return; }
-  if (!state.members) state.members = [...DEFAULT_MEMBERS];
-  if (state.members.includes(name)) { showToast('❌ Bereits vorhanden'); return; }
-  state.members.push(name);
-  document.getElementById('newMemberName').value = '';
-  saveState(); renderMemberManagement(); renderAnwesenheit();
-  showToast(`✅ ${name} hinzugefügt`);
-}
-
-function removeMember(name) {
-  showModal('Mitglied entfernen', `<p class="modal-text">„${name}" wirklich entfernen? Alle zugehörigen Daten bleiben in der Historie.</p>`, () => {
-    if (!state.members) state.members = [...DEFAULT_MEMBERS];
-    state.members = state.members.filter(m=>m!==name);
-    saveState(); renderMemberManagement(); renderAnwesenheit();
-    showToast(`🗑️ ${name} entfernt`);
-  });
-}
-
-function setBday(name, val) {
-  if (!state.memberBdays) state.memberBdays = {};
-  state.memberBdays[name] = val;
-  saveState(); renderMemberManagement(); renderDashboard();
-}
-
-function getBirthdaysNextTwoMonths() {
-  const now = new Date();
-  const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
-  const bdays = state.memberBdays || {};
-  const result = [];
-  getMembers().forEach(m => {
-    if (!bdays[m]) return;
-    const [y,mo,d] = bdays[m].split('-').map(Number);
-    // This year's birthday
-    let bd = new Date(now.getFullYear(), mo-1, d);
-    if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
-    if (bd <= twoMonths) {
-      const age = bd.getFullYear() - y;
-      result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
-    }
-  });
-  return result.sort((a,b)=>a.date-b.date);
-}
-
-init();
 </script>
+
+</head>
 <body>
 <div id="app">
 
 <!-- LOGIN SCREEN -->
 <style>
 .lpin-btn{display:block;width:100%;padding:13px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent;transition:border-color .15s,background .15s}
-.lpin-btn.sel{border-color:#f0a500;background:#2d2000;color:#f0a500}
 .lpin-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#2a2f42;margin:0 3px;transition:background .15s}
 .lpin-dot.filled{background:#f0a500}
 </style>
@@ -1795,20 +1712,16 @@ init();
   <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
   <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
-
-    <!-- STEP 1: PIN eingeben -->
     <div id="loginStepPin">
       <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:4px;text-align:center">🔑 PIN eingeben</div>
       <div style="font-size:11px;color:#8a90a8;text-align:center;margin-bottom:16px">Dein persönlicher PIN identifiziert dich</div>
-      <!-- PIN dots display -->
-      <div style="text-align:center;margin-bottom:16px" id="pinDots">
+      <div style="text-align:center;margin-bottom:16px">
         <span class="lpin-dot" id="pd0"></span>
         <span class="lpin-dot" id="pd1"></span>
         <span class="lpin-dot" id="pd2"></span>
         <span class="lpin-dot" id="pd3"></span>
       </div>
-      <!-- Number pad -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px" id="pinPad">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">
         <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('1')" onclick="pinPress('1')">1</button>
         <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('2')" onclick="pinPress('2')">2</button>
         <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('3')" onclick="pinPress('3')">3</button>
@@ -1824,14 +1737,11 @@ init();
       </div>
       <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px"></div>
     </div>
-
-    <!-- STEP 2: Admin-Panel (nur nach PIN 1590) -->
     <div id="loginStepAdmin" style="display:none">
       <div style="font-size:14px;font-weight:700;color:#f0a500;margin-bottom:16px;text-align:center">⚙️ Admin – PINs verwalten</div>
       <div id="adminPinList" style="margin-bottom:12px"></div>
       <button type="button" ontouchend="event.preventDefault();adminDone()" onclick="adminDone()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:10px;font-weight:700;font-size:14px;color:#000;cursor:pointer;font-family:sans-serif">✅ Fertig</button>
     </div>
-
   </div>
 </div>
 
@@ -1850,11 +1760,12 @@ init();
     </div>
   </header>
 
-  <div style="display:flex;align-items:center;padding:3px 12px 3px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
+  <div style="display:flex;align-items:center;padding:3px 12px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
     <span style="font-size:11px;color:var(--text2)">👤 <span id="headerUser">–</span></span>
     <div id="onlineIndicator" style="display:none;align-items:center;gap:4px;margin-left:10px;flex:1"></div>
     <button onclick="logout()" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px">Abmelden ↩</button>
   </div>
+
   <nav>
     <button class="nav-btn active" data-page="dashboard" onclick="showPage('dashboard',this)">🏠 Start</button>
     <button class="nav-btn" data-page="anwesenheit" onclick="showPage('anwesenheit',this)">👥 Heute</button>
@@ -1911,8 +1822,13 @@ init();
     <!-- STRAFEN -->
     <div class="page" id="page-strafen">
       <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
-      <div class="strafe-tabs" id="strafeMemberTabs"></div>
+      <!-- FIX: correct class "strafe-member-tabs" and ID "strafeMemberTabs" -->
+      <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
       <div id="strafeList"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn btn-purple" onclick="openFreieModal()" style="flex:1">💸 Freie Strafe</button>
+        <button class="btn btn-gold" onclick="kegelbahnKosten()" style="flex:1">🎳 Bahnkosten</button>
+      </div>
     </div>
 
     <!-- ABSCHLUSS -->
@@ -1926,8 +1842,9 @@ init();
           <span id="abschlussTotal" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--gold)">€ 0,00</span>
         </div>
       </div>
-      <button class="btn btn-gold" onclick="kegelbahnSplit()" style="width:100%;margin-bottom:10px">🎳 Kegelbahnkosten aufteilen</button>
-      <button class="btn btn-danger" onclick="abenAbschliessen()" style="width:100%">✅ Abend abschließen</button>
+      <!-- FIX: kegelbahnKosten() statt kegelbahnSplit(), abendSpeichern() statt abenAbschliessen() -->
+      <button class="btn btn-gold" onclick="kegelbahnKosten()" style="width:100%;margin-bottom:10px">🎳 Kegelbahnkosten aufteilen</button>
+      <button class="btn btn-green" onclick="abendSpeichern()" style="width:100%">💾 Abend speichern</button>
     </div>
 
     <!-- KASSE -->
@@ -1935,11 +1852,24 @@ init();
       <div class="section-title"><span class="accent">💰</span> Kasse</div>
       <div class="card">
         <div class="card-title">Kassenstand</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="kasseTotal">€ 0,00</div>
-          <button class="btn btn-gold" onclick="openKasseModal()">+ Eintrag</button>
+        <!-- FIX: correct ID "kasseTotalDisplay" -->
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px" id="kasseTotalDisplay">€ 0,00</div>
+        <div class="gap-8">
+          <input id="kasseDesc" type="text" placeholder="Beschreibung (z.B. Getränke)">
+          <div class="flex-row">
+            <input id="kasseBetrag" type="number" placeholder="Betrag €" step="0.50" min="0">
+            <select id="kasseTyp">
+              <option value="ein">📥 Einnahme</option>
+              <option value="aus">📤 Ausgabe</option>
+            </select>
+          </div>
+          <button class="btn btn-gold" onclick="kasseEintrag()">✅ Eintrag hinzufügen</button>
         </div>
-        <div id="kasseList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 Verlauf</div>
+        <!-- FIX: correct ID "kasseHistory" -->
+        <div id="kasseHistory"></div>
       </div>
     </div>
 
@@ -1947,16 +1877,40 @@ init();
     <div class="page" id="page-events">
       <div class="section-title"><span class="accent">🎉</span> Special Events</div>
       <div class="card">
-        <div class="card-title">Aktive Events</div>
-        <div id="eventList"></div>
-        <button class="btn btn-gold" onclick="openEventModal()" style="width:100%;margin-top:10px">+ Neues Event</button>
+        <div class="card-title">Neues Event</div>
+        <div class="gap-8">
+          <input id="eventName" type="text" placeholder="Event Name">
+          <input id="eventDate" type="date">
+          <input id="eventDesc" type="text" placeholder="Beschreibung (optional)">
+          <input id="eventEinsatz" type="number" placeholder="Einsatz €" step="0.50" min="0">
+          <button class="btn btn-gold" onclick="eventHinzufuegen()">🎉 Event erstellen</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Aktive &amp; vergangene Events</div>
+        <!-- FIX: correct ID "eventsList" -->
+        <div id="eventsList"></div>
       </div>
     </div>
 
     <!-- TERMINE -->
     <div class="page" id="page-termine">
       <div class="section-title"><span class="accent">📆</span> Termine</div>
+      <div class="card">
+        <div class="card-title">📌 Zusatztermin hinzufügen</div>
+        <div class="gap-8">
+          <input id="extraName" type="text" placeholder="Bezeichnung">
+          <input id="extraDate" type="date">
+          <div class="flex-row">
+            <input id="extraZeit" type="text" placeholder="Uhrzeit (optional)">
+            <input id="extraOrt" type="text" placeholder="Ort (optional)">
+          </div>
+          <button class="btn btn-gold" onclick="extraTerminAdd()">📌 Termin hinzufügen</button>
+        </div>
+      </div>
       <div id="termineList"></div>
+      <div id="extraTermineList"></div>
+      <button class="btn btn-secondary" onclick="termineShowMore()" style="margin-top:8px">Mehr anzeigen…</button>
     </div>
 
     <!-- STATS -->
@@ -1975,11 +1929,11 @@ init();
     <div class="page" id="page-chat">
       <div class="section-title"><span class="accent">💬</span> Chat</div>
       <div class="card" style="padding:0">
-        <div id="chatMessages" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px"></div>
+        <div id="chatMessages" style="height:340px;overflow-y:auto;padding:14px;display:flex;flex-direction:column"></div>
       </div>
       <div style="display:flex;gap:8px;margin-top:10px">
-        <input id="chatInput" type="text" placeholder="Nachricht…" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px" onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="btn btn-gold" onclick="sendChat()">Senden</button>
+        <input id="chatInput" type="text" placeholder="Nachricht…" onkeydown="if(event.key==='Enter')sendChat()" style="flex:1">
+        <button class="btn btn-gold" onclick="sendChat()" style="width:auto;padding:12px 18px">Senden</button>
       </div>
     </div>
 
@@ -1992,62 +1946,91 @@ init();
     <!-- EINSTELLUNGEN -->
     <div class="page" id="page-settings">
       <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
+
       <div class="card">
-        <div class="card-title">🔑 PIN-Verwaltung</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Admin-PIN <strong style="color:var(--gold)">1590</strong> eingeben beim Login um alle PINs zu verwalten.</div>
-        <div style="font-size:12px;color:var(--text3)">Standard-PINs: Jens=0001, Simon=0002, Marcus=0003, Patrick=0004, Tilo=0005, Nico=0006, Sascha=0007, Stefan=0008, Marcel=0009, Hendrik=0010</div>
-      </div>
-      <div class="card">
-        <div class="card-title">👥 Mitglieder verwalten</div>
-        <div id="memberManagement"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
-          <button class="btn btn-gold" onclick="addMember()">+</button>
+        <div class="card-title">🔗 Firebase Sync</div>
+        <div class="gap-8">
+          <div><label>Datenbank URL</label><input id="fbUrl" type="text" placeholder="https://…firebasedatabase.app"></div>
+          <div><label>API Key</label><input id="fbKey" type="text" placeholder="AIza…"></div>
+          <div><label>Project ID</label><input id="fbProjId" type="text" placeholder="mein-projekt-id"></div>
+          <button class="btn btn-gold" onclick="fbConnect()">🔗 Verbinden</button>
+          <div id="fbStatus" style="font-size:12px;color:var(--text2);text-align:center"></div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-title">🔑 PIN-Verwaltung</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Admin-PIN <strong style="color:var(--gold)">1590</strong> beim Login eingeben um alle PINs zu verwalten.</div>
+        <div style="font-size:12px;color:var(--text3)">Standard-PINs: Jens=0001, Simon=0002, Marcus=0003, Patrick=0004, Tilo=0005, Nico=0006, Sascha=0007, Stefan=0008, Marcel=0009, Hendrik=0010</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">👥 Mitglieder verwalten</div>
+        <!-- FIX: correct ID "memberMgmtList" -->
+        <div id="memberMgmtList"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <!-- FIX: correct ID "newMemberInput" -->
+          <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1">
+          <button class="btn btn-gold" onclick="addMember()" style="width:auto;padding:10px 16px">+</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">⚠️ Strafen-Einstellungen</div>
         <div id="strafenModeList"></div>
         <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
           <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">EIGENE STRAFE HINZUFÜGEN</div>
-          <div style="display:flex;gap:8px;margin-bottom:6px">
-            <input id="newStrafeName" type="text" placeholder="Name" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
-            <input id="newStrafePrice" type="number" placeholder="€" step="0.50" min="0.50" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <input id="newStrafeName" type="text" placeholder="Name" style="flex:2">
+            <input id="newStrafePrice" type="number" placeholder="€" step="0.50" min="0.50" style="flex:1">
           </div>
-          <button class="btn btn-gold" onclick="addCustomStrafe()" style="width:100%">+ Strafe hinzufügen</button>
+          <!-- FIX: addStrafe() statt addCustomStrafe() -->
+          <button class="btn btn-gold" onclick="addStrafe()">+ Strafe hinzufügen</button>
         </div>
       </div>
+
       <div class="card">
         <div class="card-title">💳 PayPal Benutzernamen</div>
         <div id="paypalSettings"></div>
       </div>
+
       <div class="card">
         <div class="card-title">🔔 Benachrichtigungen</div>
         <div id="notifSettings"></div>
       </div>
+
       <div class="card">
         <div class="card-title">🖼️ Club-Logo</div>
         <div style="display:flex;align-items:center;gap:12px">
-          <div class="logo-circle" id="logoPreview" style="width:56px;height:56px;font-size:20px"><span>PR</span></div>
+          <div class="logo-circle" style="width:56px;height:56px;font-size:20px" id="logoPreview"><span>PR</span></div>
           <div>
             <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="uploadLogo(event)">
-            <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()">Logo hochladen</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()" style="width:auto">Logo hochladen</button>
           </div>
         </div>
       </div>
+
+      <div class="card">
+        <div class="card-title">📤 Export</div>
+        <button class="btn btn-secondary" onclick="exportData()">📤 Daten exportieren</button>
+      </div>
+
       <div class="card">
         <div class="card-title" style="color:var(--red)">⚠️ Daten zurücksetzen</div>
-        <button class="btn btn-danger" onclick="resetData()" style="width:100%">Alle Daten löschen</button>
+        <!-- FIX: confirmReset() statt resetData() -->
+        <button class="btn btn-danger" onclick="confirmReset()">🗑️ Daten zurücksetzen</button>
       </div>
+
     </div>
 
   </div><!-- end #pages -->
 
 </div><!-- end #app -->
 
-<!-- MODALS -->
-<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal()">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
+<!-- MAIN MODAL (showModal) -->
+<!-- FIX: class="modal" statt class="modal-sheet" -->
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title" id="modalTitle"></div>
     <div id="modalBody"></div>
     <div class="modal-actions">
@@ -2057,13 +2040,13 @@ init();
   </div>
 </div>
 
-<div class="modal-overlay" id="alleModalOverlay" style="display:none" onclick="closeAlleModal()">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
-    <div class="modal-title">🔔 Für alle eintragen</div>
-    <div id="alleModalBody">
-      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Für wen soll die Strafe eingetragen werden?</div>
-      <div class="member-check-list" id="alleCheckList"></div>
-    </div>
+<!-- ALLE-MODAL -->
+<!-- FIX: consistent IDs: alleModal, alleMTitle, alleliste -->
+<div class="modal-overlay" id="alleModal" style="display:none" onclick="if(event.target===this)closeAlleModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title" id="alleMTitle">🔔 Für alle eintragen</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Für wen soll die Strafe eingetragen werden?</div>
+    <div class="member-check-list" id="alleliste"></div>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeAlleModal()">Abbrechen</button>
       <button class="btn btn-gold" onclick="alleBestaetigen()">✅ Eintragen</button>
@@ -2071,31 +2054,32 @@ init();
   </div>
 </div>
 
-<div class="modal-overlay" id="freieModalOverlay" style="display:none" onclick="closeFreieModal()">
-  <div class="modal-sheet" onclick="event.stopPropagation()">
+<!-- FREIE STRAFE MODAL -->
+<!-- FIX: consistent IDs: freieModal, freieLabel, freieBetrag, freieListe, freiAddKasse -->
+<div class="modal-overlay" id="freieModal" style="display:none" onclick="if(event.target===this)closeFreieModal()">
+  <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-title">💸 Freie Strafe</div>
-    <div id="freieModalBody">
-      <div style="margin-bottom:10px">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Bezeichnung</div>
-        <input id="freieLabel" type="text" placeholder="z.B. Zu spät bezahlt" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
-      </div>
-      <div style="margin-bottom:10px">
-        <div style="font-size:12px;color:var(--text2);margin-bottom:4px">Betrag (€)</div>
-        <input id="freieBetrag" type="number" placeholder="0.00" step="0.50" min="0" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
-      </div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Für wen?</div>
-      <div class="member-check-list" id="freieListe"></div>
-      <div class="modal-actions">
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:4px;cursor:pointer">
-          <input type="checkbox" id="freiAddKasse" checked style="width:16px;height:16px">
-          In Gesamtkasse addieren
-        </label>
-        <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
-        <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
-      </div>
+    <div style="margin-bottom:10px">
+      <label>Bezeichnung</label>
+      <input id="freieLabel" type="text" placeholder="z.B. Zu spät bezahlt">
+    </div>
+    <div style="margin-bottom:10px">
+      <label>Betrag (€)</label>
+      <input id="freieBetrag" type="number" placeholder="0.00" step="0.50" min="0">
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Für wen?</div>
+    <div class="member-check-list" id="freieListe"></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="freiAddKasse" checked style="width:16px;height:16px">
+      In Gesamtkasse addieren
+    </label>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
+      <button class="btn btn-gold" onclick="freieBestaetigen()">💸 Strafe verteilen</button>
     </div>
   </div>
 </div>
 
+<script>init();</script>
 </body>
 </html>
