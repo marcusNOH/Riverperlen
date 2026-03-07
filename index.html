@@ -281,7 +281,8 @@ function defaultState() {
     memberProfiles: {},
     abendNotizen: {},
     strafenPinned: [],
-    abstimmungen: []
+    abstimmungen: [],
+    memberPerms: {}
   };
 }
 
@@ -437,6 +438,11 @@ function updateSyncBanner() {
 // ═══════════════════════════════════════════
 let currentPage = 'dashboard';
 function showPage(id, btn) {
+  // Settings only for admin session
+  if (id === 'settings' && !_isAdminSession) {
+    showToast('Nur für Admin zugänglich');
+    return;
+  }
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   const pg = document.getElementById('page-'+id);
@@ -510,6 +516,15 @@ function avatar(m) {
 // DASHBOARD
 // ═══════════════════════════════════════════
 function updateHeader() {
+  // Show/hide settings nav button based on admin session
+  const settingsBtn = document.querySelector('[data-page="settings"]');
+  if (settingsBtn) settingsBtn.style.display = _isAdminSession ? '' : 'none';
+  // Admin name display
+  if (currentUser === '__admin__') {
+    const ht = document.getElementById('headerTitle') || document.querySelector('.header-title');
+    // handled below
+  }
+
   var u = document.getElementById('headerUser');
   if (u) u.textContent = currentUser || '–';
   var a = document.getElementById('headerAmount');
@@ -595,6 +610,7 @@ function renderAnwesenheit() {
   }).join('');
 }
 function togglePresent(m) {
+  if (!canDo('anw.toggle')) return;
   if (!state.anwesenheit[m]) state.anwesenheit[m]={};
   state.anwesenheit[m].present = !state.anwesenheit[m].present;
   saveState(); renderAnwesenheit(); renderDashboard();
@@ -1218,6 +1234,7 @@ function renderExtraTermine() {
 
 
 function extraTerminAdd() {
+  if (!canDo('ter.zusatz')) { showToast('Keine Berechtigung'); return; }
   const name=document.getElementById('extraName').value.trim();
   const date=document.getElementById('extraDate').value;
   const zeit=document.getElementById('extraZeit').value.trim();
@@ -1230,6 +1247,7 @@ function extraTerminAdd() {
 }
 
 function delExtraTermin(i) {
+  if (!canDo('ter.zusatz')) { showToast('Keine Berechtigung'); return; }
   showModal('Termin löschen',`<p class="modal-text">„${state.extraTermine[i].name}" wirklich löschen?</p>`,()=>{
     state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast('🗑️ Gelöscht');
   });
@@ -1328,7 +1346,94 @@ function retryFbConnect() {
   setTimeout(updateFbLiveStatus, 3000);
 }
 
+
+// ═══════════════════════════════════════════
+// BERECHTIGUNGEN VERWALTUNG (Admin)
+// ═══════════════════════════════════════════
+function renderBerechtigungen() {
+  const el = document.getElementById('berechtigungenMatrix');
+  if (!el) return;
+  const members = getMembers();
+  // Group permissions by seite
+  const bySeite = {};
+  ALLE_BERECHTIGUNGEN.forEach(p => {
+    if (!bySeite[p.seite]) bySeite[p.seite] = [];
+    bySeite[p.seite].push(p);
+  });
+
+  el.innerHTML = members.map(m => {
+    const perms = (state.memberPerms || {})[m] || {};
+    const seitenBlocks = Object.entries(bySeite).map(([seite, ps]) => `
+      <div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">${seite}</div>
+        ${ps.map(p => {
+          const val = typeof perms[p.key] === 'boolean' ? perms[p.key] : true;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="font-size:13px;color:${val?'var(--text)':'var(--text3)'}">${p.label}</span>
+            <div onclick="togglePerm('${m}','${p.key}')"
+              style="width:40px;height:22px;border-radius:11px;background:${val?'var(--green)':'var(--bg3)'};border:1px solid ${val?'var(--green)':'var(--border)'};position:relative;cursor:pointer;flex-shrink:0;transition:background .2s">
+              <div style="position:absolute;top:2px;${val?'right:2px':'left:2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`).join('');
+
+    return `<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="toggleBerechtigungExpand('${m}')">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0">${initials(m)}</div>
+        <div style="flex:1;font-weight:700;font-size:15px">${m.split(' ')[0]}</div>
+        <div style="font-size:11px;color:var(--text3)">${countRestrictions(m)} Einschränkung${countRestrictions(m)!==1?'en':''}</div>
+        <div id="bexp-arrow-${m.replace(/ /g,'_')}" style="color:var(--text3);font-size:16px;transition:transform .2s">›</div>
+      </div>
+      <div id="bexp-${m.replace(/ /g,'_')}" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:12px">
+          <button onclick="setAllPerms('${m}',true)"  style="flex:1;padding:7px;background:rgba(61,214,140,.15);border:1px solid var(--green);border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer">✅ Alles erlauben</button>
+          <button onclick="setAllPerms('${m}',false)" style="flex:1;padding:7px;background:rgba(232,64,64,.1);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer">🚫 Alles sperren</button>
+        </div>
+        ${seitenBlocks}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function countRestrictions(member) {
+  const perms = (state.memberPerms || {})[member] || {};
+  return Object.values(perms).filter(v => v === false).length;
+}
+
+function togglePerm(member, key) {
+  if (!state.memberPerms) state.memberPerms = {};
+  if (!state.memberPerms[member]) state.memberPerms[member] = {};
+  const cur = typeof state.memberPerms[member][key] === 'boolean' ? state.memberPerms[member][key] : true;
+  state.memberPerms[member][key] = !cur;
+  saveState();
+  renderBerechtigungen();
+  applyPermissions();
+}
+
+function setAllPerms(member, val) {
+  if (!state.memberPerms) state.memberPerms = {};
+  if (!state.memberPerms[member]) state.memberPerms[member] = {};
+  ALLE_BERECHTIGUNGEN.forEach(p => { state.memberPerms[member][p.key] = val; });
+  saveState();
+  renderBerechtigungen();
+  applyPermissions();
+}
+
+function toggleBerechtigungExpand(member) {
+  const key = member.replace(/ /g,'_');
+  const el = document.getElementById('bexp-'+key);
+  const arrow = document.getElementById('bexp-arrow-'+key);
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
+}
+
 function renderSettings() {
+  // Render Berechtigungen matrix
+  renderBerechtigungen();
+
   const fbUrlEl = document.getElementById('fbUrl');
   const fbKeyEl = document.getElementById('fbKey');
   const fbProjEl = document.getElementById('fbProjId');
@@ -2162,6 +2267,7 @@ function calcStreak(member) {
 // ABEND-NOTIZEN
 // ═══════════════════════════════════════════
 function saveAbendNotiz(val) {
+  if (!canDo('dash.notiz')) return;
   const today = new Date().toISOString().slice(0,10);
   if (!state.abendNotizen) state.abendNotizen = {};
   state.abendNotizen[today] = val;
@@ -2213,6 +2319,7 @@ function voteAbstimmung(ai, oi) {
 }
 
 function addAbstimmung() {
+  if (!canDo('dash.abstimmung')) { showToast('Keine Berechtigung'); return; }
   const frage = document.getElementById('abstimmungFrage')?.value.trim();
   const optRaw = document.getElementById('abstimmungOptionen')?.value.trim();
   if (!frage || !optRaw) { showToast('Frage und Optionen eingeben'); return; }
@@ -2293,6 +2400,7 @@ const GETRAENKE = [
 var _rouletteSpinning = false;
 
 function openTrinkroulette() {
+  if (!canDo('dash.trinkroulette')) return;
   const members = getMembers().filter(m => state.anwesenheit[m]?.present);
   if (members.length < 2) { showToast('Mind. 2 anwesende Mitglieder nötig'); return; }
   showModal('🎳 Trinkroulette', `
@@ -2423,12 +2531,82 @@ function spinRoulette() {
   requestAnimationFrame(frame);
 }
 
+
+// ═══════════════════════════════════════════
+// BERECHTIGUNGS-SYSTEM
+// ═══════════════════════════════════════════
+
+// Alle definierten Berechtigungen mit Seite, Key, Label
+const ALLE_BERECHTIGUNGEN = [
+  // Dashboard
+  { seite:'🏠 Start',      key:'dash.trinkroulette',    label:'Trinkroulette starten' },
+  { seite:'🏠 Start',      key:'dash.abstimmung',       label:'Abstimmungen erstellen' },
+  { seite:'🏠 Start',      key:'dash.notiz',            label:'Abend-Notiz bearbeiten' },
+  // Anwesenheit
+  { seite:'👥 Heute',      key:'anw.toggle',            label:'Anwesenheit umschalten' },
+  // Strafen
+  { seite:'⚠️ Strafen',    key:'str.eintragen',         label:'Strafen eintragen' },
+  { seite:'⚠️ Strafen',    key:'str.bahnkosten',        label:'Bahnkosten aufteilen' },
+  // Abschluss
+  { seite:'📋 Abschluss',  key:'abs.speichern',         label:'Abend speichern' },
+  // Kasse
+  { seite:'💰 Kasse',      key:'kas.seite',             label:'Kassen-Seite sehen' },
+  { seite:'💰 Kasse',      key:'kas.bearbeiten',        label:'Einträge hinzufügen/löschen' },
+  // Events
+  { seite:'🎉 Events',     key:'evt.seite',             label:'Events-Seite sehen' },
+  { seite:'🎉 Events',     key:'evt.bearbeiten',        label:'Events anlegen/bearbeiten' },
+  // Termine
+  { seite:'📆 Termine',    key:'ter.zusatz',            label:'Zusatztermine anlegen/löschen' },
+  // Stats
+  { seite:'📊 Stats',      key:'sta.seite',             label:'Stats-Seite sehen' },
+  // Spielideen
+  { seite:'🎳 Spiele',     key:'spi.seite',             label:'Spielideen-Seite sehen' },
+  // Chat
+  { seite:'💬 Chat',       key:'cha.schreiben',         label:'Chat-Nachrichten senden' },
+  // Profil
+  { seite:'👤 Profil',     key:'pro.bearbeiten',        label:'Eigenes Profil bearbeiten' },
+];
+
+// Check if current user has a permission (default: allowed)
+function canDo(key) {
+  if (!currentUser) return false;
+  const perms = (state.memberPerms || {})[currentUser];
+  if (!perms) return true; // default: alles erlaubt
+  if (typeof perms[key] === 'boolean') return perms[key];
+  return true; // nicht explizit gesetzt = erlaubt
+}
+
+// Set permission for a member
+function setPerm(member, key, val) {
+  if (!state.memberPerms) state.memberPerms = {};
+  if (!state.memberPerms[member]) state.memberPerms[member] = {};
+  state.memberPerms[member][key] = val;
+  saveState();
+}
+
+// Apply permissions: hide nav buttons and elements that user can't access
+function applyPermissions() {
+  if (!currentUser) return;
+
+  // Pages to hide completely if no permission
+  const pagePerms = {
+    'kasse':     'kas.seite',
+    'events':    'evt.seite',
+    'stats':     'sta.seite',
+    'spielideen':'spi.seite',
+  };
+  Object.entries(pagePerms).forEach(([page, permKey]) => {
+    const btn = document.querySelector(`[data-page="${page}"]`);
+    if (btn) btn.style.display = canDo(permKey) ? '' : 'none';
+  });
+}
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
 var currentUser = null;
 var _pinBuffer = '';
 var ADMIN_PIN = '1590';
+var _isAdminSession = false;
 
 function hideLoginScreen() {
   var ls = document.getElementById('loginScreen');
@@ -2468,7 +2646,21 @@ function pinSubmit() {
   updatePinDots();
   var err = document.getElementById('loginError');
 
-  if (pin === ADMIN_PIN) { renderAdminPanel(); return; }
+  if (pin === ADMIN_PIN) {
+    _isAdminSession = true;
+    try { sessionStorage.setItem('rp_admin','1'); } catch(e) {}
+    // Admin also enters app as "Admin"
+    currentUser = '__admin__';
+    hideLoginScreen();
+    updateHeader();
+    renderDashboard();
+    initChatWatermark();
+    applyPermissions();
+    startReminderLoop();
+    // Go directly to settings
+    setTimeout(()=>{ showPage('settings', document.querySelector('[data-page="settings"]')); }, 100);
+    return;
+  }
 
   var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
   var members = getMembers();
@@ -2488,6 +2680,7 @@ function pinSubmit() {
     setTimeout(initPresence, 1000);
     // Init chat watermark – must happen BEFORE any Firebase update fires notifs
     initChatWatermark();
+    applyPermissions();
     // Start termin reminder scheduler
     startReminderLoop();
   } else {
@@ -2540,6 +2733,20 @@ function adminDone() {
 function initLogin() {
   var saved = null;
   try { saved = sessionStorage.getItem('rp_user'); } catch(e) {}
+  // Restore admin session
+  try {
+    if (sessionStorage.getItem('rp_admin') === '1') {
+      _isAdminSession = true;
+      currentUser = '__admin__';
+      hideLoginScreen();
+      updateHeader();
+      renderDashboard();
+      initChatWatermark();
+      applyPermissions();
+      startReminderLoop();
+      return;
+    }
+  } catch(e) {}
   if (saved) {
     currentUser = saved;
     hideLoginScreen();
@@ -2548,6 +2755,7 @@ function initLogin() {
     setTimeout(initPresence, 2000);
     // Init chat watermark – must happen BEFORE any Firebase update fires notifs
     initChatWatermark();
+    applyPermissions();
     // Start termin reminder scheduler
     startReminderLoop();
     return;
@@ -2861,6 +3069,12 @@ function init() {
     </div>
 
     <div class="page" id="page-settings">
+      <div class="card" style="margin-bottom:12px;border-color:rgba(240,165,0,.3)">
+        <div class="card-title" style="color:var(--gold)">🔐 Berechtigungen pro Mitglied</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Tippe auf ein Mitglied um Berechtigungen zu verwalten. Standard: alles erlaubt.</div>
+        <div id="berechtigungenMatrix"></div>
+      </div>
+
       <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
 
       <div class="card">
