@@ -580,6 +580,23 @@ function renderDashboard() {
 // ANWESENHEIT
 // ═══════════════════════════════════════════
 function renderAnwesenheit() {
+  // Abend-Info Banner füllen
+  const nr = getAbendNummer();
+  const naechster = getNaechsterTermin();
+  const heute = new Date();
+  const wt = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][heute.getDay()];
+  const day = heute.getDate().toString().padStart(2,'0');
+  const mon = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][heute.getMonth()];
+  const yr  = heute.getFullYear();
+  const nrEl = document.getElementById('anwAbendNrLabel');
+  const datEl = document.getElementById('anwDatumLabel');
+  const naEl  = document.getElementById('anwNaechsterLabel');
+  if (nrEl) nrEl.textContent = `Kegelabend #${nr}`;
+  if (datEl) datEl.textContent = `${wt}, ${day}. ${mon} ${yr}`;
+  if (naEl)  naEl.innerHTML = naechster
+    ? `📅 Nächster Termin: <strong style="color:var(--text)">${formatTerminLabel(naechster)}</strong>`
+    : '📅 Kein weiterer Termin geplant';
+
   document.getElementById('memberList').innerHTML = MEMBERS.map(m=>{
     const present = state.anwesenheit[m]?.present||false;
     return `<div class="member-item">
@@ -878,11 +895,20 @@ function abendSpeichern() {
     getStrafen().forEach(s => kasseTotal += (ms[s.id]||0)*s.price);
     (state.freieStrafen?.[m]||[]).filter(f=>f.addToKasse!==false).forEach(f=>kasseTotal+=f.betrag);
   });
+  const _nr = getAbendNummer();
+  const _naechster = getNaechsterTermin();
+  const _naLabel = _naechster ? formatTerminLabel(_naechster) : 'Kein weiterer Termin geplant';
   showModal('Abend speichern',
-    `<p class="modal-text">Strafen gesamt: <strong style="color:var(--gold)">${fmt(total)}</strong><br>
+    `<div style="background:linear-gradient(135deg,rgba(240,165,0,.12),rgba(240,165,0,.04));border:1px solid rgba(240,165,0,.25);border-radius:12px;padding:12px 14px;margin-bottom:14px;text-align:center">
+      <div style="font-size:13px;color:var(--text3);margin-bottom:2px">Du schließt ab:</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--gold)">🎳 Kegelabend #${_nr}</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:6px;padding-top:8px;border-top:1px solid rgba(240,165,0,.2)">
+        📅 Nächster Termin:<br><strong style="color:var(--text)">${_naLabel}</strong>
+      </div>
+    </div>
+    <p class="modal-text">Strafen gesamt: <strong style="color:var(--gold)">${fmt(total)}</strong><br>
     Davon in die Kasse: <strong style="color:var(--green)">${fmt(kasseTotal)}</strong><br>
-    <span style="font-size:12px;color:var(--text3)">(Kegelbahnkosten werden direkt bezahlt und nicht zur Kasse addiert)</span><br><br>
-    Der Abend wird zurückgesetzt.</p>`,
+    <span style="font-size:12px;color:var(--text3)">(Kegelbahnkosten werden direkt bezahlt und nicht zur Kasse addiert)</span></p>`,
     () => doSave(kasseTotal), '💾 Speichern', 'btn-green');
 }
 function doSave(kasseTotal) {
@@ -893,7 +919,7 @@ function doSave(kasseTotal) {
   if (!state.kasse) state.kasse=[];
   if (kt>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:kt,typ:'ein',date:today()});
   state.anwesenheit={}; state.strafen={}; state.freieStrafen={};
-  saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
+  saveState(); renderDashboard(); updateAbendNavLabel(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
 }
 
 // ═══════════════════════════════════════════
@@ -1143,6 +1169,46 @@ function getAllTermine() {
   return list;
 }
 
+
+// ═══════════════════════════════════════════
+// ABEND-INFO HELPERS
+// ═══════════════════════════════════════════
+function getAbendNummer() {
+  // Laufender Abend = gespeicherte Abende + 1
+  return (state.history || []).length + 1;
+}
+
+function getNaechsterTermin() {
+  // Nächsten Termin aus der unified Liste holen (regulär + Zusatz, chronologisch)
+  // → großzügig viele Termine generieren damit Zusatztermine weit in die Zukunft passen
+  const savedCount = termineCount;
+  termineCount = Math.max(termineCount, 30);
+  const alle = getAllTermine();
+  termineCount = savedCount;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  // Nächster Termin = erster Termin strikt nach heute
+  return alle.find(t => t.date > today) || null;
+}
+
+function formatTerminLabel(t) {
+  if (!t) return '–';
+  const d = t.date;
+  const wt = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];
+  const day = d.getDate().toString().padStart(2,'0');
+  const mon = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'][d.getMonth()];
+  const yr  = d.getFullYear();
+  const name = t.isExtra ? t.name : 'Kegelabend';
+  return `${wt}. ${day}. ${mon} ${yr} – ${name}`;
+}
+
+
+function updateAbendNavLabel() {
+  const btn = document.querySelector('[data-page="anwesenheit"]');
+  if (!btn) return;
+  const nr = getAbendNummer();
+  btn.innerHTML = `👥 Heute <span style="font-size:10px;opacity:.75;font-weight:600">#${nr}</span>`;
+}
 function renderTermineItem(t, zusagen) {
   const todayD = new Date(); todayD.setHours(0,0,0,0);
   const d = t.date;
@@ -2681,6 +2747,7 @@ function pinSubmit() {
     // Init chat watermark – must happen BEFORE any Firebase update fires notifs
     initChatWatermark();
     applyPermissions();
+    updateAbendNavLabel();
     // Start termin reminder scheduler
     startReminderLoop();
   } else {
@@ -2756,6 +2823,7 @@ function initLogin() {
     // Init chat watermark – must happen BEFORE any Firebase update fires notifs
     initChatWatermark();
     applyPermissions();
+    updateAbendNavLabel();
     // Start termin reminder scheduler
     startReminderLoop();
     return;
@@ -2926,7 +2994,16 @@ function init() {
 
     <!-- ANWESENHEIT -->
     <div class="page" id="page-anwesenheit">
-      <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
+      <div id="anwAbendInfo" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:32px;line-height:1">🎳</div>
+          <div>
+            <div id="anwAbendNrLabel" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--gold);letter-spacing:1px"></div>
+            <div id="anwDatumLabel" style="font-size:12px;color:var(--text2);margin-top:1px"></div>
+          </div>
+        </div>
+        <div id="anwNaechsterLabel" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(240,165,0,.2);font-size:12px;color:var(--text3)"></div>
+      </div>
       <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
       <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
     </div>
