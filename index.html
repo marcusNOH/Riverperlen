@@ -516,15 +516,35 @@ function showToast(msg, dur=2400) {
 }
 
 // FIX: Modal uses class "modal" consistently
-function showModal(title, bodyHtml, onConfirm, confirmTxt='Bestätigen', confirmCls='btn-danger') {
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalBody').innerHTML = bodyHtml;
-  const btn = document.getElementById('modalConfirmBtn');
-  btn.textContent = confirmTxt; btn.className = 'btn '+confirmCls;
-  btn.onclick = ()=>{ closeModal(); onConfirm(); };
-  document.getElementById('modalOverlay').style.display = 'flex';
+function showModal(title, bodyHtml, onConfirm, confirmTxt, confirmCls) {
+  if (!confirmTxt) confirmTxt = 'Bestätigen';
+  if (!confirmCls) confirmCls = 'btn-danger';
+  var overlay   = document.getElementById('modalOverlay');
+  var titleEl   = document.getElementById('modalTitle');
+  var bodyEl    = document.getElementById('modalBody');
+  var btn       = document.getElementById('modalConfirmBtn');
+  var cancelBtn = document.getElementById('modalCancelBtn');
+  if (!overlay || !titleEl || !bodyEl || !btn) {
+    console.error('showModal: Modal HTML fehlt im DOM!'); return;
+  }
+  titleEl.textContent = title;
+  bodyEl.innerHTML = bodyHtml;
+  btn.textContent = confirmTxt;
+  btn.className = 'btn ' + confirmCls;
+  if (onConfirm) {
+    btn.style.display = '';
+    btn.onclick = function() { closeModal(); onConfirm(); };
+    if (cancelBtn) cancelBtn.textContent = 'Abbrechen';
+  } else {
+    btn.style.display = 'none';
+    if (cancelBtn) cancelBtn.textContent = 'Schließen';
+  }
+  overlay.style.display = 'flex';
 }
-function closeModal() { document.getElementById('modalOverlay').style.display='none'; }
+function closeModal() {
+  var el = document.getElementById('modalOverlay');
+  if (el) el.style.display = 'none';
+}
 
 function calcKasse() {
   let t = state.kasseStart||0;
@@ -3407,3 +3427,49 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
       </div><!-- end admin-only -->
 
     </div>
+
+<!-- ═══ MODALS ═══ -->
+<div id="modalOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle"></div>
+    <div id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="modalCancelBtn" onclick="closeModal()">Abbrechen</button>
+      <button class="btn btn-danger" id="modalConfirmBtn">Bestätigen</button>
+    </div>
+  </div>
+</div>
+
+<div id="alleModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="alleMTitle">🔔 Alle bekommen!</div>
+    <div id="alleliste" class="member-check-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeAlleModal()">Abbrechen</button>
+      <button class="btn btn-purple" onclick="alleBestaetigen()">🔔 Alle eintragen</button>
+    </div>
+  </div>
+</div>
+
+<div id="freieModal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-title">💸 Freie Strafe</div>
+    <div class="gap-8" style="margin-bottom:12px">
+      <div><label>Bezeichnung</label><input id="freieLabel" type="text" placeholder="z.B. Sonderstrafe"></div>
+      <div><label>Betrag (€)</label><input id="freieBetrag" type="number" placeholder="0.00" step="0.50" min="0"></div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)">
+        <input type="checkbox" id="freiAddKasse" checked> Zur Kasse hinzufügen
+      </label>
+    </div>
+    <div id="freieListe" class="member-check-list"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeFreieModal()">Abbrechen</button>
+      <button class="btn btn-purple" onclick="freieBestaetigen()">💸 Verteilen</button>
+    </div>
+  </div>
+</div>
+
+  </div><!-- end #pages -->
+</div><!-- end #app -->
+</body>
+</html>
