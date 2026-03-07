@@ -603,21 +603,6 @@ function renderAnwesenheit() {
   fillAbendBanner('anw');
   fillAbendBanner('str');
   fillAbendBanner('abs');
-  const nr =
-  const naechster = getNaechsterTermin();
-  const heute = new Date();
-  const wt = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][heute.getDay()];
-  const day = heute.getDate().toString().padStart(2,'0');
-  const mon = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][heute.getMonth()];
-  const yr  = heute.getFullYear();
-  const nrEl = document.getElementById('anwAbendNrLabel');
-  const datEl = document.getElementById('anwDatumLabel');
-  const naEl  = document.getElementById('anwNaechsterLabel');
-  if (nrEl) nrEl.textContent = `Kegelabend #${nr}`;
-  if (datEl) datEl.textContent = `${wt}, ${day}. ${mon} ${yr}`;
-  if (naEl)  naEl.innerHTML = naechster
-    ? `📅 Nächster Termin: <strong style="color:var(--text)">${formatTerminLabel(naechster)}</strong>`
-    : '📅 Kein weiterer Termin geplant';
 
   document.getElementById('memberList').innerHTML = MEMBERS.map(m=>{
     const present = state.anwesenheit[m]?.present||false;
