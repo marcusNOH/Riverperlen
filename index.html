@@ -278,7 +278,10 @@ function defaultState() {
     memberPasswords: {},
     terminZusagen: {},
     freieStrafen: {},
-    memberProfiles: {}
+    memberProfiles: {},
+    abendNotizen: {},
+    strafenPinned: [],
+    abstimmungen: []
   };
 }
 
@@ -550,6 +553,12 @@ function renderDashboard() {
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:var(--gold)">${b.age} Jahre</div>
         </div>`).join('');
   }
+  // Abend-Notiz für heute laden
+  const today = new Date().toISOString().slice(0,10);
+  const notizEl = document.getElementById('abendNotizInput');
+  if (notizEl) notizEl.value = (state.abendNotizen||{})[today] || '';
+  // Abstimmungen rendern
+  renderAbstimmungen();
 }
 
 // ═══════════════════════════════════════════
@@ -889,9 +898,10 @@ function renderMyProfile() {
         ${(localMeta.photos?.[currentUser]) ? `<img src="${localMeta.photos[currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(currentUser)}
         <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${currentUser}',event)">
       </div>
-      <div>
+      <div style="flex:1">
         <div style="font-weight:700;font-size:17px">${currentUser}</div>
         <div style="font-size:12px;color:var(--text3)">Tippe auf das Foto um es zu ändern</div>
+        ${calcStreak(currentUser) > 0 ? `<div style="margin-top:5px;display:inline-flex;align-items:center;gap:5px;background:rgba(240,165,0,.12);border:1px solid rgba(240,165,0,.3);border-radius:20px;padding:3px 10px"><span style="font-size:13px">🔥</span><span style="font-size:12px;font-weight:700;color:var(--gold)">${calcStreak(currentUser)} Abend${calcStreak(currentUser)!==1?'e':''} in Folge!</span></div>` : ''}
       </div>
     </div>
     <div class="gap-8">
@@ -2134,6 +2144,285 @@ function toggleSpiel(id) {
   if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
 }
 
+
+// ═══════════════════════════════════════════
+// ANWESENHEITS-STREAK
+// ═══════════════════════════════════════════
+function calcStreak(member) {
+  const hist = (state.history || []).slice().reverse();
+  let streak = 0;
+  for (const h of hist) {
+    if ((h.anwesenheit || {})[member]?.present) streak++;
+    else break;
+  }
+  return streak;
+}
+
+// ═══════════════════════════════════════════
+// ABEND-NOTIZEN
+// ═══════════════════════════════════════════
+function saveAbendNotiz(val) {
+  const today = new Date().toISOString().slice(0,10);
+  if (!state.abendNotizen) state.abendNotizen = {};
+  state.abendNotizen[today] = val;
+  saveState();
+}
+
+// ═══════════════════════════════════════════
+// ABSTIMMUNGEN
+// ═══════════════════════════════════════════
+function renderAbstimmungen() {
+  const el = document.getElementById('abstimmungenList');
+  if (!el) return;
+  const list = state.abstimmungen || [];
+  if (!list.length) { el.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Abstimmungen – erste unten erstellen!</div>'; return; }
+  el.innerHTML = list.map((a, ai) => {
+    const total = Object.values(a.votes || {}).length;
+    return `<div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border)">
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗳️ ${a.frage}</div>
+      ${a.optionen.map((opt, oi) => {
+        const votes = Object.values(a.votes || {}).filter(v => v === oi).length;
+        const pct = total ? Math.round(votes/total*100) : 0;
+        const myVote = currentUser ? (a.votes || {})[currentUser] : null;
+        const isMine = myVote === oi;
+        return `<div onclick="voteAbstimmung(${ai},${oi})" style="margin-bottom:6px;padding:9px 12px;border-radius:10px;border:2px solid ${isMine?'var(--gold)':'var(--border)'};background:${isMine?'rgba(240,165,0,.08)':'var(--bg2)'};cursor:pointer;position:relative;overflow:hidden">
+          <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${isMine?'rgba(240,165,0,.12)':'rgba(255,255,255,.03)'};pointer-events:none"></div>
+          <div style="position:relative;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:${isMine?700:400};color:${isMine?'var(--gold)':'var(--text)'}">${opt}</span>
+            <span style="font-size:12px;color:var(--text3)">${votes} (${pct}%)</span>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:var(--text3)">${total} Stimme${total!==1?'n':''}</span>
+        <button onclick="deleteAbstimmung(${ai})" style="background:none;border:1px solid var(--border);border-radius:8px;padding:3px 10px;font-size:11px;color:var(--text3);cursor:pointer">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function voteAbstimmung(ai, oi) {
+  if (!currentUser) { showToast('Bitte erst einloggen'); return; }
+  if (!state.abstimmungen || !state.abstimmungen[ai]) return;
+  if (!state.abstimmungen[ai].votes) state.abstimmungen[ai].votes = {};
+  if (state.abstimmungen[ai].votes[currentUser] === oi)
+    delete state.abstimmungen[ai].votes[currentUser];
+  else
+    state.abstimmungen[ai].votes[currentUser] = oi;
+  saveState(); renderAbstimmungen();
+}
+
+function addAbstimmung() {
+  const frage = document.getElementById('abstimmungFrage')?.value.trim();
+  const optRaw = document.getElementById('abstimmungOptionen')?.value.trim();
+  if (!frage || !optRaw) { showToast('Frage und Optionen eingeben'); return; }
+  const optionen = optRaw.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (optionen.length < 2) { showToast('Mind. 2 Optionen (je eine pro Zeile)'); return; }
+  if (!state.abstimmungen) state.abstimmungen = [];
+  state.abstimmungen.unshift({ frage, optionen, votes: {}, ts: Date.now() });
+  saveState(); renderAbstimmungen();
+  const fq = document.getElementById('abstimmungFrage'); if(fq) fq.value='';
+  const op = document.getElementById('abstimmungOptionen'); if(op) op.value='';
+  showToast('Abstimmung erstellt');
+}
+
+function deleteAbstimmung(ai) {
+  if (!state.abstimmungen) return;
+  state.abstimmungen.splice(ai,1);
+  saveState(); renderAbstimmungen();
+}
+
+// ═══════════════════════════════════════════
+// GEBURTSTAGS-CHAT-NACHRICHT
+// ═══════════════════════════════════════════
+function checkBirthdayChatMessage() {
+  if (!currentUser) return;
+  const today = new Date();
+  const todayMMDD = String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const sentKey = 'rp_bday_sent_'+today.getFullYear();
+  try { if (localStorage.getItem(sentKey) === todayMMDD) return; } catch(e) {}
+  for (const m of getMembers()) {
+    const bday = (state.memberBdays||{})[m];
+    if (!bday) continue;
+    const bd = new Date(bday);
+    const bdMMDD = String(bd.getMonth()+1).padStart(2,'0')+'-'+String(bd.getDate()).padStart(2,'0');
+    if (bdMMDD === todayMMDD) {
+      const age = today.getFullYear() - bd.getFullYear();
+      if (!state.chatMessages) state.chatMessages = [];
+      state.chatMessages.push({ author: '🎂 Pegelclub', text: `Herzlichen Glückwunsch ${m.split(' ')[0]}! Heute wird er/sie ${age} Jahre alt! Auf dein Wohl! 🥂🎳`, ts: Date.now() });
+      saveState();
+      try { localStorage.setItem(sentKey, todayMMDD); } catch(e) {}
+      break;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════
+// TRINKROULETTE
+// ═══════════════════════════════════════════
+const GETRAENKE = [
+  {name:'Helles Bier',     emoji:'🍺',kat:'Bier'},
+  {name:'Dunkles Bier',    emoji:'🍺',kat:'Bier'},
+  {name:'Weizenbier',      emoji:'🍺',kat:'Bier'},
+  {name:'Radler',          emoji:'🍺',kat:'Bier'},
+  {name:'Kölsch',          emoji:'🍺',kat:'Bier'},
+  {name:'Altbier',         emoji:'🍺',kat:'Bier'},
+  {name:'Pils',            emoji:'🍺',kat:'Bier'},
+  {name:'Schwarzbier',     emoji:'🍺',kat:'Bier'},
+  {name:'Klarer Schnaps',  emoji:'🥃',kat:'Schnaps'},
+  {name:'Jägermeister',    emoji:'🥃',kat:'Schnaps'},
+  {name:'Wodka Shot',      emoji:'🥃',kat:'Schnaps'},
+  {name:'Tequila Shot',    emoji:'🥃',kat:'Schnaps'},
+  {name:'Rum Shot',        emoji:'🥃',kat:'Schnaps'},
+  {name:'Obstler',         emoji:'🥃',kat:'Schnaps'},
+  {name:'Korn',            emoji:'🥃',kat:'Schnaps'},
+  {name:'Grappa',          emoji:'🥃',kat:'Schnaps'},
+  {name:'Sambuca',         emoji:'🥃',kat:'Schnaps'},
+  {name:'Baileys',         emoji:'🥛',kat:'Likör'},
+  {name:'Amaretto',        emoji:'🥛',kat:'Likör'},
+  {name:'Eierlikör',       emoji:'🥛',kat:'Likör'},
+  {name:'Kirschlikör',     emoji:'🥛',kat:'Likör'},
+  {name:'Weinbrand',       emoji:'🥃',kat:'Spirituosen'},
+  {name:'Whisky',          emoji:'🥃',kat:'Spirituosen'},
+  {name:'Gin Tonic',       emoji:'🍹',kat:'Mix'},
+  {name:'Bier + Schnaps',  emoji:'🍺🥃',kat:'Kombination'},
+  {name:'Herrengedeck',    emoji:'🍺🥃',kat:'Kombination'},
+  {name:'Radler + Shot',   emoji:'🍺🥃',kat:'Kombination'},
+];
+
+var _rouletteSpinning = false;
+
+function openTrinkroulette() {
+  const members = getMembers().filter(m => state.anwesenheit[m]?.present);
+  if (members.length < 2) { showToast('Mind. 2 anwesende Mitglieder nötig'); return; }
+  showModal('🎳 Trinkroulette', `
+  <div style="text-align:center">
+    <div style="position:relative;display:inline-block;margin-bottom:14px">
+      <canvas id="rouletteCanvas" width="260" height="260" style="border-radius:50%;display:block;margin:0 auto"></canvas>
+      <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:26px;filter:drop-shadow(0 2px 6px #000)">🔻</div>
+    </div>
+    <div id="rouletteResult" style="min-height:72px;margin-bottom:14px;padding:12px 16px;background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+      <div style="font-size:13px;color:var(--text3)">Drehe das Rad – wer muss trinken?</div>
+    </div>
+    <button id="rouletteBtn" onclick="spinRoulette()" style="width:100%;padding:14px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:900;font-size:17px;color:#000;cursor:pointer;font-family:'Barlow Condensed',sans-serif;letter-spacing:2px">🎳 DREHEN!</button>
+  </div>`, null, null, null);
+  setTimeout(() => drawRouletteWheel(window._rouletteAngle||0), 80);
+}
+
+function drawRouletteWheel(angle) {
+  const canvas = document.getElementById('rouletteCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const members = getMembers().filter(m => state.anwesenheit[m]?.present);
+  const n = members.length;
+  const cx=130,cy=130,r=120;
+  const COLORS = ['#1a1d28','#2a2f42'];
+  const ACCENT = ['#f0a500','#ffc84a'];
+  ctx.clearRect(0,0,260,260);
+
+  // Shadow ring
+  ctx.beginPath(); ctx.arc(cx,cy,r+3,0,Math.PI*2);
+  ctx.fillStyle='rgba(0,0,0,.4)'; ctx.fill();
+
+  for (let i=0;i<n;i++) {
+    const a1=angle+(i/n)*Math.PI*2;
+    const a2=angle+((i+1)/n)*Math.PI*2;
+    const midA=a1+(a2-a1)/2;
+
+    // Segment
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.arc(cx,cy,r,a1,a2); ctx.closePath();
+    ctx.fillStyle=COLORS[i%2]; ctx.fill();
+    ctx.strokeStyle='#0a0c11'; ctx.lineWidth=1.5; ctx.stroke();
+
+    // Gold accent arc at edge
+    ctx.beginPath(); ctx.arc(cx,cy,r,a1,a2);
+    ctx.strokeStyle=ACCENT[i%2]; ctx.lineWidth=3; ctx.stroke();
+
+    // Kegel (custom drawn)
+    const tx=cx+Math.cos(midA)*(r*0.65);
+    const ty=cy+Math.sin(midA)*(r*0.65);
+    ctx.save(); ctx.translate(tx,ty); ctx.rotate(midA+Math.PI/2);
+    // Kegel body
+    const kg=8;
+    ctx.beginPath(); ctx.moveTo(0,-kg*1.4); ctx.lineTo(kg,kg); ctx.lineTo(-kg,kg); ctx.closePath();
+    ctx.fillStyle=i%2===0?'#f0a500':'#fff'; ctx.fill();
+    // Kegel base
+    ctx.beginPath(); ctx.ellipse(0,kg,kg*1.2,kg*0.35,0,0,Math.PI*2);
+    ctx.fillStyle=i%2===0?'rgba(240,165,0,.5)':'rgba(255,255,255,.4)'; ctx.fill();
+    ctx.restore();
+
+    // Name
+    ctx.save(); ctx.translate(cx,cy); ctx.rotate(midA);
+    ctx.textAlign='right';
+    ctx.font=`bold ${n>7?8:10}px 'Barlow Condensed',sans-serif`;
+    ctx.fillStyle=i%2===0?'#fff':'#f0a500';
+    ctx.shadowColor='rgba(0,0,0,.8)'; ctx.shadowBlur=3;
+    ctx.fillText(members[i].split(' ')[0], r-20, 4);
+    ctx.restore();
+  }
+
+  // Divider lines
+  for (let i=0;i<n;i++) {
+    const a=angle+(i/n)*Math.PI*2;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    ctx.strokeStyle='rgba(0,0,0,.6)'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  // Center hub
+  ctx.beginPath(); ctx.arc(cx,cy,22,0,Math.PI*2);
+  ctx.fillStyle='#0a0c11'; ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy,20,0,Math.PI*2);
+  ctx.strokeStyle='#f0a500'; ctx.lineWidth=3; ctx.stroke();
+  ctx.font='16px sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#f0a500';
+  ctx.shadowBlur=0;
+  ctx.fillText('🎳',cx,cy+6);
+}
+
+function spinRoulette() {
+  if (_rouletteSpinning) return;
+  const canvas = document.getElementById('rouletteCanvas');
+  if (!canvas) return;
+  const members = getMembers().filter(m => state.anwesenheit[m]?.present);
+  if (!members.length) return;
+  _rouletteSpinning = true;
+  const btn=document.getElementById('rouletteBtn');
+  if(btn){btn.disabled=true;btn.textContent='🌀 Dreht...';}
+
+  const n = members.length;
+  const winIdx = Math.floor(Math.random()*n);
+  const drinkIdx = Math.floor(Math.random()*GETRAENKE.length);
+  const segAngle = (Math.PI*2)/n;
+  const curAngle = window._rouletteAngle||0;
+  // We want winIdx segment center at top (pointer at top = angle -PI/2)
+  const targetFinal = -winIdx*segAngle - segAngle/2 - Math.PI/2;
+  const spins = 10 + Math.random()*6;
+  const delta = spins*Math.PI*2 + (targetFinal - (curAngle%(Math.PI*2)));
+  const start=performance.now(), dur=5000;
+
+  function ease(t){return 1-Math.pow(1-t,4);}
+  function frame(now){
+    const t=Math.min((now-start)/dur,1);
+    const a=curAngle+delta*ease(t);
+    window._rouletteAngle=a;
+    drawRouletteWheel(a);
+    if(t<1){requestAnimationFrame(frame);}
+    else{
+      _rouletteSpinning=false;
+      const drink=GETRAENKE[drinkIdx];
+      const winner=members[winIdx];
+      const res=document.getElementById('rouletteResult');
+      if(res) res.innerHTML=`
+        <div style="font-size:32px;margin-bottom:6px">${drink.emoji}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--gold);margin-bottom:3px">${winner.split(' ')[0]} muss trinken!</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:2px">${drink.name}</div>
+        <div style="font-size:11px;color:var(--text3);background:var(--bg2);display:inline-block;padding:2px 8px;border-radius:10px;margin-top:2px">${drink.kat}</div>`;
+      if(btn){btn.disabled=false;btn.innerHTML='🎳 Nochmal drehen!';}
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
@@ -2287,7 +2576,7 @@ function init() {
   else { setSyncStatus('error','Nicht verbunden'); }
   renderDashboard();
   initLogin();
-  checkBdayNotifs();
+  checkBdayNotifs(); checkBirthdayChatMessage();
 }
 </script>
 
@@ -2394,7 +2683,7 @@ function init() {
           <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
           <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
           <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
-          <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
+          <div class="quick-btn" onclick="openTrinkroulette()"><div class="qi">🎳</div><div class="ql">Trinkroulette</div><div class="qd">Wer muss trinken?</div></div>
         </div>
       </div>
       <div class="card" style="background:linear-gradient(135deg,rgba(240,165,0,.08),rgba(240,165,0,.03));border-color:rgba(240,165,0,.2)">
@@ -2406,6 +2695,24 @@ function init() {
       </div>
       <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
       <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
+
+      <div class="card">
+        <div class="card-title">📝 Abend-Notiz</div>
+        <textarea id="abendNotizInput" placeholder="Notizen zum heutigen Abend…" onchange="saveAbendNotiz(this.value)"
+          style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;min-height:70px;resize:vertical;box-sizing:border-box"></textarea>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🗳️ Abstimmungen</div>
+        <div id="abstimmungenList" style="margin-bottom:12px"></div>
+        <div style="border-top:1px solid var(--border);padding-top:12px">
+          <input id="abstimmungFrage" type="text" placeholder="Frage (z.B. Nächster Termin?)"
+            style="width:100%;margin-bottom:8px;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;box-sizing:border-box">
+          <textarea id="abstimmungOptionen" placeholder="Optionen – eine pro Zeile&#10;z.B.&#10;Donnerstag&#10;Freitag"
+            style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;min-height:70px;resize:vertical;margin-bottom:8px;box-sizing:border-box"></textarea>
+          <button onclick="addAbstimmung()" class="btn btn-primary" style="width:100%">+ Abstimmung erstellen</button>
+        </div>
+      </div>
       <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v07.03.2026</div>
     </div>
 
