@@ -1023,112 +1023,120 @@ function delEvent(i) {
 // ═══════════════════════════════════════════
 let termineCount = 12;
 
-function getTermine(n) {
-  const list=[];
-  for (let i=0;i<n;i++) {
-    const d=new Date(TERMIN_START.getTime()+i*28*24*60*60*1000);
-    list.push(d);
+function termineShowMore() { termineCount+=10; renderTermine(); }
+
+// Build unified sorted list of all termine (regular + extra)
+function getAllTermine() {
+  const list = [];
+  // Regular repeating Kegelabende
+  for (let i = 0; i < termineCount; i++) {
+    const d = new Date(TERMIN_START.getTime() + i * 28 * 24 * 60 * 60 * 1000);
+    list.push({ date: d, dateKey: d.toISOString().slice(0,10), isExtra: false, extraIdx: null, name: null, zeit: null, ort: null, extraName: null });
   }
+  // Extra termine – merge into same list chronologically
+  (state.extraTermine || []).forEach((t, i) => {
+    const d = new Date(t.date + 'T00:00:00');
+    const existing = list.find(e => e.dateKey === t.date);
+    if (existing) {
+      // Same date as regular Kegelabend – show custom name as subtitle
+      existing.extraName = t.name; existing.extraIdx = i; existing.zeit = t.zeit; existing.ort = t.ort;
+    } else {
+      list.push({ date: d, dateKey: t.date, isExtra: true, extraIdx: i, name: t.name, zeit: t.zeit, ort: t.ort, extraName: null });
+    }
+  });
+  list.sort((a, b) => a.date - b.date);
   return list;
 }
 
-function termineShowMore() { termineCount+=10; renderTermine(); }
+function renderTermineItem(t, zusagen) {
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const d = t.date;
+  const isPast   = d < todayD;
+  const isToday  = d.toDateString() === todayD.toDateString();
+  const isFuture = d > todayD;
+  const day = d.getDate().toString().padStart(2,'0');
+  const mon = MON[d.getMonth()];
+  const yr  = d.getFullYear();
+  const dateKey = t.dateKey;
+  const dayZusagen = (zusagen[dateKey] || {});
+
+  const zuCount  = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
+  const abCount  = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
+  const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
+  const myGrund  = currentUser ? (dayZusagen[currentUser]?.grund  || '')   : '';
+
+  const wochentag = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];
+  const title = t.isExtra
+    ? `📌 ${t.name}${isToday?' <span style="color:var(--green);font-size:11px">\u2190 Heute!</span>':''}`
+    : `\uD83C\uDFB3 Kegelabend${t.extraName?` <span style="font-size:11px;color:var(--blue)">+${t.extraName}</span>`:''}${isToday?' <span style="color:var(--green);font-size:11px">\u2190 Heute!</span>':''}`;
+  const sub = `${wochentag} \u00B7 ${day}. ${mon} ${yr}${t.zeit?' \u00B7 '+t.zeit:''}${t.ort?' \u00B7 \uD83D\uDCCD'+t.ort:''}`;
+  const badgeBg = isToday ? 'background:var(--green);color:#000' : t.isExtra ? 'background:var(--blue);color:#fff' : '';
+  const delBtn = (t.extraIdx !== null)
+    ? `<button onclick="delExtraTermin(${t.extraIdx})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;flex-shrink:0" title="Termin l\u00F6schen">\u2715</button>`
+    : '';
+
+  let participantHtml = '';
+  if (isFuture || isToday) {
+    const zuNames   = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
+    const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
+    participantHtml = `
+      <div style="margin-top:8px;font-size:11px">
+        ${zuCount>0?`<div style="color:var(--green);margin-bottom:2px">\u2705 Dabei (${zuCount}): ${zuNames.join(', ')}</div>`:''}
+        ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">\u274C Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+v.grund+')':'')).join(', ')}</div>`:''}
+        ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine R\u00FCckmeldungen</div>`:''}
+      </div>`;
+    if (currentUser) {
+      participantHtml += `
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
+            \u2705 ${myStatus==='zusage'?'Ich bin dabei!':'Ich komme'}
+          </button>
+          <button onclick="terminZusage('${dateKey}','absage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='absage'?'var(--red)':'var(--bg3)'};color:${myStatus==='absage'?'#fff':'var(--text2)'}">
+            \u274C ${myStatus==='absage'?'Abgesagt':'Ich kann nicht'}
+          </button>
+        </div>
+        ${myStatus==='absage'?`
+        <div style="margin-top:6px">
+          <select onchange="terminGrund('${dateKey}',this.value)" style="width:100%;padding:6px;font-size:12px;border-radius:8px">
+            <option value="">Grund w\u00E4hlen\u2026</option>
+            <option value="Krank"    ${myGrund==='Krank'   ?'selected':''}>🤒 Krank</option>
+            <option value="Arbeit"   ${myGrund==='Arbeit'  ?'selected':''}>💼 Arbeit</option>
+            <option value="Urlaub"   ${myGrund==='Urlaub'  ?'selected':''}>✈️ Urlaub</option>
+            <option value="Fam\u00EEl\u00E4r" ${myGrund==='Fam\u00EEl\u00E4r'?'selected':''}>👨‍👩‍👧 Fami\u00E4r</option>
+            <option value="Anderes"  ${myGrund==='Anderes' ?'selected':''}>📝 Anderes</option>
+          </select>
+        </div>`:''}`;
+    }
+  }
+
+  return `<div class="termin-item" style="${isPast&&!isToday?'opacity:0.45':''}">
+    <div class="termin-date" style="${badgeBg}">
+      <div class="termin-day">${day}</div>
+      <div class="termin-mon">${mon}</div>
+    </div>
+    <div class="termin-info" style="flex:1">
+      <div class="termin-title">${title}</div>
+      <div class="termin-sub">${sub}</div>
+      ${(isFuture||isToday)?participantHtml:''}
+    </div>
+    ${delBtn}
+  </div>`;
+}
 
 function renderTermine() {
-  const todayD = new Date(); todayD.setHours(0,0,0,0);
-  const termine = getTermine(termineCount);
-  const zusagen = state.terminZusagen || {};
   const el = document.getElementById('termineList');
   if (!el) return;
-
-  el.innerHTML = termine.map(d=>{
-    const isPast = d < todayD;
-    const isToday = d.toDateString() === todayD.toDateString();
-    const isFuture = d > todayD;
-    const day = d.getDate().toString().padStart(2,'0');
-    const mon = MON[d.getMonth()];
-    const yr = d.getFullYear();
-    const dateKey = d.toISOString().slice(0,10);
-    const dayZusagen = zusagen[dateKey] || {};
-
-    const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
-    const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
-    const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
-    const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
-
-    let participantHtml = '';
-    if (isFuture || isToday) {
-      const zuNames = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
-      const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
-      participantHtml = `
-        <div style="margin-top:8px;font-size:11px">
-          ${zuCount>0?`<div style="color:var(--green);margin-bottom:2px">✅ Dabei (${zuCount}): ${zuNames.join(', ')}</div>`:''}
-          ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">❌ Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+v.grund+')':'')).join(', ')}</div>`:''}
-          ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine Rückmeldungen</div>`:''}
-        </div>`;
-      if (currentUser) {
-        participantHtml += `
-          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-            <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
-              ✅ ${myStatus==='zusage'?'Ich bin dabei!':'Ich komme'}
-            </button>
-            <button onclick="terminZusage('${dateKey}','absage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='absage'?'var(--red)':'var(--bg3)'};color:${myStatus==='absage'?'#fff':'var(--text2)'}">
-              ❌ ${myStatus==='absage'?'Abgesagt':'Ich kann nicht'}
-            </button>
-          </div>
-          ${myStatus==='absage'?`
-          <div style="margin-top:6px">
-            <select onchange="terminGrund('${dateKey}',this.value)" style="width:100%;padding:6px;font-size:12px;border-radius:8px">
-              <option value="">Grund wählen…</option>
-              <option value="Krank" ${myGrund==='Krank'?'selected':''}>🤒 Krank</option>
-              <option value="Arbeit" ${myGrund==='Arbeit'?'selected':''}>💼 Arbeit</option>
-              <option value="Urlaub" ${myGrund==='Urlaub'?'selected':''}>✈️ Urlaub</option>
-              <option value="Familiär" ${myGrund==='Familiär'?'selected':''}>👨‍👩‍👧 Familiär</option>
-              <option value="Anderes" ${myGrund==='Anderes'?'selected':''}>📝 Anderes</option>
-            </select>
-          </div>`:''}`;
-      }
-    }
-
-    return `<div class="termin-item" style="${isPast&&!isToday?'opacity:0.45':''}">
-      <div class="termin-date" style="${isToday?'background:var(--green);color:#000':''}">
-        <div class="termin-day">${day}</div>
-        <div class="termin-mon">${mon}</div>
-      </div>
-      <div class="termin-info" style="flex:1">
-        <div class="termin-title">🎳 Kegelabend${isToday?` <span style="color:var(--green);font-size:11px">← Heute!</span>`:''}</div>
-        <div class="termin-sub">Donnerstag · ${day}. ${mon} ${yr}</div>
-        ${(isFuture||isToday)?participantHtml:''}
-      </div>
-    </div>`;
-  }).join('');
-
-  renderExtraTermine();
+  const zusagen = state.terminZusagen || {};
+  const alle = getAllTermine();
+  el.innerHTML = alle.map(t => renderTermineItem(t, zusagen)).join('');
+  const exEl = document.getElementById('extraTermineList');
+  if (exEl) exEl.innerHTML = '';
 }
 
 function renderExtraTermine() {
-  const el=document.getElementById('extraTermineList');
-  if (!el) return;
-  if (!state.extraTermine||!state.extraTermine.length){el.innerHTML='';return;}
-  const sorted=[...state.extraTermine].sort((a,b)=>a.date.localeCompare(b.date));
-  el.innerHTML=`<div class="card mt-12">
-    <div class="card-title">📌 Zusatztermine</div>
-    ${sorted.map((t,i)=>{
-      const d=new Date(t.date+'T00:00:00');
-      const day=d.getDate().toString().padStart(2,'0');
-      const mon=MON[d.getMonth()];
-      const yr=d.getFullYear();
-      return `<div class="termin-item">
-        <div class="termin-date" style="background:var(--blue);color:#fff"><div class="termin-day">${day}</div><div class="termin-mon">${mon}</div></div>
-        <div class="termin-info">
-          <div class="termin-title">📌 ${t.name}</div>
-          <div class="termin-sub">${day}. ${mon} ${yr}${t.zeit?' · '+t.zeit:''}${t.ort?' · '+t.ort:''}</div>
-        </div>
-        <button onclick="delExtraTermin(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
-      </div>`;
-    }).join('')}
-  </div>`;
+  // Extra termine are now merged into the main list in renderTermine()
 }
+
 
 function extraTerminAdd() {
   const name=document.getElementById('extraName').value.trim();
