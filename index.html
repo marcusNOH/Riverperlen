@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -244,7 +243,6 @@ window._firebaseReady = (async () => {
   .strafe-mode-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
   .strafe-mode-row:last-child{border-bottom:none}
 </style>
-
 <script>
 // ── One-time password reset to 1234 ──────
 // Remove this block after testing is done
@@ -301,7 +299,8 @@ function defaultState() {
     memberBdays: {},    // {name: 'YYYY-MM-DD'}
     bezahlt: {},        // {name: amount_paid}
     chatMessages: [],   // [{author,text,ts}]
-    appPassword: '1234', // default password, can be changed
+    appPassword: '1234', // legacy – kept for compat
+    memberPasswords: {}, // {name: pin_string}
     terminZusagen: {},  // {'2026-03-05': {name: {status:'zusage'|'absage', grund:'...'}}}
     freieStrafen: {},   // {member: [{label, betrag, addToKasse, ts}]}
     memberProfiles: {}  // {name: {email, adresse, vorlieben, notizen, ...}}
@@ -899,88 +898,104 @@ function renderMyProfile() {
       </div>
       <div><label>📝 Notizen / Über mich</label>
         <textarea placeholder="Was andere über dich wissen sollen…" onchange="saveMyField('notizen',this.value)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px;min-height:80px;resize:vertical">${p.notizen||''}</textarea>
-
-```
-  </div>
-</div>
-```
-
-`;
+      </div>
+    </div>
+  `;
 }
 
 function saveMyField(field, value) {
-if (!currentUser) return;
-if (field === ‘bday’) {
-if (!state.memberBdays) state.memberBdays = {};
-state.memberBdays[currentUser] = value;
-} else if (field === ‘paypal’) {
-if (!state.paypal) state.paypal = {};
-state.paypal[currentUser] = value;
-} else {
-if (!state.memberProfiles) state.memberProfiles = {};
-if (!state.memberProfiles[currentUser]) state.memberProfiles[currentUser] = {};
-state.memberProfiles[currentUser][field] = value;
-}
-saveState();
-showToast(‘✅ Gespeichert’);
+  if (!currentUser) return;
+  if (field === 'bday') {
+    if (!state.memberBdays) state.memberBdays = {};
+    state.memberBdays[currentUser] = value;
+  } else if (field === 'paypal') {
+    if (!state.paypal) state.paypal = {};
+    state.paypal[currentUser] = value;
+  } else {
+    if (!state.memberProfiles) state.memberProfiles = {};
+    if (!state.memberProfiles[currentUser]) state.memberProfiles[currentUser] = {};
+    state.memberProfiles[currentUser][field] = value;
+  }
+  saveState();
+  showToast('✅ Gespeichert');
 }
 
 // ═══════════════════════════════════════════
 // KASSE
 // ═══════════════════════════════════════════
 function renderKasse() {
-document.getElementById(‘kasseTotalDisplay’).textContent=fmt(calcKasse());
-const entries=[…(state.kasse||[])].reverse();
-document.getElementById(‘kasseHistory’).innerHTML = !entries.length
-? ‘<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Einträge</div>’
-: entries.map((e,ri)=>{
-const i=state.kasse.length-1-ri;
-return `<div class="kasse-row"> <div><div style="font-size:13px;font-weight:600">${e.desc}</div><div style="font-size:11px;color:var(--text3)">${e.date}</div></div> <div style="display:flex;align-items:center;gap:10px"> <div class="${e.typ==='ein'?'kasse-pos':'kasse-neg'}">${e.typ==='ein'?'+':'−'}${fmt(e.betrag)}</div> <button onclick="delKasse(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button> </div> </div>`;
-}).join(’’);
+  document.getElementById('kasseTotalDisplay').textContent=fmt(calcKasse());
+  const entries=[...(state.kasse||[])].reverse();
+  document.getElementById('kasseHistory').innerHTML = !entries.length
+    ? '<div style="color:var(--text3);font-size:13px;padding:8px 0">Noch keine Einträge</div>'
+    : entries.map((e,ri)=>{
+        const i=state.kasse.length-1-ri;
+        return `<div class="kasse-row">
+          <div><div style="font-size:13px;font-weight:600">${e.desc}</div><div style="font-size:11px;color:var(--text3)">${e.date}</div></div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="${e.typ==='ein'?'kasse-pos':'kasse-neg'}">${e.typ==='ein'?'+':'−'}${fmt(e.betrag)}</div>
+            <button onclick="delKasse(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px">✕</button>
+          </div>
+        </div>`;
+      }).join('');
 }
 
 function kasseEintrag() {
-const desc=document.getElementById(‘kasseDesc’).value.trim();
-const betrag=parseFloat(document.getElementById(‘kasseBetrag’).value);
-const typ=document.getElementById(‘kasseTyp’).value;
-if (!desc||isNaN(betrag)||betrag<=0){showToast(‘❌ Bitte alle Felder ausfüllen’);return;}
-if (!state.kasse) state.kasse=[];
-state.kasse.push({desc,betrag,typ,date:today()});
-document.getElementById(‘kasseDesc’).value=’’;
-document.getElementById(‘kasseBetrag’).value=’’;
-saveState(); renderKasse(); updateHeader(); showToast(‘✅ Eintrag gespeichert’);
+  const desc=document.getElementById('kasseDesc').value.trim();
+  const betrag=parseFloat(document.getElementById('kasseBetrag').value);
+  const typ=document.getElementById('kasseTyp').value;
+  if (!desc||isNaN(betrag)||betrag<=0){showToast('❌ Bitte alle Felder ausfüllen');return;}
+  if (!state.kasse) state.kasse=[];
+  state.kasse.push({desc,betrag,typ,date:today()});
+  document.getElementById('kasseDesc').value='';
+  document.getElementById('kasseBetrag').value='';
+  saveState(); renderKasse(); updateHeader(); showToast('✅ Eintrag gespeichert');
 }
 function delKasse(i) {
-showModal(‘Eintrag löschen’,`<p class="modal-text">„${state.kasse[i].desc}" wirklich löschen?</p>`,()=>{
-state.kasse.splice(i,1); saveState(); renderKasse(); updateHeader(); showToast(‘🗑️ Gelöscht’);
-});
+  showModal('Eintrag löschen',`<p class="modal-text">„${state.kasse[i].desc}" wirklich löschen?</p>`,()=>{
+    state.kasse.splice(i,1); saveState(); renderKasse(); updateHeader(); showToast('🗑️ Gelöscht');
+  });
 }
 
 // ═══════════════════════════════════════════
 // EVENTS
 // ═══════════════════════════════════════════
 function renderEvents() {
-document.getElementById(‘eventsList’).innerHTML = !(state.events||[]).length
-? ‘<div class="card" style="color:var(--text3);font-size:13px">Noch keine Events erstellt.</div>’
-: (state.events||[]).map((e,i)=>` <div class="event-card"> <div style="display:flex;justify-content:space-between;align-items:flex-start"> <div> <div style="font-weight:700;font-size:15px">🎉 ${e.name}</div> <div style="font-size:12px;color:var(--text2)">${e.date} · Einsatz: ${fmt(parseFloat(e.einsatz)||0)}</div> <div style="font-size:12px;color:var(--text2);margin-top:2px">${e.desc}</div> </div> <div style="display:flex;gap:4px"> <button onclick="toggleEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px">${e.active?'✅':'⭕'}</button> <button onclick="delEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--red)">🗑️</button> </div> </div> <span class="event-badge ${e.active?'badge-active':'badge-done'}">${e.active?'Aktiv':'Beendet'}</span> </div>`).join(’’);
+  document.getElementById('eventsList').innerHTML = !(state.events||[]).length
+    ? '<div class="card" style="color:var(--text3);font-size:13px">Noch keine Events erstellt.</div>'
+    : (state.events||[]).map((e,i)=>`
+      <div class="event-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">🎉 ${e.name}</div>
+            <div style="font-size:12px;color:var(--text2)">${e.date} · Einsatz: ${fmt(parseFloat(e.einsatz)||0)}</div>
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${e.desc}</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button onclick="toggleEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px">${e.active?'✅':'⭕'}</button>
+            <button onclick="delEvent(${i})" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--red)">🗑️</button>
+          </div>
+        </div>
+        <span class="event-badge ${e.active?'badge-active':'badge-done'}">${e.active?'Aktiv':'Beendet'}</span>
+      </div>`).join('');
 }
 
 function eventHinzufuegen() {
-const name=document.getElementById(‘eventName’).value.trim();
-const date=document.getElementById(‘eventDate’).value;
-const desc=document.getElementById(‘eventDesc’).value.trim();
-const einsatz=document.getElementById(‘eventEinsatz’).value;
-if (!name||!date){showToast(‘❌ Name und Datum erforderlich’);return;}
-if (!state.events) state.events=[];
-state.events.push({name,date,desc,einsatz,active:true});
-[‘eventName’,‘eventDate’,‘eventDesc’,‘eventEinsatz’].forEach(id=>document.getElementById(id).value=’’);
-saveState(); renderEvents(); showToast(‘🎉 Event erstellt!’);
+  const name=document.getElementById('eventName').value.trim();
+  const date=document.getElementById('eventDate').value;
+  const desc=document.getElementById('eventDesc').value.trim();
+  const einsatz=document.getElementById('eventEinsatz').value;
+  if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
+  if (!state.events) state.events=[];
+  state.events.push({name,date,desc,einsatz,active:true});
+  ['eventName','eventDate','eventDesc','eventEinsatz'].forEach(id=>document.getElementById(id).value='');
+  saveState(); renderEvents(); showToast('🎉 Event erstellt!');
 }
 function toggleEvent(i) { state.events[i].active=!state.events[i].active; saveState(); renderEvents(); renderDashboard(); }
 function delEvent(i) {
-showModal(‘Event löschen’,`<p class="modal-text">„${state.events[i].name}" wirklich löschen?</p>`,()=>{
-state.events.splice(i,1); saveState(); renderEvents(); showToast(‘🗑️ Event gelöscht’);
-});
+  showModal('Event löschen',`<p class="modal-text">„${state.events[i].name}" wirklich löschen?</p>`,()=>{
+    state.events.splice(i,1); saveState(); renderEvents(); showToast('🗑️ Event gelöscht');
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -989,325 +1004,357 @@ state.events.splice(i,1); saveState(); renderEvents(); showToast(‘🗑️ Even
 let termineCount = 12;
 
 function getTermine(n) {
-const list=[];
-for (let i=0;i<n;i++) {
-const d=new Date(TERMIN_START.getTime()+i*28*24*60*60*1000);
-list.push(d);
-}
-return list;
+  const list=[];
+  for (let i=0;i<n;i++) {
+    const d=new Date(TERMIN_START.getTime()+i*28*24*60*60*1000);
+    list.push(d);
+  }
+  return list;
 }
 
 function termineShowMore() { termineCount+=10; renderTermine(); }
 
 function renderTermine() {
-const todayD = new Date(); todayD.setHours(0,0,0,0);
-const termine = getTermine(termineCount);
-const zusagen = state.terminZusagen || {};
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const termine = getTermine(termineCount);
+  const zusagen = state.terminZusagen || {};
 
-document.getElementById(‘termineList’).innerHTML = termine.map(d=>{
-const isPast = d < todayD;
-const isToday = d.toDateString() === todayD.toDateString();
-const isFuture = d > todayD;
-const day = d.getDate().toString().padStart(2,‘0’);
-const mon = MON[d.getMonth()];
-const yr = d.getFullYear();
-const dateKey = d.toISOString().slice(0,10);
-const dayZusagen = zusagen[dateKey] || {};
+  document.getElementById('termineList').innerHTML = termine.map(d=>{
+    const isPast = d < todayD;
+    const isToday = d.toDateString() === todayD.toDateString();
+    const isFuture = d > todayD;
+    const day = d.getDate().toString().padStart(2,'0');
+    const mon = MON[d.getMonth()];
+    const yr = d.getFullYear();
+    const dateKey = d.toISOString().slice(0,10);
+    const dayZusagen = zusagen[dateKey] || {};
 
-```
-// Count responses for future dates
-const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
-const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
-const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
-const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
+    // Count responses for future dates
+    const zuCount = Object.values(dayZusagen).filter(z=>z.status==='zusage').length;
+    const abCount = Object.values(dayZusagen).filter(z=>z.status==='absage').length;
+    const myStatus = currentUser ? (dayZusagen[currentUser]?.status || null) : null;
+    const myGrund = currentUser ? (dayZusagen[currentUser]?.grund || '') : '';
 
-// Build participant list for future dates
-let participantHtml = '';
-if (isFuture || isToday) {
-  const zuNames = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
-  const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
-  participantHtml = `
-    <div style="margin-top:8px;font-size:11px">
-      ${zuCount>0?`<div style="color:var(--green);margin-bottom:2px">✅ Dabei (${zuCount}): ${zuNames.join(', ')}</div>`:''}
-      ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">❌ Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+v.grund+')':'')).join(', ')}</div>`:''}
-      ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine Rückmeldungen</div>`:''}
-    </div>`;
+    // Build participant list for future dates
+    let participantHtml = '';
+    if (isFuture || isToday) {
+      const zuNames = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
+      const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
+      participantHtml = `
+        <div style="margin-top:8px;font-size:11px">
+          ${zuCount>0?`<div style="color:var(--green);margin-bottom:2px">✅ Dabei (${zuCount}): ${zuNames.join(', ')}</div>`:''}
+          ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">❌ Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+v.grund+')':'')).join(', ')}</div>`:''}
+          ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine Rückmeldungen</div>`:''}
+        </div>`;
 
-  // Action buttons only if logged in and future/today
-  if (currentUser) {
-    participantHtml += `
-      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
-        <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
-          ✅ ${myStatus==='zusage'?'Ich bin dabei!':'Ich komme'}
-        </button>
-        <button onclick="terminZusage('${dateKey}','absage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='absage'?'var(--red)':'var(--bg3)'};color:${myStatus==='absage'?'#fff':'var(--text2)'}">
-          ❌ ${myStatus==='absage'?'Abgesagt':'Ich kann nicht'}
-        </button>
+      // Action buttons only if logged in and future/today
+      if (currentUser) {
+        participantHtml += `
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button onclick="terminZusage('${dateKey}','zusage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='zusage'?'var(--green)':'var(--bg3)'};color:${myStatus==='zusage'?'#000':'var(--text2)'}">
+              ✅ ${myStatus==='zusage'?'Ich bin dabei!':'Ich komme'}
+            </button>
+            <button onclick="terminZusage('${dateKey}','absage')" style="flex:1;padding:7px 10px;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;background:${myStatus==='absage'?'var(--red)':'var(--bg3)'};color:${myStatus==='absage'?'#fff':'var(--text2)'}">
+              ❌ ${myStatus==='absage'?'Abgesagt':'Ich kann nicht'}
+            </button>
+          </div>
+          ${myStatus==='absage'?`
+          <div style="margin-top:6px;display:flex;gap:6px">
+            <select onchange="terminGrund('${dateKey}',this.value)" style="flex:1;padding:6px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text)">
+              <option value="">Grund wählen…</option>
+              <option value="Krank" ${myGrund==='Krank'?'selected':''}>🤒 Krank</option>
+              <option value="Arbeit" ${myGrund==='Arbeit'?'selected':''}>💼 Arbeit</option>
+              <option value="Urlaub" ${myGrund==='Urlaub'?'selected':''}>✈️ Urlaub</option>
+              <option value="Familiär" ${myGrund==='Familiär'?'selected':''}>👨‍👩‍👧 Familiär</option>
+              <option value="Anderes" ${myGrund==='Anderes'?'selected':''}>📝 Anderes</option>
+            </select>
+          </div>`:''}`;
+      }
+    }
+
+    return `<div class="termin-item" style="${isPast&&!isToday?'opacity:0.45':''}">
+      <div class="termin-date" style="${isToday?'background:var(--green);color:#000':''}">
+        <div class="termin-day">${day}</div>
+        <div class="termin-mon">${mon}</div>
       </div>
-      ${myStatus==='absage'?`
-      <div style="margin-top:6px;display:flex;gap:6px">
-        <select onchange="terminGrund('${dateKey}',this.value)" style="flex:1;padding:6px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text)">
-          <option value="">Grund wählen…</option>
-          <option value="Krank" ${myGrund==='Krank'?'selected':''}>🤒 Krank</option>
-          <option value="Arbeit" ${myGrund==='Arbeit'?'selected':''}>💼 Arbeit</option>
-          <option value="Urlaub" ${myGrund==='Urlaub'?'selected':''}>✈️ Urlaub</option>
-          <option value="Familiär" ${myGrund==='Familiär'?'selected':''}>👨‍👩‍👧 Familiär</option>
-          <option value="Anderes" ${myGrund==='Anderes'?'selected':''}>📝 Anderes</option>
-        </select>
-      </div>`:''}`;
-  }
-}
+      <div class="termin-info" style="flex:1">
+        <div class="termin-title">🎳 Kegelabend${isToday?` <span style="color:var(--green);font-size:11px">← Heute!</span>`:''}</div>
+        <div class="termin-sub">Donnerstag · ${day}. ${mon} ${yr}</div>
+        ${(isFuture||isToday)?participantHtml:''}
+      </div>
+    </div>`;
+  }).join('');
 
-return `<div class="termin-item" style="${isPast&&!isToday?'opacity:0.45':''}">
-  <div class="termin-date" style="${isToday?'background:var(--green);color:#000':''}">
-    <div class="termin-day">${day}</div>
-    <div class="termin-mon">${mon}</div>
-  </div>
-  <div class="termin-info" style="flex:1">
-    <div class="termin-title">🎳 Kegelabend${isToday?` <span style="color:var(--green);font-size:11px">← Heute!</span>`:''}</div>
-    <div class="termin-sub">Donnerstag · ${day}. ${mon} ${yr}</div>
-    ${(isFuture||isToday)?participantHtml:''}
-  </div>
-</div>`;
-```
-
-}).join(’’);
-
-renderExtraTermine();
+  renderExtraTermine();
 }
 
 function renderExtraTermine() {
-const el=document.getElementById(‘extraTermineList’);
-if (!state.extraTermine||!state.extraTermine.length){el.innerHTML=’’;return;}
-const sorted=[…state.extraTermine].sort((a,b)=>a.date.localeCompare(b.date));
-el.innerHTML=`<div class="card mt-12"> <div class="card-title">📌 Zusatztermine</div> ${sorted.map((t,i)=>{ const d=new Date(t.date+'T00:00:00'); const day=d.getDate().toString().padStart(2,'0'); const mon=MON[d.getMonth()]; const yr=d.getFullYear(); return `<div class="termin-item">
-<div class="termin-date" style="background:var(--blue);color:#fff"><div class="termin-day">${day}</div><div class="termin-mon">${mon}</div></div>
-<div class="termin-info">
-<div class="termin-title">📌 ${t.name}</div>
-<div class="termin-sub">${day}. ${mon} ${yr}${t.zeit?’ · ‘+t.zeit:’’}${t.ort?’ · ‘+t.ort:’’}</div>
-</div>
-<button onclick="delExtraTermin(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
-</div>`;
-}).join(’’)}
-
+  const el=document.getElementById('extraTermineList');
+  if (!state.extraTermine||!state.extraTermine.length){el.innerHTML='';return;}
+  const sorted=[...state.extraTermine].sort((a,b)=>a.date.localeCompare(b.date));
+  el.innerHTML=`<div class="card mt-12">
+    <div class="card-title">📌 Zusatztermine</div>
+    ${sorted.map((t,i)=>{
+      const d=new Date(t.date+'T00:00:00');
+      const day=d.getDate().toString().padStart(2,'0');
+      const mon=MON[d.getMonth()];
+      const yr=d.getFullYear();
+      return `<div class="termin-item">
+        <div class="termin-date" style="background:var(--blue);color:#fff"><div class="termin-day">${day}</div><div class="termin-mon">${mon}</div></div>
+        <div class="termin-info">
+          <div class="termin-title">📌 ${t.name}</div>
+          <div class="termin-sub">${day}. ${mon} ${yr}${t.zeit?' · '+t.zeit:''}${t.ort?' · '+t.ort:''}</div>
+        </div>
+        <button onclick="delExtraTermin(${i})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px">✕</button>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
 function extraTerminAdd() {
-const name=document.getElementById(‘extraName’).value.trim();
-const date=document.getElementById(‘extraDate’).value;
-const zeit=document.getElementById(‘extraZeit’).value.trim();
-const ort=document.getElementById(‘extraOrt’).value.trim();
-if (!name||!date){showToast(‘❌ Name und Datum erforderlich’);return;}
-if (!state.extraTermine) state.extraTermine=[];
-state.extraTermine.push({name,date,zeit,ort});
-[‘extraName’,‘extraDate’,‘extraZeit’,‘extraOrt’].forEach(id=>document.getElementById(id).value=’’);
-saveState(); renderTermine(); showToast(‘📌 Termin hinzugefügt’);
+  const name=document.getElementById('extraName').value.trim();
+  const date=document.getElementById('extraDate').value;
+  const zeit=document.getElementById('extraZeit').value.trim();
+  const ort=document.getElementById('extraOrt').value.trim();
+  if (!name||!date){showToast('❌ Name und Datum erforderlich');return;}
+  if (!state.extraTermine) state.extraTermine=[];
+  state.extraTermine.push({name,date,zeit,ort});
+  ['extraName','extraDate','extraZeit','extraOrt'].forEach(id=>document.getElementById(id).value='');
+  saveState(); renderTermine(); showToast('📌 Termin hinzugefügt');
 }
 
 function delExtraTermin(i) {
-showModal(‘Termin löschen’,`<p class="modal-text">„${state.extraTermine[i].name}" wirklich löschen?</p>`,()=>{
-state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast(‘🗑️ Gelöscht’);
-});
+  showModal('Termin löschen',`<p class="modal-text">„${state.extraTermine[i].name}" wirklich löschen?</p>`,()=>{
+    state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast('🗑️ Gelöscht');
+  });
 }
 
 function terminZusage(dateKey, status) {
-if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
-if (!state.terminZusagen) state.terminZusagen = {};
-if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-const prev = state.terminZusagen[dateKey][currentUser]?.status;
-// Toggle off if same
-if (prev === status) {
-delete state.terminZusagen[dateKey][currentUser];
-} else {
-state.terminZusagen[dateKey][currentUser] = { status, grund: ‘’ };
-}
-saveState(); renderTermine();
-if (status === ‘zusage’ && prev !== ‘zusage’) showToast(‘✅ Zusage gespeichert!’);
-if (status === ‘absage’ && prev !== ‘absage’) showToast(‘❌ Absage gespeichert’);
+  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
+  if (!state.terminZusagen) state.terminZusagen = {};
+  if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
+  const prev = state.terminZusagen[dateKey][currentUser]?.status;
+  // Toggle off if same
+  if (prev === status) {
+    delete state.terminZusagen[dateKey][currentUser];
+  } else {
+    state.terminZusagen[dateKey][currentUser] = { status, grund: '' };
+  }
+  saveState(); renderTermine();
+  if (status === 'zusage' && prev !== 'zusage') showToast('✅ Zusage gespeichert!');
+  if (status === 'absage' && prev !== 'absage') showToast('❌ Absage gespeichert');
 }
 
 function terminGrund(dateKey, grund) {
-if (!currentUser) return;
-if (!state.terminZusagen) state.terminZusagen = {};
-if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: ‘absage’, grund: ‘’ };
-state.terminZusagen[dateKey][currentUser].grund = grund;
-saveState(); renderTermine();
+  if (!currentUser) return;
+  if (!state.terminZusagen) state.terminZusagen = {};
+  if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
+  if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: 'absage', grund: '' };
+  state.terminZusagen[dateKey][currentUser].grund = grund;
+  saveState(); renderTermine();
 }
 
 // ═══════════════════════════════════════════
 // STATS
 // ═══════════════════════════════════════════
 function renderStats() {
-const all={};
-MEMBERS.forEach(m=>all[m]=0);
-(state.history||[]).forEach(h=>MEMBERS.forEach(m=>{
-const ms=h.strafen?.[m]||{};
-getStrafen().forEach(s=>all[m]=(all[m]||0)+(ms[s.id]||0)*s.price);
-}));
-MEMBERS.forEach(m=>all[m]=(all[m]||0)+calcMemberStrafen(m));
+  const all={};
+  MEMBERS.forEach(m=>all[m]=0);
+  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{
+    const ms=h.strafen?.[m]||{};
+    getStrafen().forEach(s=>all[m]=(all[m]||0)+(ms[s.id]||0)*s.price);
+  }));
+  MEMBERS.forEach(m=>all[m]=(all[m]||0)+calcMemberStrafen(m));
 
-const ranking=MEMBERS.map(m=>({name:m,total:all[m]})).sort((a,b)=>b.total-a.total);
-const maxV=ranking[0]?.total||1;
-document.getElementById(‘statsRanking’).innerHTML=ranking.map((r,i)=>` <div class="ranking-item"> <div class="rank-pos rank-${i+1}">${i+1}</div> <div style="flex:1"><div class="rank-name">${r.name}</div><div class="progress-bar"><div class="progress-fill" style="width:${r.total/maxV*100}%"></div></div></div> <div class="rank-amount">${fmt(r.total)}</div> </div>`).join(’’);
+  const ranking=MEMBERS.map(m=>({name:m,total:all[m]})).sort((a,b)=>b.total-a.total);
+  const maxV=ranking[0]?.total||1;
+  document.getElementById('statsRanking').innerHTML=ranking.map((r,i)=>`
+    <div class="ranking-item">
+      <div class="rank-pos rank-${i+1}">${i+1}</div>
+      <div style="flex:1"><div class="rank-name">${r.name}</div><div class="progress-bar"><div class="progress-fill" style="width:${r.total/maxV*100}%"></div></div></div>
+      <div class="rank-amount">${fmt(r.total)}</div>
+    </div>`).join('');
 
-document.getElementById(‘statsAbende’).textContent=(state.history?.length||0)+’ Abende’;
-document.getElementById(‘statsKasse’).textContent=fmt(calcKasse());
+  document.getElementById('statsAbende').textContent=(state.history?.length||0)+' Abende';
+  document.getElementById('statsKasse').textContent=fmt(calcKasse());
 
-const sc={};
-getStrafen().forEach(s=>sc[s.id]=0);
-(state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
-MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
-document.getElementById(‘statsStrafenTop’).innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
-.sort((a,b)=>b.count-a.count).slice(0,5)
-.map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join(’’);
+  const sc={};
+  getStrafen().forEach(s=>sc[s.id]=0);
+  (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
+  MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
+  document.getElementById('statsStrafenTop').innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
+    .sort((a,b)=>b.count-a.count).slice(0,5)
+    .map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join('');
 }
 
 // ═══════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════
 function renderSettings() {
-// Prefill Firebase
-if (fbCfg) {
-document.getElementById(‘fbUrl’).value    = fbCfg.databaseURL||’’;
-document.getElementById(‘fbKey’).value    = fbCfg.apiKey||’’;
-document.getElementById(‘fbProjId’).value = fbCfg.projectId||’’;
-document.getElementById(‘fbStatus’).textContent = isConnected ? ‘🟢 Verbunden und synchron’ : ‘🟡 Wird verbunden…’;
-}
+  // Prefill Firebase
+  if (fbCfg) {
+    document.getElementById('fbUrl').value    = fbCfg.databaseURL||'';
+    document.getElementById('fbKey').value    = fbCfg.apiKey||'';
+    document.getElementById('fbProjId').value = fbCfg.projectId||'';
+    document.getElementById('fbStatus').textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
+  }
 
-renderMemberManagement();
-renderNotifSettings();
+  renderMemberManagement();
+  renderNotifSettings();
 
-// Strafen-Modi + Verwaltung
-const modes=state.strafenModes||{};
-const isCustom = id => !DEFAULT_STRAFEN.find(s=>s.id===id);
-document.getElementById(‘strafenModeList’).innerHTML=getStrafen().map(s=>{
-const mode=modes[s.id]||‘einzel’;
-return `<div class="strafe-mode-row"> <div style="flex:1"> <div style="font-weight:600;font-size:14px">${s.name} ${isCustom(s.id)?'<span style="font-size:10px;background:rgba(74,158,255,.2);color:var(--blue);padding:1px 6px;border-radius:6px;font-weight:700">NEU</span>':''}</div> <div style="font-size:11px;color:var(--text2)">${fmt(s.price)} je Strich</div> ${mode==='alle'?`<div style="font-size:10px;color:var(--purple);margin-top:2px">🔔 Beim Eintragen alle außer Ausnahmen</div>`:''} </div> <div style="display:flex;align-items:center;gap:6px"> <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px"> <option value="einzel" ${mode==='einzel'?'selected':''}>👤 Einzel</option> <option value="alle"   ${mode==='alle'?'selected':''}>🔔 Alle</option> </select> ${isCustom(s.id)?`<button onclick="deleteStrafe('${s.id}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px">🗑️</button>`:''} </div> </div>`;
-}).join(’’)
+  // Strafen-Modi + Verwaltung
+  const modes=state.strafenModes||{};
+  const isCustom = id => !DEFAULT_STRAFEN.find(s=>s.id===id);
+  document.getElementById('strafenModeList').innerHTML=getStrafen().map(s=>{
+    const mode=modes[s.id]||'einzel';
+    return `<div class="strafe-mode-row">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${s.name} ${isCustom(s.id)?'<span style="font-size:10px;background:rgba(74,158,255,.2);color:var(--blue);padding:1px 6px;border-radius:6px;font-weight:700">NEU</span>':''}</div>
+        <div style="font-size:11px;color:var(--text2)">${fmt(s.price)} je Strich</div>
+        ${mode==='alle'?`<div style="font-size:10px;color:var(--purple);margin-top:2px">🔔 Beim Eintragen alle außer Ausnahmen</div>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <select onchange="setMode('${s.id}',this.value)" style="width:auto;padding:5px 8px;font-size:11px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px">
+          <option value="einzel" ${mode==='einzel'?'selected':''}>👤 Einzel</option>
+          <option value="alle"   ${mode==='alle'?'selected':''}>🔔 Alle</option>
+        </select>
+        ${isCustom(s.id)?`<button onclick="deleteStrafe('${s.id}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:13px">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('')
 
-// Member photos
-// Photo/PayPal now managed per-user in Profil page
+  // Member photos
+  // Photo/PayPal now managed per-user in Profil page
 
-// PayPal
-document.getElementById(‘paypalSettings’).innerHTML=MEMBERS.map(m=>{
-const pp=state.paypal?.[m]||’’;
-return `<div class="settings-row"> <div class="settings-label">${m.split(' ')[0]}</div> <input class="settings-input" type="text" placeholder="PayPal.Me Username" value="${pp}" onchange="setPaypal('${m}',this.value)"> </div>`;
-}).join(’’);
+
+  // PayPal
+  document.getElementById('paypalSettings').innerHTML=MEMBERS.map(m=>{
+    const pp=state.paypal?.[m]||'';
+    return `<div class="settings-row">
+      <div class="settings-label">${m.split(' ')[0]}</div>
+      <input class="settings-input" type="text" placeholder="PayPal.Me Username" value="${pp}" onchange="setPaypal('${m}',this.value)">
+    </div>`;
+  }).join('');
 }
 
 function changePassword() {
-const old = document.getElementById(‘pwOld’).value;
-const nw = document.getElementById(‘pwNew’).value;
-const nw2 = document.getElementById(‘pwNew2’).value;
-const correct = state.appPassword || ‘1234’;
-if (old !== correct) { showToast(‘❌ Aktuelles Kennwort falsch’); return; }
-if (!nw || nw.length < 4) { showToast(‘❌ Kennwort muss mind. 4 Zeichen lang sein’); return; }
-if (nw !== nw2) { showToast(‘❌ Kennwörter stimmen nicht überein’); return; }
-state.appPassword = nw;
-[‘pwOld’,‘pwNew’,‘pwNew2’].forEach(id=>document.getElementById(id).value=’’);
-saveState(); showToast(‘✅ Kennwort geändert!’);
+  const old = document.getElementById('pwOld').value;
+  const nw = document.getElementById('pwNew').value;
+  const nw2 = document.getElementById('pwNew2').value;
+  const correct = state.appPassword || '1234';
+  if (old !== correct) { showToast('❌ Aktuelles Kennwort falsch'); return; }
+  if (!nw || nw.length < 4) { showToast('❌ Kennwort muss mind. 4 Zeichen lang sein'); return; }
+  if (nw !== nw2) { showToast('❌ Kennwörter stimmen nicht überein'); return; }
+  state.appPassword = nw;
+  ['pwOld','pwNew','pwNew2'].forEach(id=>document.getElementById(id).value='');
+  saveState(); showToast('✅ Kennwort geändert!');
 }
 
 function addStrafe() {
-const name = document.getElementById(‘newStrafeName’).value.trim();
-const price = parseFloat(document.getElementById(‘newStrafePrice’).value);
-const mode = document.getElementById(‘newStrafeMode’).value;
-if (!name || isNaN(price) || price <= 0) { showToast(‘❌ Name und Preis erforderlich’); return; }
-if (!state.strafenListe) state.strafenListe = […DEFAULT_STRAFEN];
-const id = ‘custom_’ + Date.now();
-state.strafenListe.push({ id, name, price });
-if (!state.strafenModes) state.strafenModes = {};
-state.strafenModes[id] = mode;
-document.getElementById(‘newStrafeName’).value = ‘’;
-document.getElementById(‘newStrafePrice’).value = ‘’;
-saveState(); renderSettings(); renderStrafen();
-showToast(‘✅ Strafe “’ + name + ‘” hinzugefügt!’);
+  const name = document.getElementById('newStrafeName').value.trim();
+  const price = parseFloat(document.getElementById('newStrafePrice').value);
+  const mode = document.getElementById('newStrafeMode').value;
+  if (!name || isNaN(price) || price <= 0) { showToast('❌ Name und Preis erforderlich'); return; }
+  if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+  const id = 'custom_' + Date.now();
+  state.strafenListe.push({ id, name, price });
+  if (!state.strafenModes) state.strafenModes = {};
+  state.strafenModes[id] = mode;
+  document.getElementById('newStrafeName').value = '';
+  document.getElementById('newStrafePrice').value = '';
+  saveState(); renderSettings(); renderStrafen();
+  showToast('✅ Strafe "' + name + '" hinzugefügt!');
 }
 
 function deleteStrafe(id) {
-const s = getStrafen().find(x=>x.id===id);
-showModal(‘Strafe löschen’, `<p class="modal-text">Strafe "${s?.name}" wirklich löschen? Bereits eingetragene Werte bleiben in der Historie erhalten.</p>`, () => {
-if (!state.strafenListe) state.strafenListe = […DEFAULT_STRAFEN];
-state.strafenListe = state.strafenListe.filter(x=>x.id!==id);
-saveState(); renderSettings(); renderStrafen();
-showToast(‘🗑️ Strafe gelöscht’);
-});
+  const s = getStrafen().find(x=>x.id===id);
+  showModal('Strafe löschen', `<p class="modal-text">Strafe "${s?.name}" wirklich löschen? Bereits eingetragene Werte bleiben in der Historie erhalten.</p>`, () => {
+    if (!state.strafenListe) state.strafenListe = [...DEFAULT_STRAFEN];
+    state.strafenListe = state.strafenListe.filter(x=>x.id!==id);
+    saveState(); renderSettings(); renderStrafen();
+    showToast('🗑️ Strafe gelöscht');
+  });
 }
 
 function setMode(id, mode) {
-if (!state.strafenModes) state.strafenModes={};
-state.strafenModes[id]=mode;
-saveState(); renderSettings();
-const name=getStrafen().find(s=>s.id===id)?.name||id;
-showToast(mode===‘alle’?`🔔 ${name} → Alle-bekommen aktiv`:`👤 ${name} → Einzelmodus`);
+  if (!state.strafenModes) state.strafenModes={};
+  state.strafenModes[id]=mode;
+  saveState(); renderSettings();
+  const name=getStrafen().find(s=>s.id===id)?.name||id;
+  showToast(mode==='alle'?`🔔 ${name} → Alle-bekommen aktiv`:`👤 ${name} → Einzelmodus`);
 }
 
 function uploadLogo(event) {
-const file=event.target.files[0]; if (!file) return;
-const r=new FileReader();
-r.onload=e=>{localMeta.logo=e.target.result;saveLocalMeta();document.getElementById(‘logoCircle’).innerHTML=`<img src="${localMeta.logo}">`;showToast(‘✅ Logo hochgeladen’);};
-r.readAsDataURL(file);
+  const file=event.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=e=>{localMeta.logo=e.target.result;saveLocalMeta();document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;showToast('✅ Logo hochgeladen');};
+  r.readAsDataURL(file);
 }
 
 function uploadPhoto(member, event) {
-const file=event.target.files[0]; if (!file) return;
-const r=new FileReader();
-r.onload=e=>{
-if (!localMeta.photos) localMeta.photos={};
-localMeta.photos[member]=e.target.result;
-saveLocalMeta(); renderSettings(); showToast(`✅ Foto für ${member.split(' ')[0]} gespeichert`);
-};
-r.readAsDataURL(file);
+  const file=event.target.files[0]; if (!file) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    if (!localMeta.photos) localMeta.photos={};
+    localMeta.photos[member]=e.target.result;
+    saveLocalMeta(); renderSettings(); showToast(`✅ Foto für ${member.split(' ')[0]} gespeichert`);
+  };
+  r.readAsDataURL(file);
 }
 
 function setPaypal(m,v) {
-if (!state.paypal) state.paypal={};
-state.paypal[m]=v.trim(); saveState();
+  if (!state.paypal) state.paypal={};
+  state.paypal[m]=v.trim(); saveState();
 }
 
 // ═══════════════════════════════════════════
 // ABEND SPEICHERN
 // ═══════════════════════════════════════════
 function abendSpeichern() {
-const total=calcTotalStrafen();
-showModal(‘Abend speichern’,
-`<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
-doSave, ‘💾 Speichern’, ‘btn-green’);
+  const total=calcTotalStrafen();
+  showModal('Abend speichern',
+    `<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
+    doSave, '💾 Speichern', 'btn-green');
 }
 function doSave() {
-const total=calcTotalStrafen();
-if (!state.history) state.history=[];
-state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
-if (!state.kasse) state.kasse=[];
-if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:‘ein’,date:today()});
-state.anwesenheit={}; state.strafen={};
-saveState(); renderDashboard(); showToast(‘💾 Abend gespeichert & Kasse aktualisiert!’,3000);
+  const total=calcTotalStrafen();
+  if (!state.history) state.history=[];
+  state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
+  if (!state.kasse) state.kasse=[];
+  if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:'ein',date:today()});
+  state.anwesenheit={}; state.strafen={};
+  saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
 }
 
 // ═══════════════════════════════════════════
 // EXPORT / RESET
 // ═══════════════════════════════════════════
 function exportData() {
-const blob=new Blob([JSON.stringify({state,localMeta},null,2)],{type:‘application/json’});
-const a=document.createElement(‘a’);
-a.href=URL.createObjectURL(blob); a.download=`riverperlen_${today()}.json`; a.click();
-showToast(‘📤 Daten exportiert’);
+  const blob=new Blob([JSON.stringify({state,localMeta},null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=`riverperlen_${today()}.json`; a.click();
+  showToast('📤 Daten exportiert');
 }
 function confirmReset() {
-showModal(‘Daten zurücksetzen’,
-`<p class="modal-text">Was soll zurückgesetzt werden?</p> <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px"> <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label> <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetKasse"> Kasse</label> <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetHistory"> Gesamte Historie</label> <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetEvents"> Events</label> <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label> </div>`,
-() => {
-if (document.getElementById(‘resetStrafen’)?.checked) { state.strafen={}; state.anwesenheit={}; }
-if (document.getElementById(‘resetKasse’)?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
-if (document.getElementById(‘resetHistory’)?.checked) { state.history=[]; }
-if (document.getElementById(‘resetEvents’)?.checked) { state.events=[]; }
-if (document.getElementById(‘resetChat’)?.checked) { state.chatMessages=[]; }
-saveState(); renderDashboard();
-showToast(‘✅ Ausgewählte Daten zurückgesetzt’);
-}
-);
+  showModal('Daten zurücksetzen',
+    `<p class="modal-text">Was soll zurückgesetzt werden?</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetKasse"> Kasse</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetHistory"> Gesamte Historie</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetEvents"> Events</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label>
+    </div>`,
+    () => {
+      if (document.getElementById('resetStrafen')?.checked) { state.strafen={}; state.anwesenheit={}; }
+      if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
+      if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
+      if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
+      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; }
+      saveState(); renderDashboard();
+      showToast('✅ Ausgewählte Daten zurückgesetzt');
+    }
+  );
 }
 
 // ═══════════════════════════════════════════
@@ -1321,367 +1368,470 @@ let onlineRef = null;
 let onlineUsers = {};
 
 function initPresence() {
-if (!currentUser || !fbApp) return;
-try {
-const db = firebase.database(fbApp);
-const myRef = db.ref(‘riverperlen/online/’ + currentUser.replace(/[.#$[]]/g,’_’));
-// Set online
-myRef.set({ name: currentUser, ts: Date.now() });
-// Remove on disconnect
-myRef.onDisconnect().remove();
-// Listen to all online users
-onlineRef = db.ref(‘riverperlen/online’);
-onlineRef.on(‘value’, snap => {
-onlineUsers = {};
-const val = snap.val() || {};
-Object.values(val).forEach(u => { if (u.name) onlineUsers[u.name] = u.ts; });
-renderOnlineIndicator();
-// Re-render termine if on that page
-if (document.getElementById(‘page-termine’)?.classList.contains(‘active’)) renderTermine();
-});
-// Heartbeat every 2 min
-setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
-} catch(e) { console.warn(‘Presence error:’, e); }
+  if (!currentUser || !fbApp) return;
+  try {
+    const db = firebase.database(fbApp);
+    const myRef = db.ref('riverperlen/online/' + currentUser.replace(/[.#$\[\]]/g,'_'));
+    // Set online
+    myRef.set({ name: currentUser, ts: Date.now() });
+    // Remove on disconnect
+    myRef.onDisconnect().remove();
+    // Listen to all online users
+    onlineRef = db.ref('riverperlen/online');
+    onlineRef.on('value', snap => {
+      onlineUsers = {};
+      const val = snap.val() || {};
+      Object.values(val).forEach(u => { if (u.name) onlineUsers[u.name] = u.ts; });
+      renderOnlineIndicator();
+      // Re-render termine if on that page
+      if (document.getElementById('page-termine')?.classList.contains('active')) renderTermine();
+    });
+    // Heartbeat every 2 min
+    setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
+  } catch(e) { console.warn('Presence error:', e); }
 }
 
 function renderOnlineIndicator() {
-const el = document.getElementById(‘onlineIndicator’);
-if (el) {
-const names = Object.keys(onlineUsers);
-if (names.length === 0) { el.style.display = ‘none’; }
-else {
-el.style.display = ‘flex’;
-el.innerHTML = `<span style="font-size:10px;color:var(--green)">● </span><span style="font-size:11px;color:var(--text2)">${names.length} online: ${names.map(n=>n.split(' ')[0]).join(', ')}</span>`;
-}
-}
-// Also update termine page online list
-const tel = document.getElementById(‘termineOnlineList’);
-if (tel) {
-const names = Object.keys(onlineUsers);
-if (names.length === 0) {
-tel.innerHTML = ‘<span style="color:var(--text3)">Niemand gerade online</span>’;
-} else {
-tel.innerHTML = names.map(n => {
-const isMe = n === currentUser;
-return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border-radius:20px;padding:4px 10px;margin:2px;font-size:12px"> <span style="color:var(--green);font-size:9px">●</span> <span style="font-weight:${isMe?'700':'400'};color:${isMe?'var(--gold)':'var(--text)'}">${n.split(' ')[0]}${isMe?' (du)':''}</span> </span>`;
-}).join(’’);
-}
-}
+  const el = document.getElementById('onlineIndicator');
+  if (el) {
+    const names = Object.keys(onlineUsers);
+    if (names.length === 0) { el.style.display = 'none'; }
+    else {
+      el.style.display = 'flex';
+      el.innerHTML = `<span style="font-size:10px;color:var(--green)">● </span><span style="font-size:11px;color:var(--text2)">${names.length} online: ${names.map(n=>n.split(' ')[0]).join(', ')}</span>`;
+    }
+  }
+  // Also update termine page online list
+  const tel = document.getElementById('termineOnlineList');
+  if (tel) {
+    const names = Object.keys(onlineUsers);
+    if (names.length === 0) {
+      tel.innerHTML = '<span style="color:var(--text3)">Niemand gerade online</span>';
+    } else {
+      tel.innerHTML = names.map(n => {
+        const isMe = n === currentUser;
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border-radius:20px;padding:4px 10px;margin:2px;font-size:12px">
+          <span style="color:var(--green);font-size:9px">●</span>
+          <span style="font-weight:${isMe?'700':'400'};color:${isMe?'var(--gold)':'var(--text)'}">${n.split(' ')[0]}${isMe?' (du)':''}</span>
+        </span>`;
+      }).join('');
+    }
+  }
 }
 
 // ═══════════════════════════════════════════
 // PUSH BENACHRICHTIGUNGEN
 // ═══════════════════════════════════════════
-const NOTIF_KEY = ‘rp_notif_prefs’;
+const NOTIF_KEY = 'rp_notif_prefs';
 
 function getNotifPrefs() {
-try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||’{}’); } catch(e) { return {}; }
+  try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||'{}'); } catch(e) { return {}; }
 }
 function saveNotifPrefs(prefs) {
-localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
+  localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs));
 }
 
 async function requestNotifPermission() {
-if (!(‘Notification’ in window)) {
-showToast(‘❌ Dein Browser unterstützt keine Push-Benachrichtigungen’);
-return false;
-}
-if (Notification.permission === ‘granted’) return true;
-if (Notification.permission === ‘denied’) {
-showToast(‘❌ Benachrichtigungen blockiert – bitte in Safari-Einstellungen erlauben’);
-return false;
-}
-const result = await Notification.requestPermission();
-return result === ‘granted’;
+  if (!('Notification' in window)) {
+    showToast('❌ Dein Browser unterstützt keine Push-Benachrichtigungen');
+    return false;
+  }
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') {
+    showToast('❌ Benachrichtigungen blockiert – bitte in Safari-Einstellungen erlauben');
+    return false;
+  }
+  const result = await Notification.requestPermission();
+  return result === 'granted';
 }
 
 async function toggleNotif(key) {
-const prefs = getNotifPrefs();
-const newVal = !prefs[key];
-if (newVal) {
-const ok = await requestNotifPermission();
-if (!ok) return;
-}
-prefs[key] = newVal;
-saveNotifPrefs(prefs);
-renderNotifSettings();
-showToast(newVal ? ‘🔔 Benachrichtigung aktiviert’ : ‘🔕 Benachrichtigung deaktiviert’);
+  const prefs = getNotifPrefs();
+  const newVal = !prefs[key];
+  if (newVal) {
+    const ok = await requestNotifPermission();
+    if (!ok) return;
+  }
+  prefs[key] = newVal;
+  saveNotifPrefs(prefs);
+  renderNotifSettings();
+  showToast(newVal ? '🔔 Benachrichtigung aktiviert' : '🔕 Benachrichtigung deaktiviert');
 }
 
 function sendNotif(title, body, tag) {
-const prefs = getNotifPrefs();
-if (!prefs[tag]) return;
-if (Notification.permission !== ‘granted’) return;
-try {
-new Notification(title, { body, icon: ‘🎳’, tag });
-} catch(e) {}
+  const prefs = getNotifPrefs();
+  if (!prefs[tag]) return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, { body, icon: '🎳', tag });
+  } catch(e) {}
 }
 
 function renderNotifSettings() {
-const prefs = getNotifPrefs();
-const perm = (‘Notification’ in window) ? Notification.permission : ‘unsupported’;
-const permColor = perm === ‘granted’ ? ‘var(–green)’ : perm === ‘denied’ ? ‘var(–red)’ : ‘var(–gold)’;
-const permText = perm === ‘granted’ ? ‘✅ Erlaubt’ : perm === ‘denied’ ? ‘❌ Blockiert’ : perm === ‘unsupported’ ? ‘⚠️ Nicht unterstützt’ : ‘⏳ Nicht angefragt’;
+  const prefs = getNotifPrefs();
+  const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--gold)';
+  const permText = perm === 'granted' ? '✅ Erlaubt' : perm === 'denied' ? '❌ Blockiert' : perm === 'unsupported' ? '⚠️ Nicht unterstützt' : '⏳ Nicht angefragt';
 
-const items = [
-{ key: ‘chat’,    icon: ‘💬’, label: ‘Neue Chat-Nachricht’ },
-{ key: ‘strafe’,  icon: ‘⚠️’, label: ‘Strafe eingetragen’ },
-{ key: ‘bday’,    icon: ‘🎂’, label: ‘Geburtstag heute’ },
-{ key: ‘abend’,   icon: ‘🎳’, label: ‘Kegelabend-Erinnerung’ },
-];
+  const items = [
+    { key: 'chat',    icon: '💬', label: 'Neue Chat-Nachricht' },
+    { key: 'strafe',  icon: '⚠️', label: 'Strafe eingetragen' },
+    { key: 'bday',    icon: '🎂', label: 'Geburtstag heute' },
+    { key: 'abend',   icon: '🎳', label: 'Kegelabend-Erinnerung' },
+  ];
 
-const el = document.getElementById(‘notifSettings’);
-if (!el) return;
-el.innerHTML = `<div style="font-size:12px;color:var(--text2);margin-bottom:10px"> Status: <span style="color:${permColor};font-weight:600">${permText}</span> ${perm === 'denied' ? '<br><span style="font-size:11px;color:var(--text3)">In Safari: Einstellungen → Safari → Erweitert → Webseiten-Einstellungen</span>' : ''} </div> ${items.map(it =>`
-<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
-<span style="font-size:20px">${it.icon}</span>
-<div style="flex:1;font-size:14px;font-weight:500">${it.label}</div>
-<div class="toggle-btn ${prefs[it.key]?'on':''}" onclick="toggleNotif('${it.key}')"></div>
-</div>`).join('')} <div style="font-size:11px;color:var(--text3);margin-top:10px">⚠️ Push-Benachrichtigungen funktionieren nur wenn die App im Safari-Browser geöffnet ist (nicht als Homescreen-App auf iOS).</div> `;
+  const el = document.getElementById('notifSettings');
+  if (!el) return;
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+      Status: <span style="color:${permColor};font-weight:600">${permText}</span>
+      ${perm === 'denied' ? '<br><span style="font-size:11px;color:var(--text3)">In Safari: Einstellungen → Safari → Erweitert → Webseiten-Einstellungen</span>' : ''}
+    </div>
+    ${items.map(it => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:20px">${it.icon}</span>
+        <div style="flex:1;font-size:14px;font-weight:500">${it.label}</div>
+        <div class="toggle-btn ${prefs[it.key]?'on':''}" onclick="toggleNotif('${it.key}')"></div>
+      </div>`).join('')}
+    <div style="font-size:11px;color:var(--text3);margin-top:10px">⚠️ Push-Benachrichtigungen funktionieren nur wenn die App im Safari-Browser geöffnet ist (nicht als Homescreen-App auf iOS).</div>
+  `;
 }
 
 // Check birthdays daily and send notification
 function checkBdayNotifs() {
-const today = new Date();
-const todayStr = String(today.getMonth()+1).padStart(2,‘0’) + ‘-’ + String(today.getDate()).padStart(2,‘0’);
-const bdays = state.memberBdays || {};
-getMembers().forEach(m => {
-if (!bdays[m]) return;
-const mmdd = bdays[m].slice(5); // YYYY-MM-DD → MM-DD
-if (mmdd === todayStr) {
-const [y] = bdays[m].split(’-’);
-const age = today.getFullYear() - parseInt(y);
-sendNotif(‘🎂 Geburtstag!’, `${m} wird heute ${age} Jahre alt!`, ‘bday’);
-}
-});
+  const today = new Date();
+  const todayStr = String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+  const bdays = state.memberBdays || {};
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const mmdd = bdays[m].slice(5); // YYYY-MM-DD → MM-DD
+    if (mmdd === todayStr) {
+      const [y] = bdays[m].split('-');
+      const age = today.getFullYear() - parseInt(y);
+      sendNotif('🎂 Geburtstag!', `${m} wird heute ${age} Jahre alt!`, 'bday');
+    }
+  });
 }
 
 function init() {
-if (localMeta.logo) document.getElementById(‘logoCircle’).innerHTML=`<img src="${localMeta.logo}">`;
-if (fbCfg) { setSyncStatus(‘syncing’,‘Verbinde…’); initFb(); }
-else { setSyncStatus(‘error’,‘Nicht verbunden’); }
-// Sync password to localStorage so early doLogin can read it
-localStorage.setItem(‘rp_pw’, state.appPassword || ‘1234’);
-renderDashboard();
-initLogin();
-checkBdayNotifs();
+  if (localMeta.logo) document.getElementById('logoCircle').innerHTML=`<img src="${localMeta.logo}">`;
+  if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
+  else { setSyncStatus('error','Nicht verbunden'); }
+  // Sync password to localStorage so early doLogin can read it
+  localStorage.setItem('rp_pw', state.appPassword || '1234');
+  renderDashboard();
+  initLogin();
+  checkBdayNotifs();
 }
 
 // ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
 var currentUser = null;
+var _pinBuffer = '';
+var ADMIN_PIN = '1590';
 
-// Helper: nuke login screen completely
 function hideLoginScreen() {
-var ls = document.getElementById(‘loginScreen’);
-if (!ls) return;
-ls.style.display = ‘none’;
-ls.style.visibility = ‘hidden’;
-ls.style.pointerEvents = ‘none’;
-ls.style.zIndex = ‘-9999’;
-ls.style.opacity = ‘0’;
-try { ls.parentNode.removeChild(ls); } catch(e) {}
+  var ls = document.getElementById('loginScreen');
+  if (!ls) return;
+  ls.style.display = 'none';
+  ls.style.visibility = 'hidden';
+  ls.style.pointerEvents = 'none';
+  ls.style.zIndex = '-9999';
+  ls.style.opacity = '0';
+  try { ls.parentNode.removeChild(ls); } catch(e) {}
 }
 
-function doLogin() {
-var checked = document.querySelector(‘input[name=“loginName”]:checked’);
-var name = checked ? checked.value : ‘’;
-var pw = (document.getElementById(‘loginPw’) || {}).value || ‘’;
-var err = document.getElementById(‘loginError’);
-if (!name) { if (err) err.textContent = ‘❌ Bitte erst Namen antippen’; return; }
-var correctPw = ‘1234’;
-try {
-var raw = localStorage.getItem(‘rp_state_v3’);
-if (raw) { var s = JSON.parse(raw); if (s.appPassword) correctPw = s.appPassword; }
-} catch(e) {}
-if (pw !== correctPw && pw !== ‘1234’) { if (err) err.textContent = ‘❌ Falsches Kennwort’; return; }
-if (err) err.textContent = ‘’;
-currentUser = name;
-try { sessionStorage.setItem(‘rp_user’, name); } catch(e) {}
-hideLoginScreen();
-updateHeader();
-renderDashboard();
-setTimeout(initPresence, 1000);
+function updatePinDots() {
+  for (var i = 0; i < 4; i++) {
+    var d = document.getElementById('pd' + i);
+    if (d) d.className = 'lpin-dot' + (i < _pinBuffer.length ? ' filled' : '');
+  }
+}
+
+function pinPress(digit) {
+  if (_pinBuffer.length >= 4) return;
+  _pinBuffer += digit;
+  updatePinDots();
+  if (_pinBuffer.length === 4) setTimeout(pinSubmit, 150);
+}
+
+function pinClear() {
+  _pinBuffer = _pinBuffer.slice(0, -1);
+  updatePinDots();
+  var err = document.getElementById('loginError');
+  if (err) err.textContent = '';
+}
+
+function pinSubmit() {
+  var pin = _pinBuffer;
+  _pinBuffer = '';
+  updatePinDots();
+  var err = document.getElementById('loginError');
+
+  if (pin === ADMIN_PIN) { renderAdminPanel(); return; }
+
+  var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
+  var members = getMembers();
+  var found = null;
+  for (var i = 0; i < members.length; i++) {
+    var mpin = passwords[members[i]] || String(i + 1).padStart(4, '0');
+    if (pin === mpin) { found = members[i]; break; }
+  }
+
+  if (found) {
+    if (err) err.textContent = '';
+    currentUser = found;
+    try { sessionStorage.setItem('rp_user', found); } catch(e) {}
+    hideLoginScreen();
+    updateHeader();
+    renderDashboard();
+    setTimeout(initPresence, 1000);
+  } else {
+    if (err) err.textContent = '❌ PIN unbekannt';
+  }
+}
+
+function renderAdminPanel() {
+  var s1 = document.getElementById('loginStepPin');
+  var s2 = document.getElementById('loginStepAdmin');
+  if (s1) s1.style.display = 'none';
+  if (s2) s2.style.display = 'block';
+  var members = getMembers();
+  var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
+  var list = document.getElementById('adminPinList');
+  if (!list) return;
+  list.innerHTML = members.map(function(m, i) {
+    var pin = passwords[m] || String(i + 1).padStart(4, '0');
+    var short = m.split(' ')[0] + ' ' + (m.split(' ')[1]||'').charAt(0) + '.';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+      '<div style="flex:1;font-size:13px;font-weight:600;color:#e8eaf0">' + short + '</div>' +
+      '<input type="tel" maxlength="4" placeholder="PIN" value="' + pin + '" data-member="' + m.replace(/"/g,'&quot;') + '" ' +
+      'style="width:80px;padding:8px;border-radius:8px;border:1px solid #2a2f42;background:#0d0f14;color:#f0a500;font-size:16px;text-align:center;font-weight:700" ' +
+      'oninput="adminPinChange(this)"></div>';
+  }).join('');
+}
+
+function adminPinChange(input) {
+  var member = input.getAttribute('data-member');
+  var pin = input.value.replace(/[^0-9]/g,'').slice(0,4);
+  input.value = pin;
+  if (pin.length === 4) {
+    if (!state.memberPasswords) state.memberPasswords = {};
+    state.memberPasswords[member] = pin;
+    saveState();
+    input.style.borderColor = '#3dd68c';
+    setTimeout(function(){ input.style.borderColor = '#2a2f42'; }, 800);
+  }
+}
+
+function adminDone() {
+  var s1 = document.getElementById('loginStepPin');
+  var s2 = document.getElementById('loginStepAdmin');
+  if (s1) s1.style.display = 'block';
+  if (s2) s2.style.display = 'none';
+  _pinBuffer = '';
+  updatePinDots();
 }
 
 function initLogin() {
-// Restore previous session
-var saved = null;
-try { saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
-if (saved) {
-currentUser = saved;
-hideLoginScreen();
-updateHeader();
-renderDashboard();
-setTimeout(initPresence, 2000);
-return;
-}
-// Bind Enter key (button already has onclick=“doLogin()”)
-var pwEl = document.getElementById(‘loginPw’);
-if (pwEl) pwEl.addEventListener(‘keydown’, function(e){ if(e.key===‘Enter’) doLogin(); });
-updateHeader();
+  var saved = null;
+  try { saved = sessionStorage.getItem('rp_user'); } catch(e) {}
+  if (saved) {
+    currentUser = saved;
+    hideLoginScreen();
+    updateHeader();
+    renderDashboard();
+    setTimeout(initPresence, 2000);
+    return;
+  }
+  updatePinDots();
+  updateHeader();
 }
 
 function logout() {
-currentUser = null;
-try { sessionStorage.removeItem(‘rp_user’); } catch(e) {}
-location.reload();
+  currentUser = null;
+  _pinBuffer = '';
+  try { sessionStorage.removeItem('rp_user'); } catch(e) {}
+  location.reload();
 }
 
 // ═══════════════════════════════════════════
 // CHAT
 // ═══════════════════════════════════════════
 function renderChat() {
-const msgs = state.chatMessages || [];
-document.getElementById(‘chatMessages’).innerHTML = msgs.length === 0
-? ‘<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>’
-: msgs.map((m,i) => {
-const isMe = m.author === currentUser;
-const d = new Date(m.ts);
-const time = d.getHours().toString().padStart(2,‘0’)+’:’+d.getMinutes().toString().padStart(2,‘0’);
-return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px"> <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div> <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div> </div>`;
-}).join(’’);
-// scroll to bottom
-const box = document.getElementById(‘chatMessages’);
-box.scrollTop = box.scrollHeight;
+  const msgs = state.chatMessages || [];
+  document.getElementById('chatMessages').innerHTML = msgs.length === 0
+    ? '<div style="color:var(--text3);text-align:center;padding:20px;font-size:13px">Noch keine Nachrichten 💬</div>'
+    : msgs.map((m,i) => {
+        const isMe = m.author === currentUser;
+        const d = new Date(m.ts);
+        const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+        return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
+          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
+        </div>`;
+      }).join('');
+  // scroll to bottom
+  const box = document.getElementById('chatMessages');
+  box.scrollTop = box.scrollHeight;
 }
 
 function sendChat() {
-if (!currentUser) { showToast(‘❌ Bitte erst einloggen’); return; }
-const inp = document.getElementById(‘chatInput’);
-const text = inp.value.trim();
-if (!text) return;
-if (!state.chatMessages) state.chatMessages = [];
-state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
-// Keep last 100 messages
-if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-inp.value = ‘’;
-saveState(); renderChat();
-// Notify others
-sendNotif(’💬 Neue Nachricht von ’ + currentUser, text, ‘chat’);
+  if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  if (!state.chatMessages) state.chatMessages = [];
+  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
+  // Keep last 100 messages
+  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+  inp.value = '';
+  saveState(); renderChat();
+  // Notify others
+  sendNotif('💬 Neue Nachricht von ' + currentUser, text, 'chat');
 }
 
 // ═══════════════════════════════════════════
 // MEMBERS MANAGEMENT
 // ═══════════════════════════════════════════
 function renderMemberManagement() {
-const members = getMembers();
-document.getElementById(‘memberMgmtList’).innerHTML = members.map((m,i) => {
-const bday = (state.memberBdays||{})[m] || ‘’;
-const isMe = m === currentUser;
-const prof = (state.memberProfiles||{})[m] || {};
-return `<div style="padding:8px 0;border-bottom:1px solid var(--border)"> <div style="display:flex;align-items:center;gap:8px"> <div style="flex:1"> <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div> <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} ${prof.email?'· '+prof.email:''}</div> </div> ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''} </div> </div>`;
-}).join(’’);
+  const members = getMembers();
+  document.getElementById('memberMgmtList').innerHTML = members.map((m,i) => {
+    const bday = (state.memberBdays||{})[m] || '';
+    const isMe = m === currentUser;
+    const prof = (state.memberProfiles||{})[m] || {};
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div>
+          <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} ${prof.email?'· '+prof.email:''}</div>
+        </div>
+        ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function uploadMemberPhoto(name, event) {
-const file = event.target.files[0];
-if (!file) return;
-const reader = new FileReader();
-reader.onload = e => {
-if (!localMeta.photos) localMeta.photos = {};
-localMeta.photos[name] = e.target.result;
-localStorage.setItem(‘rp_meta’, JSON.stringify(localMeta));
-renderMyProfile();
-showToast(‘📷 Foto gespeichert’);
-};
-reader.readAsDataURL(file);
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (!localMeta.photos) localMeta.photos = {};
+    localMeta.photos[name] = e.target.result;
+    localStorage.setItem('rp_meta', JSON.stringify(localMeta));
+    renderMyProfile();
+    showToast('📷 Foto gespeichert');
+  };
+  reader.readAsDataURL(file);
 }
 
 function formatBday(str) {
-if (!str) return ‘’;
-const [y,mo,d] = str.split(’-’);
-return `${d}.${mo}.${y}`;
+  if (!str) return '';
+  const [y,mo,d] = str.split('-');
+  return `${d}.${mo}.${y}`;
 }
 
 function addMember() {
-const name = document.getElementById(‘newMemberName’).value.trim();
-if (!name) { showToast(‘❌ Name eingeben’); return; }
-if (!state.members) state.members = […DEFAULT_MEMBERS];
-if (state.members.includes(name)) { showToast(‘❌ Bereits vorhanden’); return; }
-state.members.push(name);
-document.getElementById(‘newMemberName’).value = ‘’;
-saveState(); renderMemberManagement(); renderAnwesenheit();
-showToast(`✅ ${name} hinzugefügt`);
+  const name = document.getElementById('newMemberName').value.trim();
+  if (!name) { showToast('❌ Name eingeben'); return; }
+  if (!state.members) state.members = [...DEFAULT_MEMBERS];
+  if (state.members.includes(name)) { showToast('❌ Bereits vorhanden'); return; }
+  state.members.push(name);
+  document.getElementById('newMemberName').value = '';
+  saveState(); renderMemberManagement(); renderAnwesenheit();
+  showToast(`✅ ${name} hinzugefügt`);
 }
 
 function removeMember(name) {
-showModal(‘Mitglied entfernen’, `<p class="modal-text">„${name}" wirklich entfernen? Alle zugehörigen Daten bleiben in der Historie.</p>`, () => {
-if (!state.members) state.members = […DEFAULT_MEMBERS];
-state.members = state.members.filter(m=>m!==name);
-saveState(); renderMemberManagement(); renderAnwesenheit();
-showToast(`🗑️ ${name} entfernt`);
-});
+  showModal('Mitglied entfernen', `<p class="modal-text">„${name}" wirklich entfernen? Alle zugehörigen Daten bleiben in der Historie.</p>`, () => {
+    if (!state.members) state.members = [...DEFAULT_MEMBERS];
+    state.members = state.members.filter(m=>m!==name);
+    saveState(); renderMemberManagement(); renderAnwesenheit();
+    showToast(`🗑️ ${name} entfernt`);
+  });
 }
 
 function setBday(name, val) {
-if (!state.memberBdays) state.memberBdays = {};
-state.memberBdays[name] = val;
-saveState(); renderMemberManagement(); renderDashboard();
+  if (!state.memberBdays) state.memberBdays = {};
+  state.memberBdays[name] = val;
+  saveState(); renderMemberManagement(); renderDashboard();
 }
 
 function getBirthdaysNextTwoMonths() {
-const now = new Date();
-const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
-const bdays = state.memberBdays || {};
-const result = [];
-getMembers().forEach(m => {
-if (!bdays[m]) return;
-const [y,mo,d] = bdays[m].split(’-’).map(Number);
-// This year’s birthday
-let bd = new Date(now.getFullYear(), mo-1, d);
-if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
-if (bd <= twoMonths) {
-const age = bd.getFullYear() - y;
-result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
-}
-});
-return result.sort((a,b)=>a.date-b.date);
+  const now = new Date();
+  const twoMonths = new Date(now.getFullYear(), now.getMonth()+2, now.getDate());
+  const bdays = state.memberBdays || {};
+  const result = [];
+  getMembers().forEach(m => {
+    if (!bdays[m]) return;
+    const [y,mo,d] = bdays[m].split('-').map(Number);
+    // This year's birthday
+    let bd = new Date(now.getFullYear(), mo-1, d);
+    if (bd < now) bd = new Date(now.getFullYear()+1, mo-1, d);
+    if (bd <= twoMonths) {
+      const age = bd.getFullYear() - y;
+      result.push({ name: m, date: bd, age, dateStr: `${String(d).padStart(2,'0')}.${String(mo).padStart(2,'0')}.${bd.getFullYear()}` });
+    }
+  });
+  return result.sort((a,b)=>a.date-b.date);
 }
 
 init();
 </script>
-
 <body>
 <div id="app">
 
 <!-- LOGIN SCREEN -->
-
 <style>
-.nm-radio{display:none}
-.nm-btn{display:block;padding:12px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;width:100%;box-sizing:border-box;font-family:sans-serif;-webkit-tap-highlight-color:transparent}
-.nm-radio:checked+.nm-btn{border-color:#f0a500;background:#2d2000;color:#f0a500}
-.nm-label{display:block}
+.lpin-btn{display:block;width:100%;padding:13px 8px;background:#1e2230;border:2px solid #2a2f42;border-radius:10px;color:#e8eaf0;font-size:13px;font-weight:600;text-align:center;cursor:pointer;font-family:sans-serif;-webkit-tap-highlight-color:transparent;transition:border-color .15s,background .15s}
+.lpin-btn.sel{border-color:#f0a500;background:#2d2000;color:#f0a500}
+.lpin-dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:#2a2f42;margin:0 3px;transition:background .15s}
+.lpin-dot.filled{background:#f0a500}
 </style>
-
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
-  <div style="width:100%;max-width:340px;display:flex;justify-content:flex-end;margin-bottom:10px">
-    <button onclick="location.reload()" style="background:#1e2230;border:1px solid #3a3f52;color:#8a90a8;border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 Aktualisieren</button>
-  </div>
   <div style="font-size:52px;margin-bottom:6px">🎳</div>
   <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
   <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
-    <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:12px;text-align:center">👆 Wer bist du?</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px" id="loginBtnGrid">
-      <label class="nm-label" for="nm_0"><input type="radio" name="loginName" id="nm_0" value="Jens Wolters" class="nm-radio"><span class="nm-btn">Jens W.</span></label>
-      <label class="nm-label" for="nm_1"><input type="radio" name="loginName" id="nm_1" value="Simon Haßmann" class="nm-radio"><span class="nm-btn">Simon H.</span></label>
-      <label class="nm-label" for="nm_2"><input type="radio" name="loginName" id="nm_2" value="Marcus Schmele" class="nm-radio"><span class="nm-btn">Marcus S.</span></label>
-      <label class="nm-label" for="nm_3"><input type="radio" name="loginName" id="nm_3" value="Patrick Jentges" class="nm-radio"><span class="nm-btn">Patrick J.</span></label>
-      <label class="nm-label" for="nm_4"><input type="radio" name="loginName" id="nm_4" value="Tilo Hase" class="nm-radio"><span class="nm-btn">Tilo H.</span></label>
-      <label class="nm-label" for="nm_5"><input type="radio" name="loginName" id="nm_5" value="Nico Foppe" class="nm-radio"><span class="nm-btn">Nico F.</span></label>
-      <label class="nm-label" for="nm_6"><input type="radio" name="loginName" id="nm_6" value="Sascha Franke" class="nm-radio"><span class="nm-btn">Sascha F.</span></label>
-      <label class="nm-label" for="nm_7"><input type="radio" name="loginName" id="nm_7" value="Stefan Hermann Thien" class="nm-radio"><span class="nm-btn">Stefan T.</span></label>
-      <label class="nm-label" for="nm_8"><input type="radio" name="loginName" id="nm_8" value="Marcel Albers" class="nm-radio"><span class="nm-btn">Marcel A.</span></label>
-      <label class="nm-label" for="nm_9"><input type="radio" name="loginName" id="nm_9" value="Hendrik Pötter" class="nm-radio"><span class="nm-btn">Hendrik P.</span></label>
+
+    <!-- STEP 1: PIN eingeben -->
+    <div id="loginStepPin">
+      <div style="font-size:14px;font-weight:700;color:#e8eaf0;margin-bottom:4px;text-align:center">🔑 PIN eingeben</div>
+      <div style="font-size:11px;color:#8a90a8;text-align:center;margin-bottom:16px">Dein persönlicher PIN identifiziert dich</div>
+      <!-- PIN dots display -->
+      <div style="text-align:center;margin-bottom:16px" id="pinDots">
+        <span class="lpin-dot" id="pd0"></span>
+        <span class="lpin-dot" id="pd1"></span>
+        <span class="lpin-dot" id="pd2"></span>
+        <span class="lpin-dot" id="pd3"></span>
+      </div>
+      <!-- Number pad -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px" id="pinPad">
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('1')" onclick="pinPress('1')">1</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('2')" onclick="pinPress('2')">2</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('3')" onclick="pinPress('3')">3</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('4')" onclick="pinPress('4')">4</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('5')" onclick="pinPress('5')">5</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('6')" onclick="pinPress('6')">6</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('7')" onclick="pinPress('7')">7</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('8')" onclick="pinPress('8')">8</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('9')" onclick="pinPress('9')">9</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinClear()" onclick="pinClear()" style="font-size:11px;color:#8a90a8">Löschen</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinPress('0')" onclick="pinPress('0')">0</button>
+        <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinSubmit()" onclick="pinSubmit()" style="background:linear-gradient(135deg,#f0a500,#ffc84a);color:#000;border-color:#f0a500;font-size:18px">✓</button>
+      </div>
+      <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px"></div>
     </div>
-    <div style="margin-bottom:10px">
-      <div style="font-size:12px;color:#8a90a8;margin-bottom:5px">Kennwort</div>
-      <input type="password" id="loginPw" placeholder="••••••••" autocomplete="current-password" style="width:100%;padding:13px 12px;border-radius:10px;border:1px solid #2a2f42;background:#0d0f14;color:#e8eaf0;font-size:16px;box-sizing:border-box;-webkit-appearance:none">
+
+    <!-- STEP 2: Admin-Panel (nur nach PIN 1590) -->
+    <div id="loginStepAdmin" style="display:none">
+      <div style="font-size:14px;font-weight:700;color:#f0a500;margin-bottom:16px;text-align:center">⚙️ Admin – PINs verwalten</div>
+      <div id="adminPinList" style="margin-bottom:12px"></div>
+      <button type="button" ontouchend="event.preventDefault();adminDone()" onclick="adminDone()" style="width:100%;padding:12px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:10px;font-weight:700;font-size:14px;color:#000;cursor:pointer;font-family:sans-serif">✅ Fertig</button>
     </div>
-    <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px;margin-bottom:8px"></div>
-    <button type="button" onclick="doLogin()" ontouchend="event.preventDefault();doLogin();" style="width:100%;padding:15px;background:linear-gradient(135deg,#f0a500,#ffc84a);border:none;border-radius:12px;font-weight:700;font-size:16px;color:#000;cursor:pointer;font-family:sans-serif;letter-spacing:1px;-webkit-tap-highlight-color:transparent">EINLOGGEN</button>
+
   </div>
 </div>
 
@@ -1721,186 +1871,181 @@ init();
 
   <div id="pages">
 
-```
-<!-- DASHBOARD -->
-<div class="page active" id="page-dashboard">
-  <div id="syncBanner"></div>
-  <div class="stats-grid">
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="dashKasse">€0</div><div class="stat-label">Kassenstand</div></div>
-    <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="dashAnwesend">0</div><div class="stat-label">Heute dabei</div></div>
-    <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="dashOffen" style="color:var(--red)">€0</div><div class="stat-label">Offen heute</div></div>
-    <div class="stat-card"><div class="stat-icon">🎉</div><div class="stat-val" id="dashEvents">0</div><div class="stat-label">Aktive Events</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title">⚡ Schnellzugriff</div>
-    <div class="quick-grid">
-      <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
-      <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
-      <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
-      <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
-    </div>
-  </div>
-  <div class="card" style="background:linear-gradient(135deg,rgba(240,165,0,.08),rgba(240,165,0,.03));border-color:rgba(240,165,0,.2)">
-    <div class="card-title">💰 Gesamtkasse</div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="dashOffenGesamt">€ 0,00</div>
-      <div style="font-size:12px;color:var(--text2);text-align:right">Gesamt offen<br>(alle Mitglieder)</div>
-    </div>
-  </div>
-  <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
-  <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
-  <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v07.03.2026</div>
-</div>
-
-<!-- ANWESENHEIT -->
-<div class="page" id="page-anwesenheit">
-  <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
-  <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
-  <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
-</div>
-
-<!-- STRAFEN -->
-<div class="page" id="page-strafen">
-  <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
-  <div class="strafe-tabs" id="strafeMemberTabs"></div>
-  <div id="strafeList"></div>
-</div>
-
-<!-- ABSCHLUSS -->
-<div class="page" id="page-abschluss">
-  <div class="section-title"><span class="accent">📋</span> Abschluss</div>
-  <div class="card">
-    <div class="card-title">Abrechnung</div>
-    <div id="abschlussContent"></div>
-    <div style="border-top:2px solid var(--gold);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-weight:700">Gesamt</span>
-      <span id="abschlussTotal" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--gold)">€ 0,00</span>
-    </div>
-  </div>
-  <button class="btn btn-gold" onclick="kegelbahnSplit()" style="width:100%;margin-bottom:10px">🎳 Kegelbahnkosten aufteilen</button>
-  <button class="btn btn-danger" onclick="abenAbschliessen()" style="width:100%">✅ Abend abschließen</button>
-</div>
-
-<!-- KASSE -->
-<div class="page" id="page-kasse">
-  <div class="section-title"><span class="accent">💰</span> Kasse</div>
-  <div class="card">
-    <div class="card-title">Kassenstand</div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-      <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="kasseTotal">€ 0,00</div>
-      <button class="btn btn-gold" onclick="openKasseModal()">+ Eintrag</button>
-    </div>
-    <div id="kasseList"></div>
-  </div>
-</div>
-
-<!-- EVENTS -->
-<div class="page" id="page-events">
-  <div class="section-title"><span class="accent">🎉</span> Special Events</div>
-  <div class="card">
-    <div class="card-title">Aktive Events</div>
-    <div id="eventList"></div>
-    <button class="btn btn-gold" onclick="openEventModal()" style="width:100%;margin-top:10px">+ Neues Event</button>
-  </div>
-</div>
-
-<!-- TERMINE -->
-<div class="page" id="page-termine">
-  <div class="section-title"><span class="accent">📆</span> Termine</div>
-  <div id="termineList"></div>
-</div>
-
-<!-- STATS -->
-<div class="page" id="page-stats">
-  <div class="section-title"><span class="accent">📊</span> Statistiken</div>
-  <div class="card"><div class="card-title">🏆 Gesamt-Ranking</div><div id="statsRanking"></div></div>
-  <div class="card">
-    <div class="card-title">📋 Überblick</div>
-    <div class="kasse-row"><span>Kegelabende</span><span id="statsAbende">0</span></div>
-    <div class="kasse-row"><span>Kassenstand</span><span id="statsKasse">€ 0,00</span></div>
-  </div>
-  <div class="card"><div class="card-title">⚠️ Top Strafen</div><div id="statsStrafenTop"></div></div>
-</div>
-
-<!-- CHAT -->
-<div class="page" id="page-chat">
-  <div class="section-title"><span class="accent">💬</span> Chat</div>
-  <div class="card" style="padding:0">
-    <div id="chatMessages" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px"></div>
-  </div>
-  <div style="display:flex;gap:8px;margin-top:10px">
-    <input id="chatInput" type="text" placeholder="Nachricht…" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px" onkeydown="if(event.key==='Enter')sendChat()">
-    <button class="btn btn-gold" onclick="sendChat()">Senden</button>
-  </div>
-</div>
-
-<!-- PROFIL -->
-<div class="page" id="page-profil">
-  <div class="section-title"><span class="accent">👤</span> Mein Profil</div>
-  <div class="card" id="myProfileContent"></div>
-</div>
-
-<!-- EINSTELLUNGEN -->
-<div class="page" id="page-settings">
-  <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
-  <div class="card">
-    <div class="card-title">🔐 App-Kennwort ändern</div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="newPwInput" type="password" placeholder="Neues Kennwort" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
-      <button class="btn btn-gold" onclick="changePw()">Speichern</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">👥 Mitglieder verwalten</div>
-    <div id="memberManagement"></div>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
-      <button class="btn btn-gold" onclick="addMember()">+</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-title">⚠️ Strafen-Einstellungen</div>
-    <div id="strafenModeList"></div>
-    <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
-      <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">EIGENE STRAFE HINZUFÜGEN</div>
-      <div style="display:flex;gap:8px;margin-bottom:6px">
-        <input id="newStrafeName" type="text" placeholder="Name" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
-        <input id="newStrafePrice" type="number" placeholder="€" step="0.50" min="0.50" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div id="syncBanner"></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="dashKasse">€0</div><div class="stat-label">Kassenstand</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="dashAnwesend">0</div><div class="stat-label">Heute dabei</div></div>
+        <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-val" id="dashOffen" style="color:var(--red)">€0</div><div class="stat-label">Offen heute</div></div>
+        <div class="stat-card"><div class="stat-icon">🎉</div><div class="stat-val" id="dashEvents">0</div><div class="stat-label">Aktive Events</div></div>
       </div>
-      <button class="btn btn-gold" onclick="addCustomStrafe()" style="width:100%">+ Strafe hinzufügen</button>
+      <div class="card">
+        <div class="card-title">⚡ Schnellzugriff</div>
+        <div class="quick-grid">
+          <div class="quick-btn" onclick="showPage('anwesenheit',document.querySelector('[data-page=anwesenheit]'))"><div class="qi">👤</div><div class="ql">Anwesenheit</div><div class="qd">Wer ist da?</div></div>
+          <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
+          <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
+          <div class="quick-btn" onclick="showPage('events',document.querySelector('[data-page=events]'))"><div class="qi">🎉</div><div class="ql">Special Events</div><div class="qd">Turniere &amp; mehr</div></div>
+        </div>
+      </div>
+      <div class="card" style="background:linear-gradient(135deg,rgba(240,165,0,.08),rgba(240,165,0,.03));border-color:rgba(240,165,0,.2)">
+        <div class="card-title">💰 Gesamtkasse</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="dashOffenGesamt">€ 0,00</div>
+          <div style="font-size:12px;color:var(--text2);text-align:right">Gesamt offen<br>(alle Mitglieder)</div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">🏆 Strafen-Ranking (heute)</div><div id="dashRanking"></div></div>
+      <div class="card"><div class="card-title">🎂 Geburtstage (nächste 2 Monate)</div><div id="dashBirthdays"></div></div>
+      <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v07.03.2026</div>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title">💳 PayPal Benutzernamen</div>
-    <div id="paypalSettings"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">🔔 Benachrichtigungen</div>
-    <div id="notifSettings"></div>
-  </div>
-  <div class="card">
-    <div class="card-title">🖼️ Club-Logo</div>
-    <div style="display:flex;align-items:center;gap:12px">
-      <div class="logo-circle" id="logoPreview" style="width:56px;height:56px;font-size:20px"><span>PR</span></div>
-      <div>
-        <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="uploadLogo(event)">
-        <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()">Logo hochladen</button>
+
+    <!-- ANWESENHEIT -->
+    <div class="page" id="page-anwesenheit">
+      <div class="section-title"><span class="accent">👥</span> Anwesenheit</div>
+      <div class="card"><div class="card-title">Heute anwesend</div><div id="memberList"></div></div>
+      <div class="card"><div class="card-title">Abwesende &amp; Grund</div><div id="abwesenList"></div></div>
+    </div>
+
+    <!-- STRAFEN -->
+    <div class="page" id="page-strafen">
+      <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
+      <div class="strafe-tabs" id="strafeMemberTabs"></div>
+      <div id="strafeList"></div>
+    </div>
+
+    <!-- ABSCHLUSS -->
+    <div class="page" id="page-abschluss">
+      <div class="section-title"><span class="accent">📋</span> Abschluss</div>
+      <div class="card">
+        <div class="card-title">Abrechnung</div>
+        <div id="abschlussContent"></div>
+        <div style="border-top:2px solid var(--gold);margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700">Gesamt</span>
+          <span id="abschlussTotal" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:900;color:var(--gold)">€ 0,00</span>
+        </div>
+      </div>
+      <button class="btn btn-gold" onclick="kegelbahnSplit()" style="width:100%;margin-bottom:10px">🎳 Kegelbahnkosten aufteilen</button>
+      <button class="btn btn-danger" onclick="abenAbschliessen()" style="width:100%">✅ Abend abschließen</button>
+    </div>
+
+    <!-- KASSE -->
+    <div class="page" id="page-kasse">
+      <div class="section-title"><span class="accent">💰</span> Kasse</div>
+      <div class="card">
+        <div class="card-title">Kassenstand</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;color:var(--green)" id="kasseTotal">€ 0,00</div>
+          <button class="btn btn-gold" onclick="openKasseModal()">+ Eintrag</button>
+        </div>
+        <div id="kasseList"></div>
       </div>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-title" style="color:var(--red)">⚠️ Daten zurücksetzen</div>
-    <button class="btn btn-danger" onclick="resetData()" style="width:100%">Alle Daten löschen</button>
-  </div>
-</div>
-```
+
+    <!-- EVENTS -->
+    <div class="page" id="page-events">
+      <div class="section-title"><span class="accent">🎉</span> Special Events</div>
+      <div class="card">
+        <div class="card-title">Aktive Events</div>
+        <div id="eventList"></div>
+        <button class="btn btn-gold" onclick="openEventModal()" style="width:100%;margin-top:10px">+ Neues Event</button>
+      </div>
+    </div>
+
+    <!-- TERMINE -->
+    <div class="page" id="page-termine">
+      <div class="section-title"><span class="accent">📆</span> Termine</div>
+      <div id="termineList"></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="page" id="page-stats">
+      <div class="section-title"><span class="accent">📊</span> Statistiken</div>
+      <div class="card"><div class="card-title">🏆 Gesamt-Ranking</div><div id="statsRanking"></div></div>
+      <div class="card">
+        <div class="card-title">📋 Überblick</div>
+        <div class="kasse-row"><span>Kegelabende</span><span id="statsAbende">0</span></div>
+        <div class="kasse-row"><span>Kassenstand</span><span id="statsKasse">€ 0,00</span></div>
+      </div>
+      <div class="card"><div class="card-title">⚠️ Top Strafen</div><div id="statsStrafenTop"></div></div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="page" id="page-chat">
+      <div class="section-title"><span class="accent">💬</span> Chat</div>
+      <div class="card" style="padding:0">
+        <div id="chatMessages" style="height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input id="chatInput" type="text" placeholder="Nachricht…" style="flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px" onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-gold" onclick="sendChat()">Senden</button>
+      </div>
+    </div>
+
+    <!-- PROFIL -->
+    <div class="page" id="page-profil">
+      <div class="section-title"><span class="accent">👤</span> Mein Profil</div>
+      <div class="card" id="myProfileContent"></div>
+    </div>
+
+    <!-- EINSTELLUNGEN -->
+    <div class="page" id="page-settings">
+      <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
+      <div class="card">
+        <div class="card-title">🔑 PIN-Verwaltung</div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Admin-PIN <strong style="color:var(--gold)">1590</strong> eingeben beim Login um alle PINs zu verwalten.</div>
+        <div style="font-size:12px;color:var(--text3)">Standard-PINs: Jens=0001, Simon=0002, Marcus=0003, Patrick=0004, Tilo=0005, Nico=0006, Sascha=0007, Stefan=0008, Marcel=0009, Hendrik=0010</div>
+      </div>
+      <div class="card">
+        <div class="card-title">👥 Mitglieder verwalten</div>
+        <div id="memberManagement"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px">
+          <button class="btn btn-gold" onclick="addMember()">+</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">⚠️ Strafen-Einstellungen</div>
+        <div id="strafenModeList"></div>
+        <div style="margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:8px">EIGENE STRAFE HINZUFÜGEN</div>
+          <div style="display:flex;gap:8px;margin-bottom:6px">
+            <input id="newStrafeName" type="text" placeholder="Name" style="flex:2;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+            <input id="newStrafePrice" type="number" placeholder="€" step="0.50" min="0.50" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px">
+          </div>
+          <button class="btn btn-gold" onclick="addCustomStrafe()" style="width:100%">+ Strafe hinzufügen</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">💳 PayPal Benutzernamen</div>
+        <div id="paypalSettings"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔔 Benachrichtigungen</div>
+        <div id="notifSettings"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">🖼️ Club-Logo</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="logo-circle" id="logoPreview" style="width:56px;height:56px;font-size:20px"><span>PR</span></div>
+          <div>
+            <input type="file" id="logoUpload" accept="image/*" style="display:none" onchange="uploadLogo(event)">
+            <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()">Logo hochladen</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--red)">⚠️ Daten zurücksetzen</div>
+        <button class="btn btn-danger" onclick="resetData()" style="width:100%">Alle Daten löschen</button>
+      </div>
+    </div>
 
   </div><!-- end #pages -->
 
 </div><!-- end #app -->
 
 <!-- MODALS -->
-
 <div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModal()">
   <div class="modal-sheet" onclick="event.stopPropagation()">
     <div class="modal-title" id="modalTitle"></div>
