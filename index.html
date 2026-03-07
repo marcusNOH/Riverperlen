@@ -410,6 +410,7 @@ function setSyncStatus(cls, label) {
 }
 
 function updateSyncBanner() {
+  updateFbLiveStatus();
   const el = document.getElementById('syncBanner');
   if (!el) return;
   if (!fbCfg) {
@@ -1193,6 +1194,35 @@ function renderStats() {
 // ═══════════════════════════════════════════
 // SETTINGS
 // ═══════════════════════════════════════════
+function updateFbLiveStatus() {
+  const dot = document.getElementById('fbStatusDot');
+  const txt = document.getElementById('fbStatusText');
+  if (!dot || !txt) return;
+  if (isConnected) {
+    dot.style.background = 'var(--green)';
+    dot.style.animation = '';
+    txt.textContent = '🟢 Verbunden – Live-Sync aktiv';
+    txt.style.color = 'var(--green)';
+  } else if (fbCfg) {
+    dot.style.background = 'var(--gold)';
+    dot.style.animation = 'pulse .8s infinite';
+    txt.textContent = '🟡 Nicht verbunden – Kein Internet?';
+    txt.style.color = 'var(--gold)';
+  } else {
+    dot.style.background = 'var(--red)';
+    dot.style.animation = '';
+    txt.textContent = '🔴 Nicht konfiguriert';
+    txt.style.color = 'var(--red)';
+  }
+}
+
+function retryFbConnect() {
+  if (!fbCfg) { showToast('❌ Keine Konfiguration gespeichert'); return; }
+  showToast('🔄 Verbinde…');
+  initFb();
+  setTimeout(updateFbLiveStatus, 3000);
+}
+
 function renderSettings() {
   const fbUrlEl = document.getElementById('fbUrl');
   const fbKeyEl = document.getElementById('fbKey');
@@ -1204,8 +1234,8 @@ function renderSettings() {
     if (fbProjEl) fbProjEl.value = fbCfg.projectId||'';
     if (fbStatEl) fbStatEl.textContent = isConnected ? '🟢 Verbunden und synchron' : '🟡 Wird verbunden…';
   }
+  updateFbLiveStatus();
 
-  // FIX: correct ID "memberMgmtList"
   renderMemberManagement();
   renderNotifSettings();
 
@@ -1434,25 +1464,75 @@ function checkBdayNotifs() {
 // ═══════════════════════════════════════════
 // MEMBER MANAGEMENT
 // ═══════════════════════════════════════════
+let editingMember = null;
+
 function renderMemberManagement() {
   const members = getMembers();
-  // FIX: correct ID "memberMgmtList"
   const el = document.getElementById('memberMgmtList');
   if (!el) return;
-  el.innerHTML = members.map((m,i) => {
+  el.innerHTML = members.map((m, i) => {
     const bday = (state.memberBdays||{})[m] || '';
     const isMe = m === currentUser;
-    const prof = (state.memberProfiles||{})[m] || {};
-    return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:8px">
-        <div style="flex:1">
-          <div style="font-weight:600;font-size:14px">${m}${isMe?' <span style="color:var(--gold);font-size:10px">● du</span>':''}</div>
-          <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'}</div>
-        </div>
-        ${!DEFAULT_MEMBERS.includes(m)?`<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:12px">🗑️</button>`:''}
-      </div>
+    const isEditing = editingMember === m;
+    const isDefault = DEFAULT_MEMBERS.includes(m);
+    return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      ${isEditing ? `
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="editNameInput_${i}" type="text" value="${m}" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--gold);background:var(--bg3);color:var(--text);font-size:14px">
+          <button onclick="saveMemberRename('${m}',${i})" style="background:var(--green);border:none;color:#000;border-radius:7px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:13px">✓</button>
+          <button onclick="editingMember=null;renderMemberManagement()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:7px;padding:8px 10px;cursor:pointer;font-size:13px">✕</button>
+        </div>` : `
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1;cursor:pointer" onclick="editingMember='${m}';renderMemberManagement()">
+            <div style="font-weight:600;font-size:14px">${m}${isMe ? ' <span style="color:var(--gold);font-size:10px">● du</span>' : ''}</div>
+            <div style="font-size:11px;color:var(--text2)">🎂 ${bday ? formatBday(bday) : '–'} <span style="color:var(--text3);margin-left:4px">✏️ bearbeiten</span></div>
+          </div>
+          <button onclick="editingMember='${m}';renderMemberManagement()" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:12px">✏️</button>
+          ${!isDefault ? `<button onclick="removeMember('${m}')" style="background:var(--red);border:none;color:#fff;border-radius:7px;padding:6px 8px;cursor:pointer;font-size:12px">🗑️</button>` : ''}
+        </div>`}
     </div>`;
   }).join('');
+  if (editingMember) {
+    const idx = members.indexOf(editingMember);
+    const inp = document.getElementById(`editNameInput_${idx}`);
+    if (inp) { inp.focus(); inp.select(); }
+  }
+}
+
+function saveMemberRename(oldName, idx) {
+  const inp = document.getElementById(`editNameInput_${idx}`);
+  const newName = inp ? inp.value.trim() : '';
+  if (!newName) { showToast('❌ Name darf nicht leer sein'); return; }
+  if (newName === oldName) { editingMember = null; renderMemberManagement(); return; }
+  const members = getMembers();
+  if (members.includes(newName)) { showToast('❌ Name bereits vorhanden'); return; }
+  if (!state.members) state.members = [...DEFAULT_MEMBERS];
+  const mi = state.members.indexOf(oldName);
+  if (mi !== -1) state.members[mi] = newName;
+  function mv(obj) { if (!obj || !(oldName in obj)) return; obj[newName] = obj[oldName]; delete obj[oldName]; }
+  mv(state.anwesenheit); mv(state.strafen); mv(state.bezahlt);
+  mv(state.paypal); mv(state.memberBdays); mv(state.memberPasswords);
+  mv(state.memberProfiles); mv(state.freieStrafen);
+  if (localMeta.photos?.[oldName]) {
+    localMeta.photos[newName] = localMeta.photos[oldName];
+    delete localMeta.photos[oldName];
+    saveLocalMeta();
+  }
+  if (state.terminZusagen) {
+    Object.keys(state.terminZusagen).forEach(dk => {
+      if (state.terminZusagen[dk]?.[oldName]) {
+        state.terminZusagen[dk][newName] = state.terminZusagen[dk][oldName];
+        delete state.terminZusagen[dk][oldName];
+      }
+    });
+  }
+  if (currentUser === oldName) {
+    currentUser = newName;
+    try { sessionStorage.setItem('rp_user', newName); } catch(e) {}
+  }
+  editingMember = null;
+  saveState(); renderMemberManagement(); updateHeader();
+  showToast(`✅ "${oldName}" → "${newName}"`);
 }
 
 function uploadMemberPhoto(name, event) {
@@ -1949,13 +2029,28 @@ function init() {
 
       <div class="card">
         <div class="card-title">🔗 Firebase Sync</div>
-        <div class="gap-8">
-          <div><label>Datenbank URL</label><input id="fbUrl" type="text" placeholder="https://…firebasedatabase.app"></div>
-          <div><label>API Key</label><input id="fbKey" type="text" placeholder="AIza…"></div>
-          <div><label>Project ID</label><input id="fbProjId" type="text" placeholder="mein-projekt-id"></div>
-          <button class="btn btn-gold" onclick="fbConnect()">🔗 Verbinden</button>
-          <div id="fbStatus" style="font-size:12px;color:var(--text2);text-align:center"></div>
+        <!-- Live-Status -->
+        <div id="fbLiveStatus" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);margin-bottom:12px">
+          <div id="fbStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--text3);flex-shrink:0"></div>
+          <div style="flex:1">
+            <div id="fbStatusText" style="font-size:13px;font-weight:600;color:var(--text)">Wird geprüft…</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:1px">riverperlen-440c1</div>
+          </div>
+          <button onclick="retryFbConnect()" style="background:var(--gold);border:none;color:#000;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer">🔄 Verbinden</button>
         </div>
+        <!-- Keys pre-filled, collapsible -->
+        <details style="margin-top:4px">
+          <summary style="font-size:12px;color:var(--text3);cursor:pointer;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px">
+            <span>▶</span> Verbindungsdaten anzeigen / ändern
+          </summary>
+          <div class="gap-8" style="margin-top:10px">
+            <div><label>Datenbank URL</label><input id="fbUrl" type="text" placeholder="https://…firebasedatabase.app"></div>
+            <div><label>API Key</label><input id="fbKey" type="text" placeholder="AIza…"></div>
+            <div><label>Project ID</label><input id="fbProjId" type="text" placeholder="mein-projekt-id"></div>
+            <button class="btn btn-gold" onclick="fbConnect()">💾 Speichern &amp; verbinden</button>
+          </div>
+        </details>
+        <div id="fbStatus" style="font-size:12px;color:var(--text2);text-align:center;margin-top:6px"></div>
       </div>
 
       <div class="card">
@@ -1966,11 +2061,10 @@ function init() {
 
       <div class="card">
         <div class="card-title">👥 Mitglieder verwalten</div>
-        <!-- FIX: correct ID "memberMgmtList" -->
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Tippe auf einen Namen um ihn zu bearbeiten. Standard-Mitglieder können nicht gelöscht werden.</div>
         <div id="memberMgmtList"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <!-- FIX: correct ID "newMemberInput" -->
-          <input id="newMemberInput" type="text" placeholder="Neues Mitglied" style="flex:1">
+        <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+          <input id="newMemberInput" type="text" placeholder="Neues Mitglied hinzufügen" style="flex:1">
           <button class="btn btn-gold" onclick="addMember()" style="width:auto;padding:10px 16px">+</button>
         </div>
       </div>
