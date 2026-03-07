@@ -579,9 +579,31 @@ function renderDashboard() {
 // ═══════════════════════════════════════════
 // ANWESENHEIT
 // ═══════════════════════════════════════════
+
+function fillAbendBanner(prefix) {
+  const nr = getAbendNummer();
+  const naechster = getNaechsterTermin();
+  const heute = new Date();
+  const wt  = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][heute.getDay()];
+  const day = heute.getDate().toString().padStart(2,'0');
+  const mon = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][heute.getMonth()];
+  const yr  = heute.getFullYear();
+  const nrEl  = document.getElementById(prefix+'AbendNrLabel');
+  const datEl = document.getElementById(prefix+'DatumLabel');
+  const naEl  = document.getElementById(prefix+'NaechsterLabel');
+  if (nrEl)  nrEl.textContent  = `Kegelabend #${nr}`;
+  if (datEl) datEl.textContent = `${wt}, ${day}. ${mon} ${yr}`;
+  if (naEl)  naEl.innerHTML = naechster
+    ? `📅 Nächster Termin: <strong style="color:var(--text)">${formatTerminLabel(naechster)}</strong>`
+    : '📅 Kein weiterer Termin geplant';
+}
+
 function renderAnwesenheit() {
   // Abend-Info Banner füllen
-  const nr = getAbendNummer();
+  fillAbendBanner('anw');
+  fillAbendBanner('str');
+  fillAbendBanner('abs');
+  const nr =
   const naechster = getNaechsterTermin();
   const heute = new Date();
   const wt = ['Sonntag','Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag'][heute.getDay()];
@@ -644,6 +666,7 @@ let selMember = null;
 function getSelMember() { return selMember || MEMBERS[0]; }
 
 function renderStrafen() {
+  fillAbendBanner('str');
   if (!selMember) selMember = MEMBERS[0];
   // FIX: correct ID "strafeMemberTabs"
   document.getElementById('strafeMemberTabs').innerHTML = MEMBERS.map(m=>{
@@ -820,6 +843,7 @@ function freieBestaetigen() {
 // ABSCHLUSS
 // ═══════════════════════════════════════════
 function renderAbschluss() {
+  fillAbendBanner('abs');
   let grand=0;
   document.getElementById('abschlussContent').innerHTML = MEMBERS.map(m=>{
     const total=calcMemberStrafen(m); grand+=total;
@@ -1204,10 +1228,9 @@ function formatTerminLabel(t) {
 
 
 function updateAbendNavLabel() {
-  const btn = document.querySelector('[data-page="anwesenheit"]');
-  if (!btn) return;
-  const nr = getAbendNummer();
-  btn.innerHTML = `👥 Heute <span style="font-size:10px;opacity:.75;font-weight:600">#${nr}</span>`;
+  // Fill banners on Strafen and Abschluss pages too
+  fillAbendBanner('str');
+  fillAbendBanner('abs');
 }
 function renderTermineItem(t, zusagen) {
   const todayD = new Date(); todayD.setHours(0,0,0,0);
@@ -3010,7 +3033,16 @@ function init() {
 
     <!-- STRAFEN -->
     <div class="page" id="page-strafen">
-      <div class="section-title"><span class="accent">⚠️</span> Strafen</div>
+      <div id="strAbendInfo" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:32px;line-height:1">🎳</div>
+          <div>
+            <div id="strAbendNrLabel" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--gold);letter-spacing:1px"></div>
+            <div id="strDatumLabel" style="font-size:12px;color:var(--text2);margin-top:1px"></div>
+          </div>
+        </div>
+        <div id="strNaechsterLabel" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(240,165,0,.2);font-size:12px;color:var(--text3)"></div>
+      </div>
       <!-- FIX: correct class "strafe-member-tabs" and ID "strafeMemberTabs" -->
       <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
       <div id="strafeList"></div>
@@ -3022,7 +3054,16 @@ function init() {
 
     <!-- ABSCHLUSS -->
     <div class="page" id="page-abschluss">
-      <div class="section-title"><span class="accent">📋</span> Abschluss</div>
+      <div id="absAbendInfo" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="font-size:32px;line-height:1">🎳</div>
+          <div>
+            <div id="absAbendNrLabel" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:20px;color:var(--gold);letter-spacing:1px"></div>
+            <div id="absDatumLabel" style="font-size:12px;color:var(--text2);margin-top:1px"></div>
+          </div>
+        </div>
+        <div id="absNaechsterLabel" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(240,165,0,.2);font-size:12px;color:var(--text3)"></div>
+      </div>
       <div class="card">
         <div class="card-title">Abrechnung</div>
         <div id="abschlussContent"></div>
