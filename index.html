@@ -454,8 +454,9 @@ function renderPage(id) {
     termine: renderTermine,
     stats: renderStats,
     settings: renderSettings,
+    spielideen: renderSpielideen,
     chat: renderChat,
-    profil: renderMyProfile
+    profil: () => { renderMyProfile(); renderTeamProfiles(); }
   }[id] || (()=>{}))();
 }
 
@@ -931,6 +932,74 @@ function saveMyField(field, value) {
   }
   saveState();
   showToast('✅ Gespeichert');
+}
+
+// ── PROFIL ANDERER MITGLIEDER ────────────────────────
+function showMemberProfile(member) {
+  const p   = (state.memberProfiles||{})[member] || {};
+  const bday= (state.memberBdays||{})[member] || '';
+  const photo= localMeta.photos?.[member];
+
+  let bdayStr = '';
+  if (bday) {
+    const bd = new Date(bday);
+    const now = new Date();
+    const age = now.getFullYear() - bd.getFullYear() - (now < new Date(now.getFullYear(), bd.getMonth(), bd.getDate()) ? 1 : 0);
+    bdayStr = `${bd.getDate().toString().padStart(2,'0')}.${(bd.getMonth()+1).toString().padStart(2,'0')}.${bd.getFullYear()} (${age} Jahre)`;
+  }
+
+  const fields = [
+    bday          ? { icon:'🎂', label:'Geburtstag',         val: bdayStr } : null,
+    p.email       ? { icon:'📧', label:'E-Mail',             val: p.email } : null,
+    p.adresse     ? { icon:'🏠', label:'Adresse',            val: p.adresse } : null,
+    p.vorlieben   ? { icon:'🍺', label:'Vorlieben / Getränke', val: p.vorlieben } : null,
+    p.notizen     ? { icon:'📝', label:'Über mich',          val: p.notizen } : null,
+  ].filter(Boolean);
+
+  const hasInfo = fields.length > 0;
+
+  showModal(
+    `👤 ${member}`,
+    `<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;color:#000;flex-shrink:0;overflow:hidden">
+        ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : member.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+      </div>
+      <div style="font-size:18px;font-weight:700">${member}</div>
+    </div>
+    ${hasInfo
+      ? `<div style="display:flex;flex-direction:column;gap:10px">
+          ${fields.map(f=>`
+            <div style="background:var(--bg3);border-radius:10px;padding:10px 14px">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${f.icon} ${f.label}</div>
+              <div style="font-size:14px;color:var(--text)">${f.val}</div>
+            </div>`).join('')}
+        </div>`
+      : `<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">Dieses Mitglied hat noch keine Profilinfos hinterlegt.</div>`
+    }`,
+    null, null, null
+  );
+}
+
+function renderTeamProfiles() {
+  const el = document.getElementById('teamProfilesList');
+  if (!el) return;
+  const members = getMembers().filter(m => m !== currentUser);
+  el.innerHTML = members.map(m => {
+    const photo = localMeta.photos?.[m];
+    const p = (state.memberProfiles||{})[m] || {};
+    const bday = (state.memberBdays||{})[m] || '';
+    const hasInfo = bday || p.email || p.adresse || p.vorlieben || p.notizen;
+    return `<div onclick="showMemberProfile('${m}')" style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer">
+      <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#000;flex-shrink:0;overflow:hidden">
+        ${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">` : m.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${m}</div>
+        <div style="font-size:11px;color:var(--text3)">${hasInfo ? '📋 Profil vorhanden' : 'Kein Profil hinterlegt'}</div>
+      </div>
+      <div style="color:var(--text3);font-size:18px">›</div>
+    </div>`;
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -1480,18 +1549,34 @@ function sendNotif(title, body, tag) {
 }
 
 // Called from Firebase listener – detects NEW messages from OTHER users
+// Set of ts values already notified – prevents duplicate notifications
+var _notifiedChatTs = new Set();
+
 function checkIncomingChatNotif(messages) {
   if (!messages || !Array.isArray(messages) || messages.length === 0) return;
   const prefs = getNotifPrefs();
   if (!prefs['chat']) return;
   if (Notification.permission !== 'granted') return;
-  // Find messages newer than last seen, not from me
-  const newMsgs = messages.filter(m => m.ts > _lastChatTs && m.author !== currentUser);
+  // Only messages newer than login time, from others, not yet notified
+  const newMsgs = messages.filter(m =>
+    m.ts > _lastChatTs &&
+    m.author !== currentUser &&
+    !_notifiedChatTs.has(m.ts)
+  );
   if (newMsgs.length > 0) {
+    // Show only the latest message as one notification
     const last = newMsgs[newMsgs.length - 1];
-    sendNotif('💬 ' + last.author, last.text, 'chat');
+    const countHint = newMsgs.length > 1 ? ` (+${newMsgs.length - 1} weitere)` : '';
+    sendNotif('💬 ' + last.author + countHint, last.text, 'chat');
+    // Mark all as notified
+    newMsgs.forEach(m => _notifiedChatTs.add(m.ts));
+    // Keep Set from growing unbounded – only keep last 200
+    if (_notifiedChatTs.size > 200) {
+      const arr = [..._notifiedChatTs].sort((a,b) => a-b);
+      _notifiedChatTs = new Set(arr.slice(-200));
+    }
   }
-  // Update watermark to newest ts
+  // Advance watermark
   const maxTs = Math.max(...messages.map(m => m.ts));
   if (maxTs > _lastChatTs) _lastChatTs = maxTs;
 }
@@ -1797,6 +1882,226 @@ function sendChat() {
 }
 
 // ═══════════════════════════════════════════
+// SPIELIDEEN
+// ═══════════════════════════════════════════
+const SPIELIDEEN = [
+  {
+    kategorie: '🎳 Klassische Kegelspiele',
+    farbe: '#f0a500',
+    spiele: [
+      {
+        name: 'Fuchsjagd',
+        emoji: '🦊',
+        spieler: '2–10',
+        dauer: '30–60 Min',
+        material: '9 Kegel, Kegelkugel (ohne Fingerlöcher), Kegelbahn',
+        beschreibung: 'Ein Spieler ist der „Fuchs" und wirft zuerst. Alle anderen versuchen, exakt dieselbe Anzahl der 9 Kegel zu treffen. Wer es schafft, wird neuer Fuchs. Wer den Fuchs über mehrere Runden nicht einholt, scheidet aus.',
+        punkte: 'Keine Punkte – Ziel ist es, den Fuchs zu „jagen" und selbst Fuchs zu werden. Beim klassischen Kegeln stehen immer 9 Kegel.',
+        tipp: 'Ideal für gemischte Gruppen – starke und schwache Spieler haben gleiche Chancen!'
+      },
+      {
+        name: 'Hohe & Niedrige Hausnummern',
+        emoji: '🏠',
+        spieler: '2–10',
+        dauer: '20–40 Min',
+        material: '9 Kegel, Kegelkugel, Kegelbahn',
+        beschreibung: 'Vor jedem Wurf wird gewürfelt: gerade Zahl = „hohe Hausnummer" (6, 8 Kegel), ungerade = „niedrige Hausnummer" (1, 3, 5, 7 Kegel). Wer beim Wurf der 9 Kegel genau die ausgewürfelte Anzahl trifft, bekommt Punkte.',
+        punkte: '1 Punkt pro korrekt getroffener Zielzahl. Nach 3 Runden gewinnt die höchste Punktzahl.',
+        tipp: 'Variante: Wer mehr als die Zielzahl trifft, bekommt Minuspunkte!'
+      },
+      {
+        name: 'Siebzehn und Vier',
+        emoji: '🃏',
+        spieler: '3–8',
+        dauer: '30–45 Min',
+        material: '9 Kegel, Kegelkugel, Kegelbahn',
+        beschreibung: 'Angelehnt ans Kartenspiel: Jeder Spieler sammelt über mehrere Würfe Kegel-Punkte. Wer unter 17 bleibt, darf nochmal werfen. Wer exakt 17 oder 21 Kegel (summiert) trifft – perfekt! Wer drüber geht, ist raus.',
+        punkte: 'Gewinner: Wer zuerst exakt 17 oder 21 Kegel (aufsummiert über Würfe) trifft. Bei Überschreitung sofort ausgeschieden.',
+        tipp: 'Jeder entscheidet selbst ob er noch wirft oder hält – klassisches Risikospiel auf der Kegelbahn!'
+      },
+      {
+        name: 'Räumen',
+        emoji: '🎯',
+        spieler: '2–8',
+        dauer: '20–30 Min',
+        material: '9 Kegel, Kegelkugel, Kegelbahn',
+        beschreibung: 'Das klassischste aller Kegelspiele: Ziel ist es, mit einem Wurf alle 9 Kegel zu „räumen" (umwerfen). Jeder Spieler hat pro Runde einen Wurf. Wer alle 9 trifft, hat „geräumt". Die Punkte entsprechen der Anzahl der umgeworfenen Kegel.',
+        punkte: 'Pro Runde: Anzahl getroffener Kegel = Punkte (max. 9). Nach vereinbarter Rundenzahl gewinnt die höchste Gesamtpunktzahl.',
+        tipp: 'Die 9 Kegel stehen beim deutschen Kegeln im Rautenmuster – der mittlere Kegel ist der „König"!'
+      },
+    ]
+  },
+  {
+    kategorie: '👨‍👩‍👧 Familie & Kinder',
+    farbe: '#3dd68c',
+    spiele: [
+      {
+        name: 'Plastikflaschen-Kegeln',
+        emoji: '🍼',
+        spieler: '2–12',
+        dauer: '15–30 Min',
+        material: 'Leere PET-Flaschen (0,5 L), Tennisball oder kleiner Softball',
+        beschreibung: '9 leere PET-Flaschen mit etwas Sand befüllen (damit sie stabiler stehen) und im Rautenmuster aufstellen – genau wie echte Kegel. Mit einem Tennisball oder Softball auf dem Boden rollen. Für drinnen und draußen geeignet.',
+        punkte: 'Jede umgeworfene Flasche = 1 Punkt. Alle 9 mit einem Wurf = Bonus! Nach 3 Runden gewinnt die höchste Punktzahl.',
+        tipp: 'Flaschen mit bunten Aufklebern oder Nummern (1–9) versehen für noch mehr Spielspaß!'
+      },
+      {
+        name: 'Tischkegeln',
+        emoji: '🏓',
+        spieler: '2–6',
+        dauer: '15–25 Min',
+        material: 'Kleine Holz- oder Plastikkegel (9 Stück), Murmel oder Tischtennisball',
+        beschreibung: 'Auf einem Tisch 9 mini-Kegel im klassischen Rautenmuster aufstellen. Mit einer Murmel oder einem Tischtennisball rollen – genau wie auf der echten Kegelbahn, nur im Kleinformat. Jeder hat pro Runde einen Wurf.',
+        punkte: 'Getroffene Kegel zählen je 1 Punkt. Alle 9 = „Räumen" und Sonderpunkt. Nach 5 Runden gewinnt die höchste Punktzahl.',
+        tipp: 'Eine aufgerollte Tischdecke als seitliche Begrenzung verwenden – hält die Kugel auf der richtigen Linie!'
+      },
+      {
+        name: 'Farb-Kegeln für Kinder',
+        emoji: '🌈',
+        spieler: '2–8',
+        dauer: '20 Min',
+        material: '9 Kegel in verschiedenen Farben (oder eingefärbte Flaschen), Kegelkugel',
+        beschreibung: 'Alle 9 Kegel bekommen je eine Farbe. Vor dem Wurf eine Farbe ziehen oder würfeln – nur der Kegel dieser Farbe zählt. Kinder lernen Farben und Zählen, trainieren gleichzeitig die Motorik.',
+        punkte: 'Richtiger Farbkegel getroffen = 2 Punkte, andere Kegel = 1 Punkt, keiner = 0 Punkte.',
+        tipp: 'Für Kinder unter 6: Abstand auf 2–3 Meter verkürzen und schwerere Kugel zum Stabilisieren verwenden!'
+      },
+    ]
+  },
+  {
+    kategorie: '🤪 Kreative Varianten',
+    farbe: '#4a9eff',
+    spiele: [
+      {
+        name: 'Blind-Kegeln',
+        emoji: '🙈',
+        spieler: '2–8',
+        dauer: '20–30 Min',
+        material: 'Augenbinde, Kegelbahn (9 Kegel + Kegelkugel)',
+        beschreibung: 'Der Spieler trägt beim Wurf eine Augenbinde und muss die schwere Kegelkugel trotzdem gezielt rollen. Ein Teamkollege darf nur mündliche Anweisungen geben (links, rechts, geradeaus). Garantiert für viel Gelächter!',
+        punkte: 'Jeder getroffene Kegel = 1 Punkt. Alle 9 blind geräumt = 5 Extrapunkte!',
+        tipp: 'Sicherheit beachten – jemand sollte am Ende der Bahn aufpassen. Nur auf einer echten Kegelbahn mit Rückläufer spielen!'
+      },
+      {
+        name: 'Schwache Hand',
+        emoji: '🤚',
+        spieler: '2–10',
+        dauer: '20–30 Min',
+        material: 'Kegelbahn (9 Kegel + Kegelkugel)',
+        beschreibung: 'Alle Spieler werfen ausschließlich mit ihrer nicht-dominanten Hand (Rechtshänder = links, Linkshänder = rechts). Die schwere Kegelkugel mit der falschen Hand zu kontrollieren gleicht Stärkeunterschiede aus und sorgt für Spaß!',
+        punkte: 'Normale Kegelwertung – aber alle sind auf Augenhöhe! Allein das Rollen der schweren Kugel wird zur Herausforderung.',
+        tipp: 'Perfektes Handicap-System – der beste Kegelspieler der Gruppe verliert garantiert seinen Vorteil!'
+      },
+      {
+        name: 'Crazy Kegeln',
+        emoji: '🎪',
+        spieler: '4–10',
+        dauer: '45–60 Min',
+        material: 'Kegelbahn (9 Kegel + Kegelkugel), Ereigniskarten (selbst gemacht)',
+        beschreibung: 'Vor jedem Wurf eine Ereigniskarte ziehen. Mögliche Ereignisse: rückwärts werfen, mit einem Bein hüpfend, mit geschlossenen Augen, Kugel zwischen den Beinen durchrollen, Pirouette vor dem Wurf, nur mit zwei Fingern etc.',
+        punkte: 'Normale Kegelwertung (max. 9 pro Runde), aber alle 9 geräumt bei einer Sonder-Challenge = doppelte Punkte!',
+        tipp: 'Karten vorher auf Zettel schreiben und in eine Bierdose legen. Eigene lustige Ideen ergänzen!'
+      },
+      {
+        name: 'Geräusch-Kegeln',
+        emoji: '🧠',
+        spieler: '2–6',
+        dauer: '20 Min',
+        material: 'Augenbinde, Kegelbahn – ein Helfer rüttelt an den Kegeln damit der blinde Werfer die Richtung hört',
+        beschreibung: 'Der Spieler verbindet die Augen. Ein Helfer steht hinter den 9 Kegeln und rüttelt oder klopft daran. Der blinde Werfer muss anhand des Geräusches die Richtung finden und die schwere Kegelkugel entsprechend rollen.',
+        punkte: 'Getroffene Kegel = 2 Punkte. Wer über 5 Runden die meisten Punkte hat, gewinnt.',
+        tipp: 'Besonders beliebt als Teamevent – Helfer und Werfer wechseln sich ab!'
+      },
+    ]
+  },
+  {
+    kategorie: '🍺 Kegelclub-Klassiker',
+    farbe: '#e84040',
+    spiele: [
+      {
+        name: 'Kegel-Skat (Mannschafts-Kegeln)',
+        emoji: '🤝',
+        spieler: '6–10',
+        dauer: '60–90 Min',
+        material: 'Kegelbahn (9 Kegel + Kegelkugel)',
+        beschreibung: 'Zwei Mannschaften à 3–5 Spieler. Jeder Spieler hat eine festgelegte Anzahl Würfe (z.B. 30 Wurf). Die Gesamtpunktzahl aller Mannschaftsmitglieder entscheidet. Typisches Vereinskegeln wie es in deutschen Kegelclubs gespielt wird.',
+        punkte: 'Jeder Kegel = 1 Punkt. Alle 9 mit einem Wurf = „Alle Neune!" (zählt 9 Punkte). Mannschaft mit höchster Gesamtpunktzahl gewinnt.',
+        tipp: 'Die klassische Vereinsform des Kegelns! Für offizielle Turniere gelten DKB-Regeln (Deutscher Kegler-Bund).'
+      },
+      {
+        name: 'Kegelpool',
+        emoji: '🎱',
+        spieler: '2–9',
+        dauer: '30–45 Min',
+        material: 'Kegelbahn (9 Kegel + Kegelkugel), Bierdeckel als Chips',
+        beschreibung: 'Jeder Spieler „kauft" sich eine Zahl von 1 bis 9 (entspricht der Position der Kegel). Wer seinen eigenen Kegel als letzten noch stehend hat – während alle anderen Kegel bereits gefallen sind – gewinnt die Runde. Ähnlich wie beim Billard-Pool.',
+        punkte: 'Wer seine Zahl als einziger noch stehend hat, gewinnt die Runde und bekommt Bierdeckel-Chips von allen anderen.',
+        tipp: 'Mit echten Bierdeckeln als Chips spielen – der Verlierer der Runde zahlt eine Runde! Traditionell in vielen Kegelclubs.'
+      },
+      {
+        name: 'Bierkegeln',
+        emoji: '🍺',
+        spieler: '2–10',
+        dauer: '30–60 Min',
+        material: 'Kegelbahn (9 Kegel + Kegelkugel), Getränke als Einsatz',
+        beschreibung: 'Jeder Spieler hat pro Runde einen Wurf. Wer die wenigsten Kegel trifft, zahlt eine Runde Getränke. Wer alle 9 räumt, bekommt ein Freigetränk von allen anderen. Geselliges Kegeln wie es sein soll!',
+        punkte: 'Keine Punkte – es zählt das Wohlbefinden der Gruppe. Wer über den Abend die meisten Freigetränke gewinnt, ist der Kegelkönig.',
+        tipp: 'Variante: Wer als einziger 0 Kegel trifft, zahlt doppelt – das ist der „Kegel-Joker"!'
+      },
+    ]
+  },
+];
+
+function renderSpielideen() {
+  const el = document.getElementById('spielideenContent');
+  if (!el) return;
+
+  el.innerHTML = SPIELIDEEN.map(kat => `
+    <div class="card" style="margin-bottom:14px;border-color:${kat.farbe}40">
+      <div class="card-title" style="color:${kat.farbe}">${kat.kategorie}</div>
+      ${kat.spiele.map((s, i) => `
+        <div style="border-bottom:1px solid var(--border);padding:12px 0" class="spiel-item">
+          <div onclick="toggleSpiel('${kat.kategorie}-${i}')"
+               style="display:flex;align-items:center;gap:10px;cursor:pointer">
+            <div style="width:38px;height:38px;border-radius:10px;background:${kat.farbe}22;border:1px solid ${kat.farbe}44;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${s.emoji}</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:14px">${s.name}</div>
+              <div style="font-size:11px;color:var(--text3)">👥 ${s.spieler} · ⏱ ${s.dauer}</div>
+            </div>
+            <div id="arrow-${kat.kategorie}-${i}" style="color:var(--text3);font-size:16px;transition:transform .2s">›</div>
+          </div>
+          <div id="spiel-detail-${kat.kategorie}-${i}" style="display:none;margin-top:12px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+              <span style="background:${kat.farbe}18;border:1px solid ${kat.farbe}44;color:${kat.farbe};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">👥 ${s.spieler} Spieler</span>
+              <span style="background:${kat.farbe}18;border:1px solid ${kat.farbe}44;color:${kat.farbe};border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">⏱ ${s.dauer}</span>
+              <span style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);border-radius:20px;padding:3px 10px;font-size:11px">🔧 ${s.material}</span>
+            </div>
+            <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">📖 Spielablauf</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.5">${s.beschreibung}</div>
+            </div>
+            <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">
+              <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">🏆 Punkte & Wertung</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.5">${s.punkte}</div>
+            </div>
+            <div style="background:${kat.farbe}0f;border:1px solid ${kat.farbe}33;border-radius:10px;padding:12px">
+              <div style="font-size:11px;font-weight:700;color:${kat.farbe};margin-bottom:4px">💡 Tipp</div>
+              <div style="font-size:13px;color:var(--text2);line-height:1.5">${s.tipp}</div>
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function toggleSpiel(id) {
+  const detail = document.getElementById('spiel-detail-' + id);
+  const arrow  = document.getElementById('arrow-' + id);
+  if (!detail) return;
+  const open = detail.style.display !== 'none';
+  detail.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+// ═══════════════════════════════════════════
 // LOGIN
 // ═══════════════════════════════════════════
 var currentUser = null;
@@ -2039,6 +2344,7 @@ function init() {
     <button class="nav-btn" data-page="stats" onclick="showPage('stats',this)">📊 Stats</button>
     <button class="nav-btn" data-page="chat" onclick="showPage('chat',this)">💬</button>
     <button class="nav-btn" data-page="profil" onclick="showPage('profil',this)">👤</button>
+    <button class="nav-btn" data-page="spielideen" onclick="showPage('spielideen',this)">🎳 Spiele</button>
     <button class="nav-btn" data-page="settings" onclick="showPage('settings',this)">⚙️</button>
   </nav>
 
@@ -2201,11 +2507,23 @@ function init() {
 
     <!-- PROFIL -->
     <div class="page" id="page-profil">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-title">👥 Team-Profile</div>
+        <div id="teamProfilesList"></div>
+      </div>
       <div class="section-title"><span class="accent">👤</span> Mein Profil</div>
       <div class="card" id="myProfileContent"></div>
     </div>
 
     <!-- EINSTELLUNGEN -->
+    <div class="page" id="page-spielideen">
+      <div style="padding:4px 0 12px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:22px;color:var(--gold)">🎳 Spielideen</div>
+        <div style="font-size:12px;color:var(--text3)">Kegel- & Bowling-Varianten für jeden Anlass</div>
+      </div>
+      <div id="spielideenContent"></div>
+    </div>
+
     <div class="page" id="page-settings">
       <div class="section-title"><span class="accent">⚙️</span> Einstellungen</div>
 
