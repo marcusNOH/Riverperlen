@@ -358,10 +358,17 @@ async function initFb() {
     fbRef.on("value", snap => {
       const remote = snap.val();
       if (remote && !ignoreNextRemote) {
+        const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
         state = {...defaultState(),...remote};
         saveLocalState();
         refreshCurrentPage();
         updateHeader();
+        // Check for new incoming chat messages from others
+        if (state.chatMessages && state.chatMessages.length > 0) {
+          checkIncomingChatNotif(state.chatMessages);
+        }
+        // Reschedule termin reminders if termine data changed
+        scheduleTerminReminders();
       }
       ignoreNextRemote = false;
       setSyncStatus("connected","Synchron");
@@ -823,7 +830,7 @@ function kegelbahnKosten() {
       if (!state.freieStrafen) state.freieStrafen = {};
       anwesend.forEach(m => {
         if (!state.freieStrafen[m]) state.freieStrafen[m] = [];
-        state.freieStrafen[m].push({ label: 'Kegelbahnkosten', betrag: anteilRound, addToKasse: true, ts: Date.now() });
+        state.freieStrafen[m].push({ label: 'Kegelbahnkosten', betrag: anteilRound, addToKasse: false, ts: Date.now() });
       });
       saveState(); renderStrafen(); updateHeader();
       showToast('🎳 Kegelbahnkosten (je ' + fmt(anteilRound) + ') auf ' + anwesend.length + ' Personen aufgeteilt!');
@@ -838,16 +845,27 @@ function kegelbahnKosten() {
 // FIX: renamed from abenAbschliessen to abendSpeichern
 function abendSpeichern() {
   const total=calcTotalStrafen();
+  // Calculate how much goes to kasse (exclude Kegelbahnkosten which are paid directly)
+  let kasseTotal = 0;
+  getMembers().forEach(m => {
+    const ms = state.strafen[m]||{};
+    getStrafen().forEach(s => kasseTotal += (ms[s.id]||0)*s.price);
+    (state.freieStrafen?.[m]||[]).filter(f=>f.addToKasse!==false).forEach(f=>kasseTotal+=f.betrag);
+  });
   showModal('Abend speichern',
-    `<p class="modal-text">Abend mit <strong style="color:var(--gold)">${fmt(total)}</strong> Strafen speichern?<br>Strafen fließen in die Kasse ein, der Abend wird zurückgesetzt.</p>`,
-    doSave, '💾 Speichern', 'btn-green');
+    `<p class="modal-text">Strafen gesamt: <strong style="color:var(--gold)">${fmt(total)}</strong><br>
+    Davon in die Kasse: <strong style="color:var(--green)">${fmt(kasseTotal)}</strong><br>
+    <span style="font-size:12px;color:var(--text3)">(Kegelbahnkosten werden direkt bezahlt und nicht zur Kasse addiert)</span><br><br>
+    Der Abend wird zurückgesetzt.</p>`,
+    () => doSave(kasseTotal), '💾 Speichern', 'btn-green');
 }
-function doSave() {
+function doSave(kasseTotal) {
   const total=calcTotalStrafen();
+  const kt = (kasseTotal !== undefined) ? kasseTotal : total;
   if (!state.history) state.history=[];
   state.history.push({date:today(),anwesenheit:JSON.parse(JSON.stringify(state.anwesenheit)),strafen:JSON.parse(JSON.stringify(state.strafen)),total});
   if (!state.kasse) state.kasse=[];
-  if (total>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:total,typ:'ein',date:today()});
+  if (kt>0) state.kasse.push({desc:`Kegelabend ${today()} – Strafen`,betrag:kt,typ:'ein',date:today()});
   state.anwesenheit={}; state.strafen={}; state.freieStrafen={};
   saveState(); renderDashboard(); showToast('💾 Abend gespeichert & Kasse aktualisiert!',3000);
 }
@@ -1310,9 +1328,23 @@ function uploadLogo(event) {
     saveLocalMeta();
     const lc = document.getElementById('logoCircle');
     if (lc) lc.innerHTML=`<img src="${localMeta.logo}">`;
+    const lp = document.getElementById('logoPreview');
+    if (lp) lp.innerHTML=`<img src="${localMeta.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    updateLoginLogo();
     showToast('✅ Logo hochgeladen');
   };
   r.readAsDataURL(file);
+}
+
+function updateLoginLogo() {
+  const loginLogo = document.getElementById('loginLogo');
+  const loginEmoji = document.getElementById('loginLogoEmoji');
+  if (!loginLogo) return;
+  if (localMeta.logo) {
+    loginLogo.innerHTML = `<img src="${localMeta.logo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    loginLogo.innerHTML = `<span id="loginLogoEmoji" style="font-size:44px;line-height:1">🎳</span>`;
+  }
 }
 
 function setPaypal(m,v) {
@@ -1397,12 +1429,17 @@ const NOTIF_KEY = 'rp_notif_prefs';
 function getNotifPrefs() { try { return JSON.parse(localStorage.getItem(NOTIF_KEY)||'{}'); } catch(e) { return {}; } }
 function saveNotifPrefs(prefs) { localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs)); }
 
+// Track last seen chat timestamp to detect incoming messages from others
+var _lastChatTs = 0;
+var _lastChatCount = 0;
+
 async function requestNotifPermission() {
-  if (!('Notification' in window)) { showToast('❌ Browser unterstützt keine Push-Benachrichtigungen'); return false; }
+  if (!('Notification' in window)) { showToast('❌ Browser unterstützt keine Benachrichtigungen'); return false; }
   if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') { showToast('❌ Benachrichtigungen blockiert'); return false; }
+  if (Notification.permission === 'denied') { showToast('❌ Benachrichtigungen blockiert – bitte in den Browser-Einstellungen freigeben'); return false; }
   const result = await Notification.requestPermission();
-  return result === 'granted';
+  if (result !== 'granted') { showToast('❌ Berechtigung verweigert'); return false; }
+  return true;
 }
 
 async function toggleNotif(key) {
@@ -1418,31 +1455,153 @@ async function toggleNotif(key) {
 function sendNotif(title, body, tag) {
   const prefs = getNotifPrefs();
   if (!prefs[tag]) return;
+  if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
-  try { new Notification(title, { body, icon: '🎳', tag }); } catch(e) {}
+  try {
+    // Use ServiceWorker if available (required for iOS PWA background)
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, { body, icon: '/favicon.ico', tag, renotify: true });
+      }).catch(() => {
+        new Notification(title, { body, tag });
+      });
+    } else {
+      new Notification(title, { body, tag });
+    }
+  } catch(e) { console.warn('Notification error:', e); }
+}
+
+// Called from Firebase listener – detects NEW messages from OTHER users
+function checkIncomingChatNotif(messages) {
+  if (!messages || !Array.isArray(messages) || messages.length === 0) return;
+  const prefs = getNotifPrefs();
+  if (!prefs['chat']) return;
+  if (Notification.permission !== 'granted') return;
+  // Find messages newer than last seen, not from me
+  const newMsgs = messages.filter(m => m.ts > _lastChatTs && m.author !== currentUser);
+  if (newMsgs.length > 0) {
+    const last = newMsgs[newMsgs.length - 1];
+    sendNotif('💬 ' + last.author, last.text, 'chat');
+  }
+  // Update watermark to newest ts
+  const maxTs = Math.max(...messages.map(m => m.ts));
+  if (maxTs > _lastChatTs) _lastChatTs = maxTs;
+}
+
+// ── TERMIN-ERINNERUNGEN ─────────────────────────────
+// Reminder timers stored as { dateKey: timeoutId }
+var _reminderTimers = {};
+var _reminderCheckInterval = null;
+
+function getTerminReminderMinutes() {
+  try { return parseInt(localStorage.getItem('rp_reminder_min') || '1440'); } catch(e) { return 1440; }
+}
+function setTerminReminderMinutes(min) {
+  localStorage.setItem('rp_reminder_min', String(min));
+}
+
+function scheduleTerminReminders() {
+  // Clear old timers
+  Object.values(_reminderTimers).forEach(id => clearTimeout(id));
+  _reminderTimers = {};
+  if (!currentUser) return;
+  const prefs = getNotifPrefs();
+  if (!prefs['termin']) return;
+  if (Notification.permission !== 'granted') return;
+
+  const reminderMs = getTerminReminderMinutes() * 60 * 1000;
+  const now = Date.now();
+
+  // Collect all termine user has confirmed
+  const zusagen = state.terminZusagen || {};
+  const alleTermine = [];
+
+  // Regular repeating termine (every 28 days from base date)
+  const baseDate = new Date('2026-03-05');
+  for (let i = 0; i < 52; i++) {
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + i * 28);
+    const dk = d.toISOString().slice(0,10);
+    alleTermine.push({ dateKey: dk, name: 'Kegelabend', ts: d.getTime() });
+  }
+  // Extra termine
+  (state.extraTermine || []).forEach(et => {
+    const d = new Date(et.date + (et.zeit ? 'T' + et.zeit : 'T19:00'));
+    alleTermine.push({ dateKey: et.date, name: et.name || 'Termin', ts: d.getTime() });
+  });
+
+  alleTermine.forEach(t => {
+    const myStatus = zusagen[t.dateKey]?.[currentUser]?.status;
+    if (myStatus !== 'zusage') return; // only remind if confirmed
+    const fireAt = t.ts - reminderMs;
+    const delay = fireAt - now;
+    if (delay < 0 || delay > 7 * 24 * 60 * 60 * 1000) return; // only schedule within 7 days
+    _reminderTimers[t.dateKey] = setTimeout(() => {
+      const when = new Date(t.ts).toLocaleDateString('de-DE', { weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      sendNotif('📆 Erinnerung: ' + t.name, '⏰ ' + when + ' – du hast zugesagt!', 'termin');
+    }, delay);
+  });
+}
+
+// Check every hour for newly upcoming reminders
+function startReminderLoop() {
+  if (_reminderCheckInterval) clearInterval(_reminderCheckInterval);
+  scheduleTerminReminders();
+  _reminderCheckInterval = setInterval(scheduleTerminReminders, 60 * 60 * 1000);
 }
 
 function renderNotifSettings() {
   const prefs = getNotifPrefs();
   const perm = ('Notification' in window) ? Notification.permission : 'unsupported';
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isPWA = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
   const permColor = perm === 'granted' ? 'var(--green)' : perm === 'denied' ? 'var(--red)' : 'var(--gold)';
-  const permText = perm === 'granted' ? '✅ Erlaubt' : perm === 'denied' ? '❌ Blockiert' : perm === 'unsupported' ? '⚠️ Nicht unterstützt' : '⏳ Nicht angefragt';
-  const items = [
-    { key: 'chat', icon: '💬', label: 'Neue Chat-Nachricht' },
-    { key: 'strafe', icon: '⚠️', label: 'Strafe eingetragen' },
-    { key: 'bday', icon: '🎂', label: 'Geburtstag heute' },
-    { key: 'abend', icon: '🎳', label: 'Kegelabend-Erinnerung' },
+  const permText = perm === 'granted' ? '✅ Erlaubt' : perm === 'denied' ? '❌ Blockiert' : perm === 'unsupported' ? '⚠️ Nicht unterstützt' : '⏳ Noch nicht angefragt';
+
+  const reminderMin = getTerminReminderMinutes();
+  const reminderOptions = [
+    { val: 60, label: '1 Stunde vorher' },
+    { val: 180, label: '3 Stunden vorher' },
+    { val: 720, label: '12 Stunden vorher' },
+    { val: 1440, label: '24 Stunden vorher' },
+    { val: 2880, label: '2 Tage vorher' },
   ];
+
+  const items = [
+    { key: 'chat',   icon: '💬', label: 'Neue Chat-Nachricht' },
+    { key: 'strafe', icon: '⚠️', label: 'Strafe eingetragen' },
+    { key: 'bday',   icon: '🎂', label: 'Geburtstag heute' },
+    { key: 'termin', icon: '📆', label: 'Termin-Erinnerung' },
+  ];
+
   const el = document.getElementById('notifSettings');
   if (!el) return;
+
+  const iosHint = (isIOS && !isPWA) ? `
+    <div style="background:rgba(240,165,0,.1);border:1px solid rgba(240,165,0,.3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--gold);line-height:1.5">
+      📱 <strong>iPhone-Hinweis:</strong> Benachrichtigungen funktionieren auf iOS nur wenn die App zum Homescreen hinzugefügt wurde.<br>
+      Safari → Teilen → <strong>Zum Home-Bildschirm</strong> → dann App von dort öffnen.
+    </div>` : '';
+
   el.innerHTML = `
-    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Status: <span style="color:${permColor};font-weight:600">${permText}</span></div>
+    ${iosHint}
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">
+      Browser-Status: <span style="color:${permColor};font-weight:600">${permText}</span>
+    </div>
     ${items.map(it => `
       <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
         <span style="font-size:20px">${it.icon}</span>
         <div style="flex:1;font-size:14px;font-weight:500">${it.label}</div>
         <div class="toggle-btn ${prefs[it.key]?'on':''}" onclick="toggleNotif('${it.key}')"></div>
       </div>`).join('')}
+    ${prefs['termin'] ? `
+    <div style="padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:8px">⏰ Erinnerung wie lange vorher?</div>
+      <select onchange="setTerminReminderMinutes(parseInt(this.value));scheduleTerminReminders();showToast('✅ Gespeichert')"
+        style="width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px">
+        ${reminderOptions.map(o => `<option value="${o.val}" ${reminderMin==o.val?'selected':''}>${o.label}</option>`).join('')}
+      </select>
+    </div>` : ''}
   `;
 }
 
@@ -1692,6 +1851,12 @@ function pinSubmit() {
     updateHeader();
     renderDashboard();
     setTimeout(initPresence, 1000);
+    // Init chat watermark so we don't fire notifs for old messages
+    if (state.chatMessages && state.chatMessages.length > 0) {
+      _lastChatTs = Math.max(...state.chatMessages.map(m => m.ts));
+    }
+    // Start termin reminder scheduler
+    startReminderLoop();
   } else {
     if (err) err.textContent = '❌ PIN unbekannt';
   }
@@ -1748,6 +1913,12 @@ function initLogin() {
     updateHeader();
     renderDashboard();
     setTimeout(initPresence, 2000);
+    // Init chat watermark so we don't fire notifs for old messages
+    if (state.chatMessages && state.chatMessages.length > 0) {
+      _lastChatTs = Math.max(...state.chatMessages.map(m => m.ts));
+    }
+    // Start termin reminder scheduler
+    startReminderLoop();
     return;
   }
   updatePinDots();
@@ -1769,6 +1940,7 @@ function init() {
     const lc = document.getElementById('logoCircle');
     if (lc) lc.innerHTML=`<img src="${localMeta.logo}">`;
   }
+  updateLoginLogo();
   if (fbCfg) { setSyncStatus('syncing','Verbinde…'); initFb(); }
   else { setSyncStatus('error','Nicht verbunden'); }
   renderDashboard();
@@ -1788,7 +1960,9 @@ function init() {
 .lpin-dot.filled{background:#f0a500}
 </style>
 <div id="loginScreen" style="position:fixed;inset:0;background:linear-gradient(160deg,#0a0c11 0%,#1a1d28 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9000;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch">
-  <div style="font-size:52px;margin-bottom:6px">🎳</div>
+  <div id="loginLogo" style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#f0a500,#ffc84a);display:flex;align-items:center;justify-content:center;margin-bottom:14px;box-shadow:0 0 40px rgba(240,165,0,.35);overflow:hidden;flex-shrink:0">
+    <span id="loginLogoEmoji" style="font-size:44px;line-height:1">🎳</span>
+  </div>
   <div style="font-family:sans-serif;font-weight:900;font-size:26px;color:#f0a500;letter-spacing:2px;margin-bottom:2px">PEGELCLUB</div>
   <div style="font-family:sans-serif;font-size:13px;color:#8a90a8;letter-spacing:4px;margin-bottom:20px">RIVERPERLEN</div>
   <div style="width:100%;max-width:340px;background:#1a1d28;border-radius:18px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,.7)">
