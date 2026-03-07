@@ -305,9 +305,8 @@ window.doLogin = function() {
   // Save session
   try { sessionStorage.setItem('rp_user', name); } catch(e) {}
   window._loginUser = name;
-  // Remove login screen
-  var ls = document.getElementById('loginScreen');
-  if (ls) ls.parentNode.removeChild(ls);
+  // Hide login screen (more reliable than removeChild on iOS)
+  hideLoginScreen();
   // Tell main script who logged in (if it's ready)
   if (typeof window._onLoginDone === 'function') window._onLoginDone(name);
 };
@@ -1886,12 +1885,29 @@ checkBdayNotifs();
 // ═══════════════════════════════════════════
 var currentUser = null;
 
+// Helper: nuke login screen completely
+function hideLoginScreen() {
+var ls = document.getElementById(‘loginScreen’);
+if (!ls) return;
+ls.style.display = ‘none’;
+ls.style.visibility = ‘hidden’;
+ls.style.pointerEvents = ‘none’;
+ls.style.zIndex = ‘-9999’;
+ls.style.opacity = ‘0’;
+try { ls.parentNode.removeChild(ls); } catch(e) {}
+}
+
 // Called by early doLogin script after login screen removed
 window._onLoginDone = function(name) {
+try {
 currentUser = name;
+hideLoginScreen();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 1000);
+} catch(e) {
+document.body.innerHTML += ‘<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-size:12px;word-break:break-all">LOGIN ERROR: ’ + e.message + ‘<br>’ + (e.stack||’’).split(”\n”).slice(0,4).join(”<br>”) + ‘</div>’;
+}
 };
 
 // doLogin handled by early script (see before <header>)
@@ -1901,13 +1917,16 @@ function initLogin() {
 var saved = window._loginUser || null;
 try { if (!saved) saved = sessionStorage.getItem(‘rp_user’); } catch(e) {}
 if (saved) {
+try {
 currentUser = saved;
 window._loginUser = null;
-var ls = document.getElementById(‘loginScreen’);
-if (ls) ls.parentNode.removeChild(ls);
+hideLoginScreen();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 2000);
+} catch(e) {
+document.body.innerHTML += ‘<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:99999;font-size:12px;word-break:break-all">INIT ERROR: ’ + e.message + ‘<br>’ + (e.stack||’’).split(”\n”).slice(0,4).join(”<br>”) + ‘</div>’;
+}
 return;
 }
 // Not logged in yet - bind enter key (button already has onclick)
