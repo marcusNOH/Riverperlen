@@ -1428,45 +1428,52 @@ function renderBerechtigungen() {
   const el = document.getElementById('berechtigungenMatrix');
   if (!el) return;
   const members = getMembers();
-  // Group permissions by seite
   const bySeite = {};
-  ALLE_BERECHTIGUNGEN.forEach(p => {
+  ALLE_BERECHTIGUNGEN.forEach(function(p) {
     if (!bySeite[p.seite]) bySeite[p.seite] = [];
     bySeite[p.seite].push(p);
   });
 
-  el.innerHTML = members.map(m => {
+  el.innerHTML = members.map(function(m) {
     const perms = (state.memberPerms || {})[m] || {};
-    const seitenBlocks = Object.entries(bySeite).map(([seite, ps]) => `
-      <div style="margin-bottom:10px">
-        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">${seite}</div>
-        ${ps.map(p => {
-          const val = typeof perms[p.key] === 'boolean' ? perms[p.key] : true;
-          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
-            <span style="font-size:13px;color:${val?'var(--text)':'var(--text3)'}">${p.label}</span>
-            <div onclick="togglePerm('${m}','${p.key}')"
-              style="width:40px;height:22px;border-radius:11px;background:${val?'var(--green)':'var(--bg3)'};border:1px solid ${val?'var(--green)':'var(--border)'};position:relative;cursor:pointer;flex-shrink:0;transition:background .2s">
-              <div style="position:absolute;top:2px;${val?'right:2px':'left:2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s"></div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`).join('');
+    const mkey = m.replace(/ /g,'_');
 
-    return `<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="toggleBerechtigungExpand('${m}')">
-        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0">${initials(m)}</div>
-        <div style="flex:1;font-weight:700;font-size:15px">${m.split(' ')[0]}</div>
-        <div style="font-size:11px;color:var(--text3)">${countRestrictions(m)} Einschränkung${countRestrictions(m)!==1?'en':''}</div>
-        <div id="bexp-arrow-${m.replace(/ /g,'_')}" style="color:var(--text3);font-size:16px;transition:transform .2s">›</div>
-      </div>
-      <div id="bexp-${m.replace(/ /g,'_')}" style="display:none">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <button onclick="setAllPerms('${m}',true)"  style="flex:1;padding:7px;background:rgba(61,214,140,.15);border:1px solid var(--green);border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer">✅ Alles erlauben</button>
-          <button onclick="setAllPerms('${m}',false)" style="flex:1;padding:7px;background:rgba(232,64,64,.1);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer">🚫 Alles sperren</button>
-        </div>
-        ${seitenBlocks}
-      </div>
-    </div>`;
+    // Build seiten blocks using string concat (avoid nested template literal issues)
+    let seitenBlocks = '';
+    Object.entries(bySeite).forEach(function([seite, ps]) {
+      seitenBlocks += '<div style="margin-bottom:10px">';
+      seitenBlocks += '<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:1px;margin-bottom:5px;text-transform:uppercase">' + seite + '</div>';
+      ps.forEach(function(p) {
+        const val = typeof perms[p.key] === 'boolean' ? perms[p.key] : true;
+        const bg  = val ? 'var(--green)' : 'var(--bg3)';
+        const bdr = val ? 'var(--green)' : 'var(--border)';
+        const pos = val ? 'right:2px' : 'left:2px';
+        const col = val ? 'var(--text)' : 'var(--text3)';
+        seitenBlocks += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">';
+        seitenBlocks += '<span style="font-size:13px;color:' + col + '">' + p.label + '</span>';
+        seitenBlocks += '<div onclick="togglePerm('' + m + '','' + p.key + '')" style="width:40px;height:22px;border-radius:11px;background:' + bg + ';border:1px solid ' + bdr + ';position:relative;cursor:pointer;flex-shrink:0;transition:background .2s">';
+        seitenBlocks += '<div style="position:absolute;top:2px;' + pos + ';width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s"></div>';
+        seitenBlocks += '</div></div>';
+      });
+      seitenBlocks += '</div>';
+    });
+
+    const restr = countRestrictions(m);
+    let html = '<div style="background:var(--bg3);border-radius:12px;padding:14px;margin-bottom:12px;border:1px solid var(--border)">';
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer" onclick="toggleBerechtigungExpand('' + m + '')">';
+    html += '<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#000;flex-shrink:0">' + initials(m) + '</div>';
+    html += '<div style="flex:1;font-weight:700;font-size:15px">' + m.split(' ')[0] + '</div>';
+    html += '<div style="font-size:11px;color:var(--text3)">' + restr + ' Einschränkung' + (restr!==1?'en':'') + '</div>';
+    html += '<div id="bexp-arrow-' + mkey + '" style="color:var(--text3);font-size:16px;transition:transform .2s">›</div>';
+    html += '</div>';
+    html += '<div id="bexp-' + mkey + '" style="display:none">';
+    html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
+    html += '<button onclick="setAllPerms('' + m + '',true)" style="flex:1;padding:7px;background:rgba(61,214,140,.15);border:1px solid var(--green);border-radius:8px;color:var(--green);font-size:12px;font-weight:700;cursor:pointer">✅ Alles erlauben</button>';
+    html += '<button onclick="setAllPerms('' + m + '',false)" style="flex:1;padding:7px;background:rgba(232,64,64,.1);border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;cursor:pointer">🚫 Alles sperren</button>';
+    html += '</div>';
+    html += seitenBlocks;
+    html += '</div></div>';
+    return html;
   }).join('');
 }
 
