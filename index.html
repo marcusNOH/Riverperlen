@@ -439,10 +439,12 @@ async function initFb() {
         state = {...defaultState(),...remote};
         if (savedPerms) state.memberPerms = savedPerms;
         // Sync Firebase photos to localMeta for this device
+        // memberPhotos kommt jetzt aus /riverperlen/photos – hier ignorieren
         if (state.memberPhotos) {
           if (!localMeta.photos) localMeta.photos = {};
           Object.assign(localMeta.photos, state.memberPhotos);
           saveLocalMeta();
+          delete state.memberPhotos; // nicht im state halten
         }
         saveLocalState();
         if (!_permSaving) { refreshCurrentPage(); updateHeader(); }
@@ -479,8 +481,11 @@ async function initFb() {
 
 function pushFb(onDone) {
   if (!fbRef) { if (onDone) onDone(null); return; }
+  // Fotos nie im Haupt-State speichern – die haben ihren eigenen Pfad
+  var stateToSave = Object.assign({}, state);
+  delete stateToSave.memberPhotos;
   ignoreNextRemote++;
-  fbRef.set(state).then(function() {
+  fbRef.set(stateToSave).then(function() {
     setSyncStatus('connected', 'Synchron');
     if (onDone) onDone(null);
   }).catch(function(err) {
@@ -2193,9 +2198,9 @@ function uploadMemberPhoto(name, event) {
       if (!localMeta.photos) localMeta.photos = {};
       localMeta.photos[name] = data;
       saveLocalMeta();
-      // In separatem Firebase-Pfad speichern (nicht im Haupt-State)
+      // Nur in lokalem Cache – NICHT im state (wäre zu groß für Firebase-Sync)
       if (!state.memberPhotos) state.memberPhotos = {};
-      state.memberPhotos[name] = data;
+      state.memberPhotos[name] = data; // nur lokal für diese Session
       if (photosRef) {
         var photoUpdate = {};
         photoUpdate[name] = data;
