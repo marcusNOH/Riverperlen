@@ -345,44 +345,14 @@ function _triggerLoginInit() {
   initLogin();
   checkBdayNotifs();
   checkBirthdayChatMessage();
-  // iOS pending-Chat: Nachrichten die beim letzten Start nicht zu Firebase kamen nachholen
-  _flushPendingChat();
-}
-
-function _flushPendingChat() {
-  try {
-    var pending = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
-    if (!pending.length) return;
-    if (!fbRef) return; // Firebase nicht bereit – beim nächsten Start nochmal
-    // Pending-Msgs in state mergen falls noch nicht vorhanden
-    if (!state.chatMessages) state.chatMessages = [];
-    var existingTs = new Set(state.chatMessages.map(function(m){return m.ts;}));
-    var added = false;
-    pending.forEach(function(m){
-      if (!existingTs.has(m.ts)) {
-        state.chatMessages.push(m);
-        added = true;
-      }
-    });
-    if (!added) {
-      // Alle bereits in Firebase – pending einfach leeren
-      localStorage.removeItem('rp_pending_chat');
-      return;
-    }
-    state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
-    if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-    localStorage.removeItem('rp_pending_chat');
-    // Jetzt sicher pushen – außerhalb von onValue, fbRef garantiert ready
-    pushFb();
-  } catch(e) {
-    console.warn('_flushPendingChat error:', e);
-  }
 }
 let fbApp = null;
 let fbRef = null;
 let isConnected = false;
 let ignoreNextRemote = 0; // Zähler: >0 = ignorieren
 var photosRef = null;
+var chatRef = null;
+var _chatMessages = []; // eigener Chat-State, unabhängig von state{}
 
 (function loadFbCfg() {
   try { fbCfg = JSON.parse(localStorage.getItem('rp_fbcfg')||'null'); } catch(e){}
@@ -462,11 +432,35 @@ async function initFb() {
         if (mp) renderMyProfile();
       }
     });
+    // Chat: eigener Pfad /riverperlen/chat – schnelles push() für iOS
+    chatRef = db.ref("riverperlen/chat");
+    chatRef.limitToLast(100).on("value", function(snap) {
+      _chatMessages = [];
+      var val = snap.val();
+      if (val) {
+        Object.keys(val).forEach(function(k) {
+          _chatMessages.push(val[k]);
+        });
+        _chatMessages.sort(function(a,b){ return a.ts - b.ts; });
+      }
+      // Migration: alte Nachrichten aus state.chatMessages einmalig übernehmen
+      if (state.chatMessages && state.chatMessages.length > 0) {
+        var existingTs = new Set(_chatMessages.map(function(m){return m.ts;}));
+        state.chatMessages.forEach(function(m){
+          if (!existingTs.has(m.ts)) {
+            chatRef.push(m);
+          }
+        });
+        state.chatMessages = [];
+        saveLocalState();
+      }
+      renderChat();
+      checkIncomingChatNotif(_chatMessages);
+    });
     setSyncStatus("syncing","Verbinde...");
     fbRef.on("value", snap => {
       const remote = snap.val();
       if (remote && ignoreNextRemote === 0) {
-        const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
@@ -485,10 +479,6 @@ async function initFb() {
         saveLocalState();
         if (!_permSaving) { refreshCurrentPage(); updateHeader(); }
         else { updateHeader(); updateSyncBanner(); }
-        // Check for new incoming chat messages from others
-        if (state.chatMessages && state.chatMessages.length > 0) {
-          checkIncomingChatNotif(state.chatMessages);
-        }
         // Reschedule termin reminders if termine data changed
         scheduleTerminReminders();
       }
@@ -1846,7 +1836,7 @@ function confirmReset() {
       if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
       if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
       if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
-      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; }
+      if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; if(chatRef) chatRef.set(null); }
       saveState(); renderDashboard();
       showToast('✅ Ausgewählte Daten zurückgesetzt');
     },
@@ -1972,7 +1962,7 @@ function _persistNotifiedTs() {
 function initChatWatermark() {
   // Called at login. Set watermark = newest existing message timestamp.
   // Pre-seed _notifiedChatTs with ALL current messages → nothing old can ever fire.
-  const msgs = state.chatMessages || [];
+  const msgs = _chatMessages || [];
   _lastChatTs = msgs.length > 0
     ? Math.max(...msgs.map(m => m.ts))
     : Date.now();
@@ -2311,7 +2301,7 @@ function getBirthdaysNextTwoMonths() {
 // CHAT
 // ═══════════════════════════════════════════
 function renderChat() {
-  const msgs = state.chatMessages || [];
+  const msgs = _chatMessages || [];
   const el = document.getElementById('chatMessages');
   if (!el) return;
   el.innerHTML = msgs.length === 0
@@ -2333,22 +2323,20 @@ function sendChat() {
   const inp = document.getElementById('chatInput');
   const text = inp.value.trim();
   if (!text) return;
-  if (!state.chatMessages) state.chatMessages = [];
-  state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
-  if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+  if (!chatRef) { showToast('❌ Keine Verbindung'); return; }
+  var msg = { author: currentUser, text: text, ts: Date.now() };
   inp.value = '';
-  // iOS Safari Fix: pending-Nachricht separat merken falls pushFb() unterbrochen wird
-  try {
-    var pending = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
-    var lastMsg = state.chatMessages[state.chatMessages.length-1];
-    pending.push(lastMsg);
-    localStorage.setItem('rp_pending_chat', JSON.stringify(pending));
-  } catch(e) {}
-  saveLocalState();
+  // Sofort lokal anzeigen (optimistic UI)
+  _chatMessages.push(msg);
   renderChat();
-  pushFb(function() {
-    // Nach erfolgreichem Push: pending leeren
-    try { localStorage.removeItem('rp_pending_chat'); } catch(e) {}
+  // Direkt in eigenen Firebase-Pfad pushen – kein State-Push nötig
+  // chatRef.push() ist viel schneller als fbRef.set(gesamterState)
+  chatRef.push(msg).catch(function(err) {
+    showToast('❌ Nachricht konnte nicht gesendet werden');
+    console.error('sendChat error:', err);
+    // Optimistic update rückgängig machen
+    _chatMessages = _chatMessages.filter(function(m){ return m.ts !== msg.ts; });
+    renderChat();
   });
 }
 
@@ -2978,9 +2966,9 @@ function checkBirthdayChatMessage() {
     const bdMMDD = String(bd.getMonth()+1).padStart(2,'0')+'-'+String(bd.getDate()).padStart(2,'0');
     if (bdMMDD === todayMMDD) {
       const age = today.getFullYear() - bd.getFullYear();
-      if (!state.chatMessages) state.chatMessages = [];
-      state.chatMessages.push({ author: '🎂 Pegelclub', text: `Herzlichen Glückwunsch ${m.split(' ')[0]}! Heute wird er/sie ${age} Jahre alt! Auf dein Wohl! 🥂🎳`, ts: Date.now() });
-      saveState();
+      if (chatRef) {
+        chatRef.push({ author: '🎂 Pegelclub', text: 'Herzlichen Glückwunsch ' + m.split(' ')[0] + '! Heute wird er/sie ' + age + ' Jahre alt! Auf dein Wohl! 🥂🎳', ts: Date.now() });
+      }
       try { localStorage.setItem(sentKey, todayMMDD); } catch(e) {}
       break;
     }
