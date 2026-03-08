@@ -554,6 +554,8 @@ function renderPage(id) {
     chat: renderChat,
     profil: () => { renderMyProfile(); renderTeamProfiles(); }
   }[id] || (()=>{}))();
+  // Berechtigungen nach jedem Render anwenden
+  if (currentUser) applyPermissions();
 }
 
 // ═══════════════════════════════════════════
@@ -682,6 +684,8 @@ function renderDashboard() {
   if (notizEl) notizEl.value = (state.abendNotizen||{})[today] || '';
   // Abstimmungen rendern
   renderAbstimmungen();
+  // Berechtigungen anwenden nachdem Dashboard gerendert
+  applyPermissions();
 }
 
 // ═══════════════════════════════════════════
@@ -740,6 +744,7 @@ function renderAnwesenheit() {
       </div>
     </div>`;
   }).join('');
+  applyPermissions();
 }
 function togglePresent(m) {
   if (!canDo('anw.toggle')) return;
