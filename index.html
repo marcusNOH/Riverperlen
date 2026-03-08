@@ -3702,7 +3702,10 @@ document.addEventListener(‘DOMContentLoaded’, function() { init(); });
 </div>
 ```
 
-<!-- ═══ MODALS ═══ -->
+  </div><!-- end #pages -->
+</div><!-- end #app -->
+
+<!-- ═══ MODALS – außerhalb #app damit sie nie blockiert werden ═══ -->
 
 <div id="modalOverlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -3743,8 +3746,5 @@ document.addEventListener(‘DOMContentLoaded’, function() { init(); });
     </div>
   </div>
 </div>
-
-  </div><!-- end #pages -->
-</div><!-- end #app -->
 </body>
 </html>
