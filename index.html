@@ -3124,15 +3124,49 @@ function spinSpielRoulette() {
     window._spRA=a; drawSpielWheel(a);
     if (t<1) { requestAnimationFrame(frame); return; }
     _spielRS=false;
-    var res=document.getElementById('spRR');
+   var res=document.getElementById('spRR');
     if (res) res.innerHTML='<div style="font-size:28px;margin-bottom:6px">&#127923;</div>'
       +'<div style="font-size:16px;font-weight:900;color:#4a9eff;margin-bottom:4px">Heute spielen wir:</div>'
-      +'<div style="font-size:15px;font-weight:700;color:var(--text)">'+ALLE_SPIELE_KURZ[win]+'</div>';
+      +'<div onclick="showSpielAnleitung(\''+ALLE_SPIELE_KURZ[win]+'\')" style="font-size:15px;font-weight:700;color:var(--text);background:rgba(74,158,255,.12);border:1px solid rgba(74,158,255,.3);border-radius:10px;padding:10px 14px;margin-top:6px;cursor:pointer">'+ALLE_SPIELE_KURZ[win]+' <span style="font-size:12px;color:#4a9eff">&#8250; Anleitung</span></div>';
     if (btn) { btn.disabled=false; btn.textContent='Nochmal drehen!'; }
   }
   requestAnimationFrame(frame);
 }
-
+function showSpielAnleitung(name) {
+  var found = null;
+  for (var ki = 0; ki < SPIELIDEEN.length; ki++) {
+    var kat = SPIELIDEEN[ki];
+    for (var si = 0; si < kat.spiele.length; si++) {
+      if (kat.spiele[si].name === name) { found = kat.spiele[si]; break; }
+    }
+    if (found) break;
+  }
+  if (!found) { showToast('Anleitung nicht gefunden'); return; }
+  var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'
+    + '<span style="background:rgba(74,158,255,.15);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">&#128101; ' + found.spieler + ' Spieler</span>'
+    + '<span style="background:rgba(74,158,255,.15);border:1px solid rgba(74,158,255,.3);color:#4a9eff;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700">&#9201; ' + found.dauer + '</span>'
+    + '</div>'
+    + '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">&#128214; Spielablauf</div>'
+    + '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + found.beschreibung + '</div>'
+    + '</div>'
+    + '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:8px">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">&#127942; Punkte &amp; Wertung</div>'
+    + '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + found.punkte + '</div>'
+    + '</div>'
+    + '<div style="background:rgba(74,158,255,.08);border:1px solid rgba(74,158,255,.2);border-radius:10px;padding:12px">'
+    + '<div style="font-size:11px;font-weight:700;color:#4a9eff;margin-bottom:4px">&#128161; Tipp</div>'
+    + '<div style="font-size:13px;color:var(--text2);line-height:1.5">' + found.tipp + '</div>'
+    + '</div>';
+  var titleEl = document.getElementById('modalTitle');
+  var bodyEl = document.getElementById('modalBody');
+  var confirmBtn = document.getElementById('modalConfirmBtn');
+  var cancelBtn = document.getElementById('modalCancelBtn');
+  if (titleEl) titleEl.textContent = found.emoji + ' ' + found.name;
+  if (bodyEl) bodyEl.innerHTML = html;
+  if (confirmBtn) confirmBtn.style.display = 'none';
+  if (cancelBtn) cancelBtn.textContent = 'Schliessen';
+}
 // ═══════════════════════════════════════════
 // TRINKROULETTE
 // ═══════════════════════════════════════════
