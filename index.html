@@ -435,7 +435,9 @@ async function initFb() {
       const remote = snap.val();
       if (remote && ignoreNextRemote === 0) {
         const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
+        var savedPerms = _permSaving ? state.memberPerms : null;
         state = {...defaultState(),...remote};
+        if (savedPerms) state.memberPerms = savedPerms;
         // Sync Firebase photos to localMeta for this device
         if (state.memberPhotos) {
           if (!localMeta.photos) localMeta.photos = {};
@@ -1629,36 +1631,28 @@ function togglePerm(member, key) {
   state.memberPerms[member][key] = !cur;
   _permSaving = true;
   saveLocalState();
-  // Nur den memberPerms Pfad schreiben – nicht den ganzen State
-  if (fbRef) {
-    setSyncStatus('syncing','Speichert…');
-    var permsRef = fbRef.child ? fbRef.child('memberPerms') : null;
-    if (permsRef) {
-      permsRef.set(state.memberPerms || {}).then(function() {
-        setSyncStatus('connected','Synchron');
-        _permSaving = false;
-        showToast('✅ Berechtigung gespeichert');
-      }).catch(function(err) {
-        setSyncStatus('error','Sync-Fehler');
-        _permSaving = false;
-        console.error(err);
-      });
-    } else {
-      // Fallback: ganzen State schreiben
-      ignoreNextRemote++;
-      fbRef.set(state).then(function() {
-        setSyncStatus('connected','Synchron');
-        _permSaving = false;
-      }).catch(function(err) {
-        setSyncStatus('error','Sync-Fehler');
-        _permSaving = false;
-      });
-    }
-  } else {
-    setTimeout(function() { _permSaving = false; }, 500);
-  }
   renderBerechtigungen();
   applyPermissions();
+  // Firebase schreiben – mit hartem Timeout als Fallback
+  if (fbRef) {
+    setSyncStatus('syncing','Speichert…');
+    ignoreNextRemote++;
+    fbRef.set(state, function(err) {
+      if (err) {
+        setSyncStatus('error','Sync-Fehler');
+        showToast('❌ Speichern fehlgeschlagen');
+      } else {
+        setSyncStatus('connected','Synchron');
+        showToast('✅ Berechtigung gespeichert');
+      }
+      _permSaving = false;
+    });
+    // Harter Fallback: nach 5s freigeben egal was
+    setTimeout(function() { _permSaving = false; }, 5000);
+  } else {
+    setTimeout(function() { _permSaving = false; }, 300);
+    showToast('💾 Lokal gespeichert');
+  }
 }
 
 function setAllPerms(member, val) {
@@ -1667,33 +1661,25 @@ function setAllPerms(member, val) {
   ALLE_BERECHTIGUNGEN.forEach(function(p) { state.memberPerms[member][p.key] = val; });
   _permSaving = true;
   saveLocalState();
-  if (fbRef) {
-    setSyncStatus('syncing','Speichert…');
-    var permsRef2 = fbRef.child ? fbRef.child('memberPerms') : null;
-    if (permsRef2) {
-      permsRef2.set(state.memberPerms || {}).then(function() {
-        setSyncStatus('connected','Synchron');
-        _permSaving = false;
-        showToast('✅ Berechtigungen gespeichert');
-      }).catch(function(err) {
-        setSyncStatus('error','Sync-Fehler');
-        _permSaving = false;
-      });
-    } else {
-      ignoreNextRemote++;
-      fbRef.set(state).then(function() {
-        setSyncStatus('connected','Synchron');
-        _permSaving = false;
-      }).catch(function(err) {
-        setSyncStatus('error','Sync-Fehler');
-        _permSaving = false;
-      });
-    }
-  } else {
-    setTimeout(function() { _permSaving = false; }, 500);
-  }
   renderBerechtigungen();
   applyPermissions();
+  if (fbRef) {
+    setSyncStatus('syncing','Speichert…');
+    ignoreNextRemote++;
+    fbRef.set(state, function(err) {
+      if (err) {
+        setSyncStatus('error','Sync-Fehler');
+      } else {
+        setSyncStatus('connected','Synchron');
+        showToast('✅ Berechtigungen gespeichert');
+      }
+      _permSaving = false;
+    });
+    setTimeout(function() { _permSaving = false; }, 5000);
+  } else {
+    setTimeout(function() { _permSaving = false; }, 300);
+    showToast('💾 Lokal gespeichert');
+  }
 }
 
 function toggleBerechtigungExpand(member) {
