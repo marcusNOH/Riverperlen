@@ -437,7 +437,7 @@ async function initFb() {
         // iOS Fix: pending-Nachrichten aus sessionStorage in prevChatMsgs mergen
         var pendingMsgs = [];
         try {
-          pendingMsgs = JSON.parse(sessionStorage.getItem('rp_pending_chat')||'[]');
+          pendingMsgs = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
         } catch(e) {}
         var localChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
         // Pending-Msgs die noch nicht im lokalen State sind hinzufügen
@@ -463,7 +463,12 @@ async function initFb() {
             state.chatMessages = state.chatMessages.concat(missing);
             state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
             if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-            setTimeout(function(){ pushFb(); }, 500);
+            // Pending nach erfolgreichem Re-Push leeren
+            setTimeout(function(){
+              pushFb(function(err) {
+                if (!err) { try { localStorage.removeItem('rp_pending_chat'); } catch(e) {} }
+              });
+            }, 500);
           }
         }
         // Sync Firebase photos to localMeta for this device
@@ -2331,16 +2336,16 @@ function sendChat() {
   inp.value = '';
   // iOS Safari Fix: pending-Nachricht separat merken falls pushFb() unterbrochen wird
   try {
-    var pending = JSON.parse(sessionStorage.getItem('rp_pending_chat')||'[]');
+    var pending = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
     var lastMsg = state.chatMessages[state.chatMessages.length-1];
     pending.push(lastMsg);
-    sessionStorage.setItem('rp_pending_chat', JSON.stringify(pending));
+    localStorage.setItem('rp_pending_chat', JSON.stringify(pending));
   } catch(e) {}
   saveLocalState();
   renderChat();
   pushFb(function() {
     // Nach erfolgreichem Push: pending leeren
-    try { sessionStorage.removeItem('rp_pending_chat'); } catch(e) {}
+    try { localStorage.removeItem('rp_pending_chat'); } catch(e) {}
   });
 }
 
