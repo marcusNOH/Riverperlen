@@ -1000,7 +1000,7 @@ function renderMyProfile() {
   document.getElementById('myProfileContent').innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
       <div class="member-avatar" style="width:56px;height:56px;font-size:20px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold2));display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;flex-shrink:0;overflow:hidden" onclick="document.getElementById('myPhotoUpload').click()">
-        ${(state.memberPhotos?.[currentUser] || localMeta.photos?.[currentUser]) ? `<img src="${localMeta.photos[currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(currentUser)}
+        ${((state.memberPhotos && state.memberPhotos[currentUser]) || localMeta.photos?.[currentUser]) ? `<img src="${(state.memberPhotos && state.memberPhotos[currentUser]) || localMeta.photos[currentUser]}" style="width:100%;height:100%;object-fit:cover">` : initials(currentUser)}
         <input type="file" id="myPhotoUpload" accept="image/*" style="display:none" onchange="uploadMemberPhoto('${currentUser}',event)">
       </div>
       <div style="flex:1">
@@ -1091,7 +1091,7 @@ const el = document.getElementById(‘teamProfilesList’);
 if (!el) return;
 const members = getMembers().filter(m => m !== currentUser);
 el.innerHTML = members.map(m => {
-const photo = localMeta.photos?.[m];
+const photo = (state.memberPhotos && state.memberPhotos[m]) || localMeta.photos?.[m];
 const p = (state.memberProfiles||{})[m] || {};
 const bday = (state.memberBdays||{})[m] || ‘’;
 const hasInfo = bday || p.email || p.adresse || p.vorlieben || p.notizen;
@@ -2033,14 +2033,17 @@ canvas.width  = Math.round(img.width  * scale);
 canvas.height = Math.round(img.height * scale);
 canvas.getContext(‘2d’).drawImage(img, 0, 0, canvas.width, canvas.height);
 const data = canvas.toDataURL(‘image/jpeg’, 0.78);
+// Lokal cachen
 if (!localMeta.photos) localMeta.photos = {};
 localMeta.photos[name] = data;
-localStorage.setItem(‘rp_meta’, JSON.stringify(localMeta));
+saveLocalMeta();
+// In Firebase State speichern – alle anderen sehen es sofort
 if (!state.memberPhotos) state.memberPhotos = {};
 state.memberPhotos[name] = data;
 saveState();
 renderMyProfile();
-showToast(‘📷 Foto gespeichert & synchronisiert’);
+renderTeamProfiles();
+showToast(‘📷 Foto gespeichert & für alle sichtbar!’);
 };
 img.src = ev.target.result;
 };
@@ -2302,9 +2305,9 @@ emoji: ‘🏆’,
 spieler: ‘4–16’,
 dauer: ‘60–120 Min’,
 material: ‘9 Kegel, Kegelkugel, Turniertabelle’,
-beschreibung: ‘Alle Spieler werden ausgelost und treten in Einzelduellen gegeneinander an. Jedes Duell: 3 Würfe je Spieler, wer mehr Kegel trifft kommt weiter. Der Verlierer scheidet aus. Sieger-Bracket bis zum großen Finale!’,
-punkte: ‘Jedes Duell gewinnt, wer mehr Kegel umwirft (3 Würfe). Bei Gleichstand: ein Stich-Wurf entscheidet.’,
-tipp: ‘Vorab auslosen und Bracket auf Papier aufzeichnen – macht den Wettbewerb deutlich spannender!’
+beschreibung: ‘Alle Spieler werden ausgelost und treten in Einzelduellen gegeneinander an. Jedes Duell besteht aus 3 Würfen je Spieler – wer mehr Kegel trifft, kommt weiter. Der Verlierer scheidet sofort aus. So geht es weiter bis zum großen Finale!’,
+punkte: ‘Jedes Duell: wer in 3 Würfen mehr Kegel trifft, gewinnt. Bei Gleichstand: ein Stechwurf entscheidet.’,
+tipp: ‘Bracket vor dem Abend auslosen und auf Papier aufzeichnen – steigert die Vorfreude!’
 },
 {
 name: ‘Liga-Abend’,
@@ -2312,7 +2315,7 @@ emoji: ‘📊’,
 spieler: ‘4–10’,
 dauer: ‘90–180 Min’,
 material: ‘9 Kegel, Kegelkugel, Punkteliste’,
-beschreibung: ‘Jeder spielt gegen jeden eine Runde (Jeder-gegen-Jeden-System). Pro Partie hat jeder Spieler 10 Würfe. Höchste Gesamtpunktzahl nach allen Partien gewinnt. Perfekt für einen echten Club-Abend mit Rangliste.’,
+beschreibung: ‘Jeder spielt gegen jeden eine Partie (Jeder-gegen-Jeden). Pro Partie hat jeder Spieler 10 Würfe. Höchste Gesamtpunktzahl nach allen Partien gewinnt. Perfekt für einen echten Club-Abend mit Rangliste.’,
 punkte: ‘Sieg = 3 Punkte, Unentschieden = 1 Punkt, Niederlage = 0. Tiebreaker: geworfene Kegel gesamt.’,
 tipp: ‘Tabelle nach jedem Spiel aktualisieren – steigert die Spannung enorm!’
 },
@@ -2322,7 +2325,7 @@ emoji: ‘🔄’,
 spieler: ‘6–12’,
 dauer: ‘45–60 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Zwei gleich große Teams. Jeder Spieler hat genau einen Wurf. Dann wechselt der nächste. Die Punkte werden addiert. Das Team mit der höchsten Gesamtpunktzahl nach allen Spielern gewinnt die Runde. Beste von 5 Runden.’,
+beschreibung: ‘Zwei gleich große Teams. Jeder Spieler hat exakt einen Wurf, dann wechselt der Nächste. Die Punkte werden für das Team addiert. Das Team mit der höchsten Gesamtpunktzahl nach allen Spielern gewinnt. Beste aus 5 Runden.’,
 punkte: ‘Getroffene Kegel pro Wurf summiert. Team mit mehr Gesamtpunkten gewinnt die Runde.’,
 tipp: ‘Starke und schwache Werfer abwechselnd einsetzen – balanciert die Teams!’
 },
@@ -2332,9 +2335,29 @@ emoji: ‘⚖️’,
 spieler: ‘4–10’,
 dauer: ‘60–90 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Vor dem Turnier werden die Stärken eingeschätzt. Anfänger starten mit Vorgabepunkten, Profis ohne. Jeder hat 10 Würfe. Am Ende werden Vorgabepunkte addiert. So haben alle eine faire Chance – ideal für gemischte Gruppen!’,
+beschreibung: ‘Vor dem Turnier werden Stärken eingeschätzt und Vorgabepunkte vergeben. Anfänger starten mit Bonus, Profis ohne. Jeder hat 10 Würfe. Am Ende werden Vorgabepunkte addiert – so haben alle eine faire Chance!’,
 punkte: ‘Ergebnis + Vorgabe = Endpunktzahl. Vorgabe: Anfänger +20, Mittel +10, Profi +0.’,
-tipp: ‘Vorgaben ehrlich festlegen! Der beste Kegelspieler der Gruppe kann so auch mal verlieren.’
+tipp: ‘Vorgaben ehrlich festlegen – der beste Kegelspieler kann so auch mal verlieren!’
+},
+{
+name: ‘Zeitkegeln’,
+emoji: ‘⏱️’,
+spieler: ‘2–8’,
+dauer: ‘20–30 Min’,
+material: ‘9 Kegel, Kegelkugel, Stoppuhr’,
+beschreibung: ‘Jeder Spieler hat exakt 2 Minuten Zeit für so viele Würfe wie möglich. Kegel werden nach jedem Wurf sofort neu aufgestellt. Wer in der Zeit die meisten Kegel abgeräumt hat, gewinnt.’,
+punkte: ‘Alle umgeworfenen Kegel in 2 Minuten = Gesamtpunktzahl. Bei Gleichstand: Stechwurf.’,
+tipp: ‘Einen Aufsteller für die Kegel bestimmen – sonst verliert man zu viel Zeit!’
+},
+{
+name: ‘Königskegeln’,
+emoji: ‘👑’,
+spieler: ‘4–10’,
+dauer: ‘45–60 Min’,
+material: ‘9 Kegel, Kegelkugel, Papierkrone’,
+beschreibung: ‘Der erste der alle 9 Kegel mit einem Wurf räumt, wird “König” und bekommt die Papierkrone. Der König darf Sonderregeln für die nächste Runde diktieren (z.B. alle werfen mit links). Wer den König stürzt, übernimmt die Krone.’,
+punkte: ‘Punkte für jeden Abend als König. Wer am Ende die längste Regentschaft hatte, gewinnt.’,
+tipp: ‘Faire aber lustige Regeln diktieren – zu gemeine Regeln kosten Sympathiepunkte!’
 },
 ]
 },
@@ -2348,28 +2371,28 @@ emoji: ‘🎲’,
 spieler: ‘2–8’,
 dauer: ‘30–45 Min’,
 material: ‘9 Kegel, Kegelkugel, 2 Würfel’,
-beschreibung: ‘Vor jedem Wurf würfeln. Die Augenzahl bestimmt die Aufgabe: 2 = nur mit links, 3 = rückwärts, 4 = normal, 5 = mit geschlossenen Augen, 6 = Bonuswurf!, 7 = alle Kegel zählen doppelt, 8 = nur der König zählt, 9 = alle müssen gleichzeitig tippen wie viele Kegel fallen, 10 = Wahl des Gegners, 11 = Bonuswurf für alle, 12 = Jackpot – 9 Kegel = 20 Punkte.’,
+beschreibung: ‘Vor jedem Wurf würfeln. Die Augenzahl bestimmt die Aufgabe – 2: nur mit links werfen · 3: rückwärts werfen · 4: normal · 5: Augen zu · 6: Bonuswurf · 7: alle Kegel doppelt · 8: nur der König zählt · 9: Tipp-Runde (alle tippen Kegel-Anzahl) · 10: Gegner wählt Seite · 11: Bonuswurf für alle · 12: Jackpot – 9 Kegel = 20 Punkte.’,
 punkte: ‘Normale Kegelwertung mit den Würfel-Regeln. Nach 3 Runden gewinnt die höchste Punktzahl.’,
-tipp: ‘Die Regeln auf Kärtchen schreiben – dann muss man sie nicht auswendig kennen!’
+tipp: ‘Regeln auf Kärtchen schreiben – dann muss man sie nicht auswendig kennen!’
 },
 {
 name: ‘Russisches Roulette Kegeln’,
 emoji: ‘🎯’,
 spieler: ‘3–8’,
 dauer: ‘20–30 Min’,
-material: ‘9 Kegel, Kegelkugel, 1 Becher, 6 Zettel (5x leer, 1x “Strafe”)’,
-beschreibung: ‘Jeder Spieler zieht vor seinem Wurf einen Zettel aus dem Becher (ohne hinzuschauen). Wer die “Strafe” zieht, muss einen Schnaps trinken – UND danach trotzdem noch werfen! Nach jedem Durchgang werden die Zettel neu gemischt.’,
-punkte: ‘Getroffene Kegel = Punkte. Wer nach 5 Runden die meisten hat, gewinnt und ist frei von Strafen.’,
-tipp: ‘Spannung pur! Mit mehr “Strafe”-Zetteln lässt sich die Häufigkeit erhöhen.’
+material: ‘9 Kegel, Kegelkugel, Becher, 6 Zettel (5x leer, 1x Strafe)’,
+beschreibung: ‘Jeder Spieler zieht vor seinem Wurf blind einen Zettel aus dem Becher. Wer die “Strafe” zieht, muss einen Shot trinken – UND danach trotzdem werfen! Nach jedem Durchgang werden Zettel neu gemischt.’,
+punkte: ‘Getroffene Kegel = Punkte. Wer nach 5 Runden die meisten hat, gewinnt und ist strafenfrei.’,
+tipp: ‘Mit mehr Strafe-Zetteln (2 von 6) lässt sich die Häufigkeit erhöhen!’
 },
 {
 name: ‘Zielzahl-Kegeln’,
 emoji: ‘🎯’,
 spieler: ‘2–10’,
 dauer: ‘25–35 Min’,
-material: ‘9 Kegel, Kegelkugel, 1 Würfel’,
-beschreibung: ‘Alle würfeln gleichzeitig – die Summe aller Würfel ergibt die Zielzahl. Wer beim Werfen exakt diese Anzahl Kegel trifft, bekommt 5 Bonuspunkte! Wer am nächsten dran ist, bekommt 2 Punkte. Wer die Zielzahl überschreitet, bekommt 0.’,
-punkte: ‘Exakt getroffen = 5 Punkte, am nächsten = 2 Punkte, überschritten = 0. Nach 5 Runden gewinnt die höchste Summe.’,
+material: ‘9 Kegel, Kegelkugel, je 1 Würfel pro Spieler’,
+beschreibung: ‘Alle würfeln gleichzeitig – die Summe aller Würfel ergibt die Zielzahl. Wer beim Werfen exakt diese Anzahl Kegel trifft, bekommt 5 Bonuspunkte! Wer am nächsten dran ist, bekommt 2 Punkte.’,
+punkte: ‘Exakt getroffen = 5 Punkte, am nächsten = 2 Punkte, überschritten = 0. Nach 5 Runden Gesamtsieger.’,
 tipp: ‘Vor dem Wurf laut die Strategie verkünden – erhöht den Spaßfaktor!’
 },
 {
@@ -2378,9 +2401,19 @@ emoji: ‘🔢’,
 spieler: ‘2–8’,
 dauer: ‘30–45 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Normale Kegelrunde – ABER wer eine Schnapszahl erzielt (11, 22, 33, 44, 55, 66, 77, 88, 99) bekommt einen Bonuspunkt. Wer exakt 0 Kegel trifft, muss einen Shot trinken. Wer alle 9 räumt (Alle Neune!) bekommt 3 Bonuspunkte.’,
-punkte: ‘Getroffene Kegel + Bonuspunkte. Schnapszahl +1, Alle Neune +3. Nach 10 Würfen gewinnt die höchste Punktzahl.’,
+beschreibung: ‘Normale Kegelrunde – ABER wer eine Schnapszahl erzielt (11, 22, 33, 44, 55, 66, 77, 88, 99 summiert) bekommt Bonuspunkte. Wer exakt 0 Kegel trifft: Shot! Wer alle 9 räumt: 3 Bonuspunkte.’,
+punkte: ‘Getroffene Kegel + Boni. Schnapszahl +1, Alle Neune +3. Nach 10 Würfen Gesamtsieger.’,
 tipp: ‘Auf Schnapszahlen zu zielen macht die Partie deutlich taktischer!’
+},
+{
+name: ‘Lotterie-Kegeln’,
+emoji: ‘🎰’,
+spieler: ‘3–9’,
+dauer: ‘30–40 Min’,
+material: ‘9 Kegel, Kegelkugel, 9 Zettel mit Zahlen 1–9’,
+beschreibung: ‘Jeder Spieler zieht zu Beginn blind eine Zahl (1–9). Das ist seine persönliche Glückszahl für den Abend. Wer beim Wurf exakt seine Zahl trifft, gewinnt eine Runde Getränke von allen anderen. Wer alle 9 räumt zahlt selbst eine Runde.’,
+punkte: ‘Keine Punkte – reine Glückssache. Der Spannung wegen Zahlen nicht verraten bis zum ersten Treffer!’,
+tipp: ‘Zahlen-Zettel bis zum Ende geheim halten – für maximale Dramatik!’
 },
 ]
 },
@@ -2394,27 +2427,27 @@ emoji: ‘👫’,
 spieler: ‘4–8’,
 dauer: ‘30–45 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Zwei Spieler bilden ein Tandem-Team. Beide halten gleichzeitig die Kugel und werfen gemeinsam – einer steuert die Richtung, der andere die Kraft! Abwechselnd wechseln die Paare. Garantiert für Gelächter und echte Teamarbeit.’,
-punkte: ‘Getroffene Kegel pro Tandem-Wurf = Punkte. Team mit den meisten Kegeln nach 3 Runden gewinnt.’,
-tipp: ‘Vorher kurz absprechen wer führt und wer die Kraft gibt – dann klappts besser!’
+beschreibung: ‘Zwei Spieler bilden ein Tandem-Team und halten gemeinsam die Kugel. Einer steuert die Richtung, der andere die Kraft. Beide müssen gleichzeitig loslassen! Garantiert Gelächter und echte Teamarbeit.’,
+punkte: ‘Getroffene Kegel pro Tandem-Wurf zählen. Team mit den meisten Kegeln nach 3 Runden gewinnt.’,
+tipp: ‘Kurz absprechen wer führt und wer die Kraft gibt – dann klappts tatsächlich!’
 },
 {
-name: ‘Staffel mit Kommunikation’,
+name: ‘Blind-Staffel’,
 emoji: ‘📢’,
 spieler: ‘6–10’,
 dauer: ‘30–40 Min’,
 material: ‘9 Kegel, Kegelkugel, Augenbinden’,
-beschreibung: ‘Team A schickt einen Blinden Werfer (Augenbinde), Team B gibt Anweisungen. Dann tauschen. Der blinde Werfer darf nur auf Zuruf seines Teams reagieren (links/rechts/geradeaus). Kommunikation und Vertrauen sind alles!’,
+beschreibung: ‘Team A schickt einen Blinden Werfer (Augenbinde), Team B gibt Anweisungen. Dann tauschen. Der blinde Werfer reagiert nur auf Zuruf seines Teams: links/rechts/geradeaus/jetzt! Kommunikation und Vertrauen sind alles.’,
 punkte: ‘Getroffene Kegel zählen. Alle 9 blind geräumt = 5 Bonuspunkte. 3 Runden, höchste Gesamtpunktzahl gewinnt.’,
-tipp: ‘Klare Kommandos vereinbaren: z.B. “stop” = stehen bleiben, “jetzt” = werfen!’
+tipp: ‘Klare Kommandos vereinbaren: “stop” = stehen bleiben, “jetzt” = werfen!’
 },
 {
-name: ‘Kegel-Staffel (Olympisch)’,
+name: ‘Olympisches Staffel-Kegeln’,
 emoji: ‘🏅’,
 spieler: ‘6–12’,
 dauer: ‘45–60 Min’,
 material: ‘9 Kegel, Kegelkugel, Stoppuhr’,
-beschreibung: ‘Jedes Team schickt seine Spieler nacheinander – jeder hat exakt 60 Sekunden Zeit für so viele Würfe wie möglich. Kegel werden nach jedem Wurf sofort neu aufgestellt. Wer in 60 Sekunden die meisten Kegel abgeräumt hat, gewinnt den Staffelabschnitt.’,
+beschreibung: ‘Jedes Team schickt Spieler nacheinander – jeder hat exakt 60 Sekunden für so viele Würfe wie möglich. Kegel werden nach jedem Wurf sofort neu aufgestellt. Wer in 60 Sekunden die meisten Kegel abgeräumt hat, gewinnt den Staffelabschnitt.’,
 punkte: ‘Kegel in 60 Sekunden = Punkte. Gesamtpunktzahl aller Teammitglieder entscheidet.’,
 tipp: ‘Stoppuhr sichtbar aufstellen – der Zeitdruck macht den Unterschied!’
 },
@@ -2424,9 +2457,19 @@ emoji: ‘🃏’,
 spieler: ‘8’,
 dauer: ‘60–90 Min’,
 material: ‘9 Kegel, Kegelkugel, Spielkarten’,
-beschreibung: ‘Vier Teams à 2 Spieler. Jedes Team zieht eine Spielkarte – die Zahl bestimmt die Zielzahl (Bube=11, Dame=12, König=13, Ass=1 oder 14). Wer seiner Zielzahl am nächsten kommt (über mehrere Würfe summiert), gewinnt die Runde. 5 Runden, Sieger gewinnt das Quartett.’,
-punkte: ‘Genau getroffen = 3 Punkte, ±1 = 2 Punkte, ±2 = 1 Punkt, weiter weg = 0.’,
-tipp: ‘Das Ass kann strategisch als 1 oder 14 gespielt werden – muss vor dem Wurf entschieden werden!’
+beschreibung: ‘Vier Teams à 2 Spieler. Jedes Team zieht eine Spielkarte – die Zahl bestimmt die Zielzahl (Bube=11, Dame=12, König=13, Ass=1 oder 14). Wer seiner Zielzahl am nächsten kommt, gewinnt die Runde.’,
+punkte: ‘Genau getroffen = 3 Punkte, ±1 = 2 Punkte, ±2 = 1 Punkt, weiter weg = 0. Nach 5 Runden Gesamtsieger.’,
+tipp: ‘Das Ass kann als 1 oder 14 gespielt werden – muss vor dem Wurf entschieden werden!’
+},
+{
+name: ‘Doppel-Kegeln’,
+emoji: ‘👥’,
+spieler: ‘4–8’,
+dauer: ‘40–60 Min’,
+material: ‘9 Kegel, Kegelkugel’,
+beschreibung: ‘Feste 2er-Teams spielen gegeneinander. Abwechselnd wirft immer ein Spieler pro Team. Die Punkte beider Spieler werden addiert. Nach 5 Runden gewinnt das Team mit der höchsten Gesamtpunktzahl. Strategische Absprache erlaubt!’,
+punkte: ‘Summe aller Kegel beider Teammitglieder pro Runde. Nach 5 Runden Gesamtsieger.’,
+tipp: ‘Den stärkeren Werfer zuletzt einsetzen – erhöht den psychologischen Druck auf den Gegner!’
 },
 ]
 },
@@ -2440,39 +2483,115 @@ emoji: ‘😅’,
 spieler: ‘4–10’,
 dauer: ‘45–60 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Jeder Spieler hat pro Runde einen Wurf. Wer 0 Kegel trifft: Wahrheit oder Pflicht! Er darf wählen – Wahrheit = eine peinliche Frage beantworten, Pflicht = eine lustige Aufgabe erfüllen (z.B. Liegestütze, Rückwärts singen, etc.). Die Gruppe entscheidet die Fragen/Aufgaben vorab.’,
-punkte: ‘Keine Punkte – nur Spaß und Scham! Optional: Wer nach 5 Runden am wenigsten Kegel hat, muss eine Mega-Pflicht erfüllen.’,
-tipp: ‘Fragen und Aufgaben vorher auf Zettel schreiben und ziehen lassen!’
+beschreibung: ‘Jeder Spieler hat pro Runde einen Wurf. Wer 0 Kegel trifft: Wahrheit oder Pflicht! Wahrheit = peinliche Frage beantworten, Pflicht = lustige Aufgabe erfüllen (Liegestütze, rückwärts singen, etc.). Gruppe entscheidet Fragen/Aufgaben vorab.’,
+punkte: ‘Keine Punkte – nur Spaß. Optional: Wer nach 5 Runden am wenigsten Kegel hat, muss eine Mega-Pflicht erfüllen.’,
+tipp: ‘Fragen und Aufgaben vorher auf Zettel schreiben und blind ziehen lassen!’
 },
 {
 name: ‘Kegel-Jenga’,
 emoji: ‘🧱’,
-spieler: ‘2–6’,
+spieler: ‘2–8’,
 dauer: ‘30–45 Min’,
-material: ‘9 Kegel, Kegelkugel, Jenga-Steine (optional)’,
-beschreibung: ‘Auf jeden Kegel wird ein Post-it oder Klebeband-Zettel mit einer Aufgabe geklebt. Wer einen Kegel trifft, muss die Aufgabe auf dem Zettel erfüllen (Schnaps, Liegestütze, Lied singen, etc.). Wer alle 9 räumt, darf eine Aufgabe vergeben.’,
-punkte: ‘Keine klassischen Punkte – jeder getroffene Kegel ist eine Aufgabe. Wer am Ende am meisten Aufgaben erfüllt hat, bekommt einen Ehrenpreis!’,
-tipp: ‘Aufgaben-Mix: 3x lustig, 3x sportlich, 3x Getränk – ausgewogen für alle!’
+material: ‘9 Kegel, Kegelkugel, Post-its’,
+beschreibung: ‘Auf jeden Kegel ein Post-it mit einer Aufgabe kleben. Wer einen Kegel trifft, muss die Aufgabe auf dem Zettel erfüllen. Wer alle 9 räumt, darf eine Aufgabe selbst vergeben.’,
+punkte: ‘Keine klassischen Punkte – jeder getroffene Kegel ist eine Aufgabe. Wer am Ende die meisten Aufgaben erfüllt hat, bekommt einen Ehrenpreis!’,
+tipp: ‘Mix: 3x lustig, 3x sportlich, 3x Getränk – ausgewogen für alle!’
 },
 {
-name: ‘Straf-Kegeln’,
+name: ‘Straf-Kegeln (Umgekehrt)’,
 emoji: ‘💀’,
 spieler: ‘3–8’,
 dauer: ‘30–45 Min’,
 material: ‘9 Kegel, Kegelkugel’,
-beschreibung: ‘Umgekehrte Logik: Wer Kegel trifft, bekommt KEINE Punkte – sondern muss für jeden getroffenen Kegel einen Schluck trinken! Wer gar keinen Kegel trifft, ist der Rundensieger. Wer alle 9 räumt, zahlt eine Runde aus.’,
-punkte: ‘Keine klassischen Punkte – der Rundensieger ist wer 0 Kegel trifft. Wer nach 5 Runden die meisten Kegel getroffen hat, zahlt die Abschlussrunde.’,
-tipp: ‘Gute Kegler sind hier im Nachteil – herrlich zum Nivellieren!’
+beschreibung: ‘Umgekehrte Logik: Wer Kegel trifft, bekommt KEINE Punkte – sondern muss für jeden getroffenen Kegel einen Schluck trinken! Wer gar keinen Kegel trifft, ist Rundensieger. Wer alle 9 räumt, zahlt eine Runde aus.’,
+punkte: ‘Rundensieger ist wer 0 Kegel trifft. Wer nach 5 Runden die meisten Kegel insgesamt traf, zahlt die Abschlussrunde.’,
+tipp: ‘Gute Kegler sind hier klar im Nachteil – herrlich zum Nivellieren!’
 },
 {
-name: ‘König des Abends’,
-emoji: ‘👑’,
+name: ‘Kegel-Bingo’,
+emoji: ‘🔲’,
+spieler: ‘4–9’,
+dauer: ‘30–45 Min’,
+material: ‘9 Kegel, Kegelkugel, Bingo-Karten (3x3 mit Zahlen 1–9)’,
+beschreibung: ‘Jeder Spieler hat eine 3x3 Bingo-Karte mit den Zahlen 1–9. Reihum wird geworfen – welcher Kegel fällt, wird auf der eigenen Karte markiert (jeder trägt seinen Wurf ein). Wer zuerst eine Reihe (horizontal, vertikal oder diagonal) komplett hat, ruft “Kegel-Bingo!”’,
+punkte: ‘Erster Bingo = Rundensieger. Wer nach mehreren Runden die meisten Bingos hat, gewinnt den Abend.’,
+tipp: ‘Bingo-Karten vor dem Abend drucken oder auf Bierdeckeln zeichnen!’
+},
+{
+name: ‘Alkohol-Pyramide’,
+emoji: ‘🔺’,
 spieler: ‘4–10’,
-dauer: ‘60 Min’,
-material: ‘9 Kegel, Kegelkugel, Papierkrone’,
-beschreibung: ‘Der erste Spieler der alle 9 Kegel mit einem Wurf räumt, wird “König” und bekommt die Papierkrone. Der König kann Regeln für die Runde diktieren (z.B. alle müssen mit links werfen). Die Krone wechselt wenn ein anderer Spieler alle 9 räumt.’,
-punkte: ‘Punkte für jeden Abend als König gesammelt. Wer am Ende der Session die längste Regentschaft hatte, gewinnt.’,
-tipp: ‘Der König sollte faire aber lustige Regeln diktieren – zu gemeine Regeln kosten Sympathiepunkte!’
+dauer: ‘45–60 Min’,
+material: ‘9 Kegel, Kegelkugel, Getränke’,
+beschreibung: ‘Jeder Kegel steht für einen Schluck (Kegel 1–3 = 1 Schluck, Kegel 4–6 = 2 Schluck, Kegel 7–8 = 3 Schluck, Kegel 9 König = 4 Schluck). Wer einen Kegel trifft, kann die Schlucke verteilen – oder behalten. Wer alle 9 räumt, darf eine komplette Runde verteilen.’,
+punkte: ‘Keine Punkte – nur Schlucke. Wer am nüchternsten bleibt ohne zu werfen verliert den Ehrentitel.’,
+tipp: ‘Wasser als Alternative immer bereitstellen – Verantwortungsvoll genießen!’
+},
+{
+name: ‘Das Heiße Stuhl-Kegeln’,
+emoji: ‘🔥’,
+spieler: ‘4–8’,
+dauer: ‘40–50 Min’,
+material: ‘9 Kegel, Kegelkugel, Stuhl’,
+beschreibung: ‘Ein Spieler sitzt auf dem “heißen Stuhl” und muss Fragen der anderen beantworten, während er wirft. Für jeden Kegel den er trifft darf er eine Frage ablehnen. Wer alle 9 räumt ist für diese Runde fragen-immun. Dann kommt der Nächste auf den Stuhl.’,
+punkte: ‘Punkte für abgelehnte Fragen (= getroffene Kegel). Nach 2 Runden pro Spieler gewinnt wer die meisten Fragen abgewehrt hat.’,
+tipp: ‘Fragen vorher anonym einsammeln – dann wird es wirklich heiß!’
+},
+]
+},
+{
+kategorie: ‘🧘 Geschicklichkeit & Präzision’,
+farbe: ‘#4a9eff’,
+spiele: [
+{
+name: ‘Präzisions-Kegeln’,
+emoji: ‘🎯’,
+spieler: ‘2–8’,
+dauer: ‘25–35 Min’,
+material: ‘9 Kegel, Kegelkugel’,
+beschreibung: ‘Vor jedem Wurf wird ein bestimmter Kegel als Ziel ausgerufen (z.B. “nur Kegel 5” oder “nur die hinteren 3”). Wer genau die angesagten Kegel trifft (ohne andere umzuwerfen), bekommt Bonuspunkte. Präzision schlägt Masse!’,
+punkte: ‘Exakt angesagte Kegel getroffen = doppelte Punkte. Andere Kegel getroffen = abzug. Nach 5 Runden Gesamtsieger.’,
+tipp: ‘Ansagen realistisch wählen – zu schwere Ziele frustrieren, zu leichte langweilen!’
+},
+{
+name: ‘Einhand-Sprint’,
+emoji: ‘🤸’,
+spieler: ‘2–10’,
+dauer: ‘20–30 Min’,
+material: ‘9 Kegel, Kegelkugel’,
+beschreibung: ‘Jeder Spieler wirft nacheinander mit rechts, dann links, dann zwischen den Beinen durch. Alle drei Würfe werden addiert. Der Gesamtsieger nach 3 Runden (9 Würfe je Spieler) wird “Kegel-Artist” des Abends.’,
+punkte: ‘Alle Kegel aus 3 verschiedenen Wurfarten summiert. Höchste Gesamtpunktzahl gewinnt.’,
+tipp: ‘Zwischen-den-Beinen-Wurf vor dem ersten Versuch trocken üben – sonst landet die Kugel im Gebälk!’
+},
+{
+name: ‘König-Schuss’,
+emoji: ‘👑’,
+spieler: ‘2–8’,
+dauer: ‘20–30 Min’,
+material: ‘9 Kegel, Kegelkugel’,
+beschreibung: ‘Nur der mittlere Kegel (Kegel 5, der König) zählt! Jeder Spieler hat 5 Versuche. Für jeden Wurf bei dem nur Kegel 5 fällt (ohne andere) gibt es 3 Punkte. Wenn der König fällt und andere auch: 1 Punkt. Wenn der König steht: 0 Punkte.’,
+punkte: ‘Nur König getroffen = 3P. König + andere = 1P. König stehend = 0P. Nach 5 Würfen Gesamtsieger.’,
+tipp: ‘Konzentration auf die Mitte – Randkegel ignorieren. Weniger ist mehr!’
+},
+{
+name: ‘Linienkegeln’,
+emoji: ‘📏’,
+spieler: ‘2–8’,
+dauer: ‘25–35 Min’,
+material: ‘9 Kegel, Kegelkugel, Klebeband für Linien’,
+beschreibung: ‘Verschiedene Abwurflinien werden auf dem Boden markiert: 2m (5 Punkte), 4m (3 Punkte), 6m (normale Punkte), 8m (doppelte Punkte). Jeder Spieler wählt vor dem Wurf seine Linie. Mehr Risiko = mehr Punkte!’,
+punkte: ‘Getroffene Kegel × Linienmultiplikator. Nach 5 Würfen Gesamtsieger.’,
+tipp: ‘Auf die kurze Linie zu gehen ist keine Schande – manchmal ist Sicherheit die bessere Strategie!’
+},
+{
+name: ‘Rückwärts-Kegeln’,
+emoji: ‘🔄’,
+spieler: ‘2–8’,
+dauer: ‘20–30 Min’,
+material: ‘9 Kegel, Kegelkugel’,
+beschreibung: ‘Alle Würfe werden rückwärts ausgeführt! Der Spieler steht mit dem Rücken zu den Kegeln und rollt die Kugel zwischen den Beinen durch oder über die Schulter. Erlaubt ist alles – Hauptsache rückwärts!’,
+punkte: ‘Normale Kegelwertung. Wer alle 9 rückwärts räumt bekommt Legendenstatus und 10 Bonuspunkte.’,
+tipp: ‘Zwischen-den-Beinen ist einfacher als über die Schulter – guter Einstieg!’
 },
 ]
 },
@@ -2633,12 +2752,14 @@ break;
 var ALLE_SPIELE_KURZ = [
 ‘Fuchsjagd’,‘Hohe Hausnummern’,‘Niedrige Hausnummern’,‘17 und 4’,‘Räumen’,
 ‘Blind-Kegeln’,‘Schwache Hand’,‘Crazy Kegeln’,‘Geräusch-Kegeln’,‘Farb-Kegeln’,
-‘Kegel-Skat’,‘Bierkegeln’,‘Kegelpool’,‘Flaschen-Kegeln’,‘Tisch-Kegeln’,
-‘K.O.-Turnier’,‘Liga-Abend’,‘Staffel-Kegeln’,‘Handicap-Turnier’,
-‘Würfel-Kegeln’,‘Russisches Roulette’,‘Zielzahl-Kegeln’,‘Schnapszahl-Kegeln’,
-‘Tandem-Kegeln’,‘Staffel mit Kommunikation’,‘Kegel-Staffel Olympisch’,‘Kegel-Quartett’,
-‘Kegel-Wahrheit oder Pflicht’,‘Kegel-Jenga’,‘Straf-Kegeln’,‘König des Abends’,
-‘Siebzehn und Vier’,‘Plastikflaschen-Kegeln’,‘Tischkegeln’,‘Kegel-Skat Mannschaft’
+‘Kegel-Skat’,‘Bierkegeln’,‘Kegelpool’,‘Flaschen-Kegeln’,‘Tischkegeln’,
+‘K.O.-Turnier’,‘Liga-Abend’,‘Staffel-Kegeln’,‘Handicap-Turnier’,‘Zeitkegeln’,
+‘Königskegeln’,‘Würfel-Kegeln’,‘Russisches Roulette Kegeln’,‘Zielzahl-Kegeln’,
+‘Schnapszahl-Kegeln’,‘Lotterie-Kegeln’,‘Tandem-Kegeln’,‘Blind-Staffel’,
+‘Olympisches Staffel-Kegeln’,‘Kegel-Quartett’,‘Doppel-Kegeln’,
+‘Wahrheit oder Pflicht’,‘Kegel-Jenga’,‘Straf-Kegeln’,‘Kegel-Bingo’,
+‘Alkohol-Pyramide’,‘Heißer Stuhl’,‘Präzisions-Kegeln’,‘Einhand-Sprint’,
+‘König-Schuss’,‘Linienkegeln’,‘Rückwärts-Kegeln’,‘Siebzehn und Vier’
 ];
 var _spielRS = false;
 
@@ -2711,7 +2832,6 @@ requestAnimationFrame(frame);
 // TRINKROULETTE
 // ═══════════════════════════════════════════
 const GETRAENKE = [
-// Bier
 {name:‘Helles Bier’,        emoji:‘🍺’,kat:‘Bier’},
 {name:‘Dunkles Bier’,       emoji:‘🍺’,kat:‘Bier’},
 {name:‘Weizenbier’,         emoji:‘🍺’,kat:‘Bier’},
@@ -2726,7 +2846,7 @@ const GETRAENKE = [
 {name:‘Kellerbier’,         emoji:‘🍺’,kat:‘Bier’},
 {name:‘Zwickelbier’,        emoji:‘🍺’,kat:‘Bier’},
 {name:‘Märzen’,             emoji:‘🍺’,kat:‘Bier’},
-// Schnaps
+{name:‘Starkbier’,          emoji:‘🍺’,kat:‘Bier’},
 {name:‘Klarer Schnaps’,     emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Jägermeister’,       emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Wodka Shot’,         emoji:‘🥃’,kat:‘Schnaps’},
@@ -2743,22 +2863,18 @@ const GETRAENKE = [
 {name:‘Becherovka’,         emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Asbach Uralt’,       emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Hubertus’,           emoji:‘🥃’,kat:‘Schnaps’},
-{name:‘Klosterbitter’,      emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Doornkaat’,          emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Stonsdorfer’,        emoji:‘🥃’,kat:‘Schnaps’},
-{name:‘Mast-Jägermeister’,  emoji:‘🥃’,kat:‘Schnaps’},
 {name:‘Killepitsch’,        emoji:‘🥃’,kat:‘Schnaps’},
-// Likör
 {name:‘Baileys’,            emoji:‘🥛’,kat:‘Likör’},
 {name:‘Amaretto’,           emoji:‘🥛’,kat:‘Likör’},
 {name:‘Eierlikör’,          emoji:‘🥛’,kat:‘Likör’},
 {name:‘Kirschlikör’,        emoji:‘🥛’,kat:‘Likör’},
-{name:‘Erdbeerelikör’,      emoji:‘🥛’,kat:‘Likör’},
+{name:‘Erdbeerlikör’,       emoji:‘🥛’,kat:‘Likör’},
 {name:‘Maracujalikör’,      emoji:‘🥛’,kat:‘Likör’},
 {name:‘Schokoladenlikör’,   emoji:‘🥛’,kat:‘Likör’},
 {name:‘Haselnusslikör’,     emoji:‘🥛’,kat:‘Likör’},
 {name:‘Bananenlikör’,       emoji:‘🥛’,kat:‘Likör’},
-// Spirituosen
 {name:‘Weinbrand’,          emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Whisky’,             emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Bourbon’,            emoji:‘🥃’,kat:‘Spirituosen’},
@@ -2768,10 +2884,9 @@ const GETRAENKE = [
 {name:‘Armagnac’,           emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Mezcal’,             emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Absinthe’,           emoji:‘🥃’,kat:‘Spirituosen’},
-{name:‘Rum (braun)’,        emoji:‘🥃’,kat:‘Spirituosen’},
+{name:‘Rum braun’,          emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Cachaça’,            emoji:‘🥃’,kat:‘Spirituosen’},
 {name:‘Gin’,                emoji:‘🥃’,kat:‘Spirituosen’},
-// Mix
 {name:‘Gin Tonic’,          emoji:‘🍹’,kat:‘Mix’},
 {name:‘Gin Basil Smash’,    emoji:‘🍹’,kat:‘Mix’},
 {name:‘Moscow Mule’,        emoji:‘🍹’,kat:‘Mix’},
@@ -2784,11 +2899,9 @@ const GETRAENKE = [
 {name:‘Mojito’,             emoji:‘🍹’,kat:‘Mix’},
 {name:‘Negroni’,            emoji:‘🍹’,kat:‘Mix’},
 {name:‘Espresso Martini’,   emoji:‘🍹’,kat:‘Mix’},
-{name:‘Rusty Nail’,         emoji:‘🍹’,kat:‘Mix’},
 {name:‘Russé’,              emoji:‘🍺’,kat:‘Mix’},
 {name:‘Diesel’,             emoji:‘🍺’,kat:‘Mix’},
 {name:‘Alsterwasser’,       emoji:‘🍺’,kat:‘Mix’},
-// Kombination
 {name:‘Bier + Schnaps’,     emoji:‘🍺🥃’,kat:‘Kombination’},
 {name:‘Herrengedeck’,       emoji:‘🍺🥃’,kat:‘Kombination’},
 {name:‘Radler + Shot’,      emoji:‘🍺🥃’,kat:‘Kombination’},
@@ -3017,6 +3130,7 @@ try { sessionStorage.setItem(‘rp_admin’,‘1’); } catch(e) {}
 // Admin also enters app as “Admin”
 currentUser = ‘**admin**’;
 hideLoginScreen();
+updateLoginLogo();
 updateHeader();
 renderDashboard();
 initChatWatermark();
@@ -3040,6 +3154,7 @@ if (err) err.textContent = ‘’;
 currentUser = found;
 try { sessionStorage.setItem(‘rp_user’, found); } catch(e) {}
 hideLoginScreen();
+updateLoginLogo();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 1000);
@@ -3105,6 +3220,7 @@ if (sessionStorage.getItem(‘rp_admin’) === ‘1’) {
 _isAdminSession = true;
 currentUser = ‘**admin**’;
 hideLoginScreen();
+updateLoginLogo();
 updateHeader();
 renderDashboard();
 initChatWatermark();
@@ -3116,6 +3232,7 @@ return;
 if (saved) {
 currentUser = saved;
 hideLoginScreen();
+updateLoginLogo();
 updateHeader();
 renderDashboard();
 setTimeout(initPresence, 2000);
