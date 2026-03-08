@@ -339,6 +339,14 @@ function saveLocalMeta() {
 // FIREBASE
 // ═══════════════════════════════════════════
 let fbCfg = null;
+var _loginInitDone = false;
+function _triggerLoginInit() {
+  if (_loginInitDone) return;
+  _loginInitDone = true;
+  initLogin();
+  checkBdayNotifs();
+  checkBirthdayChatMessage();
+}
 let fbApp = null;
 let fbRef = null;
 let isConnected = false;
@@ -418,6 +426,8 @@ async function initFb() {
       updateSyncBanner();
       const s = document.getElementById("fbStatus");
       if (s) s.textContent = "🟢 Verbunden und synchron";
+      // Login erst starten wenn Firebase State geladen ist
+      _triggerLoginInit();
     }, err => {
       setSyncStatus("error","Fehler");
       isConnected = false;
@@ -3260,11 +3270,16 @@ location.reload();
 // ═══════════════════════════════════════════
 function init() {
 updateLoginLogo();
-if (fbCfg) { setSyncStatus(‘syncing’,‘Verbinde…’); initFb(); }
-else { setSyncStatus(‘error’,‘Nicht verbunden’); }
+if (fbCfg) {
+setSyncStatus(‘syncing’,‘Verbinde…’);
+initFb();
+// Fallback: Falls Firebase nach 4s noch nicht geantwortet hat, Login trotzdem starten
+setTimeout(_triggerLoginInit, 4000);
+} else {
+setSyncStatus(‘error’,‘Nicht verbunden’);
+_triggerLoginInit();
+}
 renderDashboard();
-initLogin();
-checkBdayNotifs(); checkBirthdayChatMessage();
 }
 
 document.addEventListener(‘DOMContentLoaded’, function() { init(); });
