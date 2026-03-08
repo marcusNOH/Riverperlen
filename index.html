@@ -454,7 +454,7 @@ async function initFb() {
         // Lokale Perms behalten – Remote nie überschreiben lassen
         if (localPerms) state.memberPerms = localPerms;
         // Chat-Merge: lokale Nachrichten die Firebase noch nicht kennt nicht verlieren
-        // (passiert wenn App geschlossen wird bevor pushFb().then() feuert)
+        // (passiert wenn iOS Safari die App killt bevor pushFb().then() feuert)
         if (prevChatMsgs.length > 0) {
           var remoteTsSet = new Set((state.chatMessages||[]).map(function(m){return m.ts;}));
           var missing = prevChatMsgs.filter(function(m){return !remoteTsSet.has(m.ts);});
@@ -463,12 +463,19 @@ async function initFb() {
             state.chatMessages = state.chatMessages.concat(missing);
             state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
             if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-            // Pending nach erfolgreichem Re-Push leeren
-            setTimeout(function(){
-              pushFb(function(err) {
-                if (!err) { try { localStorage.removeItem('rp_pending_chat'); } catch(e) {} }
-              });
-            }, 500);
+            // saveState() statt direktem pushFb() – fbRef ist jetzt garantiert ready
+            // weil wir bereits im onValue-Callback sind
+            saveLocalState();
+            try { localStorage.removeItem('rp_pending_chat'); } catch(e) {}
+            fbRef.set((function(){
+              var s = Object.assign({}, state);
+              delete s.memberPhotos;
+              return s;
+            })()).then(function(){
+              setSyncStatus('connected','Synchron');
+            }).catch(function(err){
+              console.error('Pending chat push failed:', err);
+            });
           }
         }
         // Sync Firebase photos to localMeta for this device
