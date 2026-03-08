@@ -435,9 +435,12 @@ async function initFb() {
       const remote = snap.val();
       if (remote && ignoreNextRemote === 0) {
         const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
-        var savedPerms = _permSaving ? state.memberPerms : null;
+        // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
+        var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
+          ? state.memberPerms : null;
         state = {...defaultState(),...remote};
-        if (savedPerms) state.memberPerms = savedPerms;
+        // Lokale Perms behalten – Remote nie überschreiben lassen
+        if (localPerms) state.memberPerms = localPerms;
         // Sync Firebase photos to localMeta for this device
         // memberPhotos kommt jetzt aus /riverperlen/photos – hier ignorieren
         if (state.memberPhotos) {
@@ -484,7 +487,7 @@ function pushFb(onDone) {
   // Fotos nie im Haupt-State speichern – die haben ihren eigenen Pfad
   var stateToSave = Object.assign({}, state);
   delete stateToSave.memberPhotos;
-  ignoreNextRemote++;
+  ignoreNextRemote += 2; // Zwei Callbacks ignorieren (Firebase sendet Write+Confirm)
   fbRef.set(stateToSave).then(function() {
     setSyncStatus('connected', 'Synchron');
     if (onDone) onDone(null);
