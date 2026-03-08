@@ -2305,7 +2305,7 @@ function sendChat() {
   if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
   inp.value = '';
   saveState(); renderChat();
-  sendNotif('💬 Neue Nachricht von ' + currentUser, text, 'chat');
+  // Notification für andere wird via checkIncomingChatNotif (Firebase-Listener) ausgelöst
 }
 
 // ═══════════════════════════════════════════
@@ -3329,12 +3329,6 @@ function applyPermissions() {
   var terAddBtns = document.querySelectorAll('[onclick*="addZusatz"],[onclick*="zusatzTermin"],[onclick*="addExtraTermin"]');
   terAddBtns.forEach(function(b) { b.style.display = canDo('ter.zusatz') ? '' : 'none'; });
 
-  // Chat: Senden-Button und Input ausblenden
-  var chatInput = document.getElementById('chatInput');
-  if (chatInput) chatInput.style.display = canDo('cha.schreiben') ? '' : 'none';
-  var chatSend = document.querySelector('[onclick*="sendChat"]');
-  if (chatSend) chatSend.style.display = canDo('cha.schreiben') ? '' : 'none';
-
   // Profil: Bearbeiten ausblenden
   var profilEdit = document.querySelectorAll('[onclick*="saveMyField"],[onchange*="saveMyField"],[onclick*="uploadMemberPhoto"]');
   profilEdit.forEach(function(b) { b.style.display = canDo('pro.bearbeiten') ? '' : 'none'; });
@@ -3872,6 +3866,11 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
             <button class="btn btn-secondary" onclick="document.getElementById('logoUpload').click()" style="width:auto">Logo hochladen</button>
           </div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔔 Push-Benachrichtigungen</div>
+        <div id="notifSettings"></div>
       </div>
 
       <div class="settings-admin-only">
