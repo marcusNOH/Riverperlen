@@ -17,21 +17,38 @@ function loadScript(src) {
     document.head.appendChild(s);
   });
 }
-window._firebaseReady = (async () => {
+// App-Version für Cache-Busting
+var APP_VERSION = '20260308-3';
+(function checkAppVersion() {
   try {
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
-    return true;
-  } catch(e) {
-    try {
-      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
-      return true;
-    } catch(e2) {
-      console.warn('Firebase konnte nicht geladen werden – Offline-Modus aktiv');
-      return false;
+    var stored = localStorage.getItem('rp_app_version');
+    if (stored && stored !== APP_VERSION) {
+      // Neue Version erkannt – Cache leeren und neu laden
+      localStorage.setItem('rp_app_version', APP_VERSION);
+      // Hard reload umgehen githack Cache
+      var url = window.location.href.split('?')[0];
+      window.location.replace(url + '?v=' + APP_VERSION);
+      return;
     }
-  }
+    localStorage.setItem('rp_app_version', APP_VERSION);
+  } catch(e) {}
+})();
+
+window._firebaseReady = (async () => {
+try {
+await loadScript(‘https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js’);
+await loadScript(‘https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js’);
+return true;
+} catch(e) {
+try {
+await loadScript(‘https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js’);
+await loadScript(‘https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js’);
+return true;
+} catch(e2) {
+console.warn(‘Firebase konnte nicht geladen werden – Offline-Modus aktiv’);
+return false;
+}
+}
 })();
 </script>
 
@@ -3262,7 +3279,9 @@ function logout() {
 currentUser = null;
 _pinBuffer = ‘’;
 try { sessionStorage.removeItem(‘rp_user’); } catch(e) {}
-location.reload();
+try { localStorage.removeItem(‘rp_app_version’); } catch(e) {}
+var url = window.location.href.split(’?’)[0];
+window.location.replace(url + ‘?v=’ + Date.now());
 }
 
 // ═══════════════════════════════════════════
@@ -3328,7 +3347,7 @@ document.addEventListener(‘DOMContentLoaded’, function() { init(); });
         <button type="button" class="lpin-btn" ontouchend="event.preventDefault();pinSubmit()" onclick="pinSubmit()" style="background:linear-gradient(135deg,#f0a500,#ffc84a);color:#000;border-color:#f0a500;font-size:18px">✓</button>
       </div>
       <div id="loginError" style="color:#e84040;font-size:12px;text-align:center;min-height:16px"></div>
-      <button type="button" onclick="location.reload()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:1px solid #2a2f42;border-radius:10px;color:#8a90a8;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 App aktualisieren</button>
+      <button type="button" onclick="(function(){try{localStorage.removeItem('rp_app_version');}catch(e){}var u=location.href.split('?')[0];location.replace(u+'?v='+Date.now());})()" style="margin-top:12px;width:100%;padding:10px;background:transparent;border:1px solid #2a2f42;border-radius:10px;color:#8a90a8;font-size:12px;cursor:pointer;font-family:sans-serif">🔄 App aktualisieren</button>
     </div>
     <div id="loginStepAdmin" style="display:none">
       <div style="font-size:14px;font-weight:700;color:#f0a500;margin-bottom:16px;text-align:center">⚙️ Admin – PINs verwalten</div>
