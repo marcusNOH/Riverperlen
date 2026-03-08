@@ -1583,22 +1583,49 @@ function countRestrictions(member) {
 function togglePerm(member, key) {
   if (!state.memberPerms) state.memberPerms = {};
   if (!state.memberPerms[member]) state.memberPerms[member] = {};
-  const cur = typeof state.memberPerms[member][key] === 'boolean' ? state.memberPerms[member][key] : true;
+  var cur = typeof state.memberPerms[member][key] === 'boolean' ? state.memberPerms[member][key] : true;
   state.memberPerms[member][key] = !cur;
-  // Save locally first (instant), then push to Firebase
-  // Suppress re-render from Firebase callback briefly
   _permSaving = true;
-  saveState();
+  saveLocalState();
+  // Firebase direkt schreiben – _permSaving erst nach Bestätigung zurücksetzen
+  if (fbRef) {
+    setSyncStatus('syncing','Speichert…');
+    ignoreNextRemote = true;
+    fbRef.set(state).then(function() {
+      setSyncStatus('connected','Synchron');
+      _permSaving = false;
+    }).catch(function(err) {
+      setSyncStatus('error','Sync-Fehler');
+      _permSaving = false;
+      console.error(err);
+    });
+  } else {
+    // Offline – kurz warten dann freigeben
+    setTimeout(function() { _permSaving = false; }, 500);
+  }
   renderBerechtigungen();
   applyPermissions();
-  setTimeout(() => { _permSaving = false; }, 3000);
 }
 
 function setAllPerms(member, val) {
   if (!state.memberPerms) state.memberPerms = {};
   if (!state.memberPerms[member]) state.memberPerms[member] = {};
-  ALLE_BERECHTIGUNGEN.forEach(p => { state.memberPerms[member][p.key] = val; });
-  saveState();
+  ALLE_BERECHTIGUNGEN.forEach(function(p) { state.memberPerms[member][p.key] = val; });
+  _permSaving = true;
+  saveLocalState();
+  if (fbRef) {
+    setSyncStatus('syncing','Speichert…');
+    ignoreNextRemote = true;
+    fbRef.set(state).then(function() {
+      setSyncStatus('connected','Synchron');
+      _permSaving = false;
+    }).catch(function(err) {
+      setSyncStatus('error','Sync-Fehler');
+      _permSaving = false;
+    });
+  } else {
+    setTimeout(function() { _permSaving = false; }, 500);
+  }
   renderBerechtigungen();
   applyPermissions();
 }
