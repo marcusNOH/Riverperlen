@@ -16,6 +16,42 @@ function loadScript(src) {
     document.head.appendChild(s);
   });
 }
+// ── Service Worker (Blob) für iOS PWA Push Notifications ──────────────────
+window._swRegistration = null;
+(function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    var swCode = [
+      'self.addEventListener("install", function(e){ self.skipWaiting(); });',
+      'self.addEventListener("activate", function(e){ e.waitUntil(self.clients.claim()); });',
+      'self.addEventListener("push", function(e){',
+      '  var data = {};',
+      '  try { data = e.data ? e.data.json() : {}; } catch(x) {}',
+      '  e.waitUntil(self.registration.showNotification(data.title||"Riverperlen", {',
+      '    body: data.body||"",',
+      '    icon: data.icon||"",',
+      '    tag: data.tag||"msg",',
+      '    renotify: true',
+      '  }));',
+      '});',
+      'self.addEventListener("notificationclick", function(e){',
+      '  e.notification.close();',
+      '  e.waitUntil(clients.openWindow(self.location.origin));',
+      '});'
+    ].join("\n");
+    var blob = new Blob([swCode], { type: 'application/javascript' });
+    var swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl, { scope: './' }).then(function(reg) {
+      window._swRegistration = reg;
+      console.log('[SW] registriert:', reg.scope);
+    }).catch(function(err) {
+      console.warn('[SW] Registrierung fehlgeschlagen:', err);
+    });
+  } catch(e) {
+    console.warn('[SW] Fehler:', e);
+  }
+})();
+
 window._firebaseReady = (async () => {
   try {
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
@@ -1926,15 +1962,19 @@ function sendNotif(title, body, tag) {
   if (!('Notification' in window)) return;
   if (Notification.permission !== 'granted') return;
   try {
-    // Use ServiceWorker if available (required for iOS PWA background)
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification(title, { body, icon: '/favicon.ico', tag, renotify: true });
-      }).catch(() => {
-        new Notification(title, { body, tag });
+    var opts = { body: body, tag: tag, renotify: true };
+    // Blob-SW bevorzugen (iOS PWA braucht SW für Hintergrund-Notifications)
+    var reg = window._swRegistration || null;
+    if (reg && reg.active) {
+      reg.showNotification(title, opts);
+    } else if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(function(r) {
+        r.showNotification(title, opts);
+      }).catch(function() {
+        new Notification(title, { body: body, tag: tag });
       });
     } else {
-      new Notification(title, { body, tag });
+      new Notification(title, { body: body, tag: tag });
     }
   } catch(e) { console.warn('Notification error:', e); }
 }
