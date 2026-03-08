@@ -267,6 +267,11 @@ window._firebaseReady = (async () => {
 
   .strafe-mode-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
   .strafe-mode-row:last-child{border-bottom:none}
+  /* ── Verlierer/Gewinner ── */
+.vg-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:20px;border:2px solid var(--border);background:var(--bg3);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;margin:4px}
+.vg-chip.winner{border-color:#ffd700;background:rgba(255,215,0,.15);color:#ffd700}
+.vg-chip.loser{border-color:var(--red);background:rgba(232,64,64,.15);color:var(--red)}
+.vg-chip:active{transform:scale(.93)}
 </style>
 
 <script>
@@ -3318,7 +3323,114 @@ function spinRoulette() {
   requestAnimationFrame(frame);
 }
 
+// ═══════════════════════════════════════════
+// EIN VERLIERER, EIN GEWINNER
+// ═══════════════════════════════════════════
+var VG_DRINKS = [
+  {emoji:'🍺',name:'Helles Bier'},
+  {emoji:'🍺',name:'Weizenbier'},
+  {emoji:'🥃',name:'Jägermeister'},
+  {emoji:'🥃',name:'Tequila Shot'},
+  {emoji:'🥃',name:'Wodka Shot'},
+  {emoji:'🥃',name:'Korn'},
+  {emoji:'🍹',name:'Gin Tonic'},
+  {emoji:'🥃',name:'Obstler'},
+  {emoji:'🍺',name:'Radler'},
+  {emoji:'🥃',name:'Underberg'}
+];
+var _vgWinner = null;
+var _vgLoser  = null;
 
+function openVerliererGewinner() {
+  _vgWinner = null;
+  _vgLoser  = null;
+  var members = getMembers().filter(function(m){ return state.anwesenheit[m]&&state.anwesenheit[m].present; });
+  if (members.length < 2) members = getMembers();
+
+  var chips = members.map(function(m){
+    return '<div class="vg-chip" id="vgchip_'+m.replace(/\s/g,'_')+'" onclick="vgPick(\''+m+'\')">'+avatar(m)+' '+m.split(' ')[0]+'</div>';
+  }).join('');
+
+  showModal('🏆 Verlierer zahlt!',
+    '<div style="font-size:13px;color:var(--text2);margin-bottom:10px">1. Tippe auf den <strong style="color:#ffd700">Gewinner</strong> → 2. Tippe auf den <strong style="color:var(--red)">Verlierer</strong></div>'
+    +'<div id="vgInfo" style="min-height:24px;font-size:13px;color:var(--text3);margin-bottom:10px;text-align:center">Wähle zuerst den Gewinner</div>'
+    +'<div style="display:flex;flex-wrap:wrap;justify-content:center">'+chips+'</div>',
+    function(){ vgStartAnimation(); },
+    '🎳 Los geht\'s!', 'btn-gold'
+  );
+  // Confirm-Button initial deaktivieren
+  setTimeout(function(){
+    var btn = document.getElementById('modalConfirmBtn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+  }, 50);
+}
+
+function vgPick(m) {
+  if (!_vgWinner) {
+    _vgWinner = m;
+  } else if (!_vgLoser && m !== _vgWinner) {
+    _vgLoser = m;
+  } else if (m === _vgWinner) {
+    _vgWinner = null;
+    if (_vgLoser === null) {}
+  } else if (m === _vgLoser) {
+    _vgLoser = null;
+  }
+  // Chips updaten
+  getMembers().forEach(function(n){
+    var el = document.getElementById('vgchip_'+n.replace(/\s/g,'_'));
+    if (!el) return;
+    el.className = 'vg-chip';
+    if (n === _vgWinner) el.className += ' winner';
+    if (n === _vgLoser)  el.className += ' loser';
+  });
+  var info = document.getElementById('vgInfo');
+  if (info) {
+    if (!_vgWinner) info.innerHTML = 'Wähle zuerst den <strong style="color:#ffd700">Gewinner</strong>';
+    else if (!_vgLoser) info.innerHTML = '<span style="color:#ffd700">Gewinner: '+_vgWinner.split(' ')[0]+'</span> &nbsp;·&nbsp; Jetzt den <strong style="color:var(--red)">Verlierer</strong> wählen';
+    else info.innerHTML = '<span style="color:#ffd700">&#x2605; '+_vgWinner.split(' ')[0]+'</span> &nbsp;vs&nbsp; <span style="color:var(--red)">&#x2620; '+_vgLoser.split(' ')[0]+'</span>';
+  }
+  var btn = document.getElementById('modalConfirmBtn');
+  if (btn) {
+    var ready = (_vgWinner && _vgLoser);
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? '1' : '0.4';
+  }
+}
+
+function vgStartAnimation() {
+  if (!_vgWinner || !_vgLoser) return;
+  var drink = VG_DRINKS[Math.floor(Math.random()*VG_DRINKS.length)];
+  closeModal();
+  setTimeout(function(){ vgShowResult(drink, false); }, 200);
+}
+
+function vgShowResult(drink, reroll) {
+  if (reroll) {
+    drink = VG_DRINKS[Math.floor(Math.random()*VG_DRINKS.length)];
+  }
+  var _drink = drink;
+  showModal('🏆 Ergebnis!',
+    '<div style="text-align:center;padding:10px 0">'
+    +'<div style="font-size:64px;margin-bottom:8px">'+drink.emoji+'</div>'
+    +'<div style="font-size:22px;font-weight:900;color:var(--gold);margin-bottom:6px">'+drink.name+'</div>'
+    +'<div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">'
+    +'<span style="color:var(--red);font-weight:700">'+_vgLoser.split(' ')[0]+'</span>'
+    +' kauft ein <strong>'+drink.name+'</strong><br>für '
+    +'<span style="color:#ffd700;font-weight:700">'+_vgWinner.split(' ')[0]+'</span>!'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
+    +'<button onclick="vgReroll()" style="padding:10px 18px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">🎲 Anderes Getränk</button>'
+    +'</div>'
+    +'</div>',
+    null, null, null
+  );
+}
+
+function vgReroll() {
+  closeModal();
+  setTimeout(function(){ vgShowResult(null, true); }, 150);
+}
 // ═══════════════════════════════════════════
 // BERECHTIGUNGS-SYSTEM
 // ═══════════════════════════════════════════
@@ -3717,6 +3829,7 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
           <div class="quick-btn" onclick="showPage('strafen',document.querySelector('[data-page=strafen]'))"><div class="qi">⚠️</div><div class="ql">Strafe eintragen</div><div class="qd">+ / − zählen</div></div>
           <div class="quick-btn" onclick="showPage('abschluss',document.querySelector('[data-page=abschluss]'))"><div class="qi">💳</div><div class="ql">Abrechnen</div><div class="qd">PayPal &amp; Abschluss</div></div>
           <div class="quick-btn" onclick="openTrinkroulette()"><div class="qi">🎳</div><div class="ql">Trinkroulette</div><div class="qd">Wer muss trinken?</div></div>
+          <div class="quick-btn" onclick="openVerliererGewinner()"><div class="qi">🏆</div><div class="ql">Verlierer zahlt!</div><div class="qd">Wer kauft was?</div></div>
         </div>
       </div>
       <div class="card" style="background:linear-gradient(135deg,rgba(240,165,0,.08),rgba(240,165,0,.03));border-color:rgba(240,165,0,.2)">
