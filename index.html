@@ -455,7 +455,7 @@ async function initFb() {
         scheduleTerminReminders();
       }
       if (ignoreNextRemote > 0) ignoreNextRemote--;
-      setSyncStatus("connected","Synchron");
+      if (!_permSaving) setSyncStatus("connected","Synchron");
       isConnected = true;
       updateSyncBanner();
       const s = document.getElementById("fbStatus");
@@ -479,17 +479,15 @@ async function initFb() {
 
 function pushFb(onDone) {
   if (!fbRef) { if (onDone) onDone(null); return; }
-  setSyncStatus('syncing','Speichert…');
   ignoreNextRemote++;
-  fbRef.set(state, function(err) {
-    if (err) {
-      setSyncStatus('error','Sync-Fehler');
-      if (ignoreNextRemote > 0) ignoreNextRemote--;
-      console.error(err);
-      showToast('⚠️ Sync fehlgeschlagen');
-    } else {
-      setSyncStatus('connected','Synchron');
-    }
+  fbRef.set(state).then(function() {
+    setSyncStatus('connected', 'Synchron');
+    if (onDone) onDone(null);
+  }).catch(function(err) {
+    setSyncStatus('error','Sync-Fehler');
+    if (ignoreNextRemote > 0) ignoreNextRemote--;
+    console.error(err);
+    showToast('⚠️ Sync fehlgeschlagen');
     if (onDone) onDone(err);
   });
 }
@@ -1640,8 +1638,7 @@ function togglePerm(member, key) {
     _permSaving = false;
     if (!err) showToast('✅ Berechtigung gespeichert');
   });
-  // Harter Fallback
-  setTimeout(function() { _permSaving = false; }, 6000);
+  setTimeout(function() { if (_permSaving) { _permSaving = false; setSyncStatus('connected','Synchron'); } }, 3000);
 }
 
 function setAllPerms(member, val) {
@@ -1656,7 +1653,7 @@ function setAllPerms(member, val) {
     _permSaving = false;
     if (!err) showToast('✅ Berechtigungen gespeichert');
   });
-  setTimeout(function() { _permSaving = false; }, 6000);
+  setTimeout(function() { if (_permSaving) { _permSaving = false; setSyncStatus('connected','Synchron'); } }, 3000);
 }
 
 function toggleBerechtigungExpand(member) {
