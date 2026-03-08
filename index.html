@@ -441,6 +441,19 @@ async function initFb() {
         state = {...defaultState(),...remote};
         // Lokale Perms behalten – Remote nie überschreiben lassen
         if (localPerms) state.memberPerms = localPerms;
+        // Chat-Merge: lokale Nachrichten die Firebase noch nicht kennt nicht verlieren
+        // (passiert wenn App geschlossen wird bevor pushFb().then() feuert)
+        if (prevChatMsgs.length > 0) {
+          var remoteTsSet = new Set((state.chatMessages||[]).map(function(m){return m.ts;}));
+          var missing = prevChatMsgs.filter(function(m){return !remoteTsSet.has(m.ts);});
+          if (missing.length > 0) {
+            if (!state.chatMessages) state.chatMessages = [];
+            state.chatMessages = state.chatMessages.concat(missing);
+            state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
+            if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+            setTimeout(function(){ pushFb(); }, 500);
+          }
+        }
         // Sync Firebase photos to localMeta for this device
         // memberPhotos kommt jetzt aus /riverperlen/photos – hier ignorieren
         if (state.memberPhotos) {
