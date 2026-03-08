@@ -345,6 +345,38 @@ function _triggerLoginInit() {
   initLogin();
   checkBdayNotifs();
   checkBirthdayChatMessage();
+  // iOS pending-Chat: Nachrichten die beim letzten Start nicht zu Firebase kamen nachholen
+  _flushPendingChat();
+}
+
+function _flushPendingChat() {
+  try {
+    var pending = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
+    if (!pending.length) return;
+    if (!fbRef) return; // Firebase nicht bereit – beim nächsten Start nochmal
+    // Pending-Msgs in state mergen falls noch nicht vorhanden
+    if (!state.chatMessages) state.chatMessages = [];
+    var existingTs = new Set(state.chatMessages.map(function(m){return m.ts;}));
+    var added = false;
+    pending.forEach(function(m){
+      if (!existingTs.has(m.ts)) {
+        state.chatMessages.push(m);
+        added = true;
+      }
+    });
+    if (!added) {
+      // Alle bereits in Firebase – pending einfach leeren
+      localStorage.removeItem('rp_pending_chat');
+      return;
+    }
+    state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
+    if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
+    localStorage.removeItem('rp_pending_chat');
+    // Jetzt sicher pushen – außerhalb von onValue, fbRef garantiert ready
+    pushFb();
+  } catch(e) {
+    console.warn('_flushPendingChat error:', e);
+  }
 }
 let fbApp = null;
 let fbRef = null;
@@ -434,41 +466,14 @@ async function initFb() {
     fbRef.on("value", snap => {
       const remote = snap.val();
       if (remote && ignoreNextRemote === 0) {
-        // iOS Fix: pending-Nachrichten aus sessionStorage in prevChatMsgs mergen
-        var pendingMsgs = [];
-        try {
-          pendingMsgs = JSON.parse(localStorage.getItem('rp_pending_chat')||'[]');
-        } catch(e) {}
-        var localChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
-        // Pending-Msgs die noch nicht im lokalen State sind hinzufügen
-        if (pendingMsgs.length > 0) {
-          var localTsSet = new Set(localChatMsgs.map(function(m){return m.ts;}));
-          pendingMsgs.forEach(function(m){ if(!localTsSet.has(m.ts)) localChatMsgs.push(m); });
-          localChatMsgs.sort(function(a,b){return a.ts-b.ts;});
-        }
-        const prevChatMsgs = localChatMsgs;
+        const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
         state = {...defaultState(),...remote};
         // Lokale Perms behalten – Remote nie überschreiben lassen
         if (localPerms) state.memberPerms = localPerms;
-        // Chat-Merge: lokale Nachrichten die Firebase noch nicht kennt nicht verlieren
-        // (passiert wenn iOS Safari die App killt bevor pushFb().then() feuert)
-        if (prevChatMsgs.length > 0) {
-          var remoteTsSet = new Set((state.chatMessages||[]).map(function(m){return m.ts;}));
-          var missing = prevChatMsgs.filter(function(m){return !remoteTsSet.has(m.ts);});
-          if (missing.length > 0) {
-            if (!state.chatMessages) state.chatMessages = [];
-            state.chatMessages = state.chatMessages.concat(missing);
-            state.chatMessages.sort(function(a,b){return a.ts-b.ts;});
-            if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
-            // saveState() = saveLocalState() + pushFb()
-            // pushFb() setzt ignoreNextRemote+=2 → verhindert Endlosschleife
-            try { localStorage.removeItem('rp_pending_chat'); } catch(e) {}
-            saveState();
-          }
-        }
+
         // Sync Firebase photos to localMeta for this device
         // memberPhotos kommt jetzt aus /riverperlen/photos – hier ignorieren
         if (state.memberPhotos) {
