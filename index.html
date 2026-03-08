@@ -390,7 +390,9 @@ function _triggerLoginInit() {
 let fbApp = null;
 let fbRef = null;
 let isConnected = false;
-let ignoreNextRemote = 0; // Zähler: >0 = ignorieren
+var ignoreNextRemote = 0; // Legacy – nicht mehr verwendet
+var _lastWriteTs = 0;     // Timestamp des letzten eigenen Firebase-Writes
+var _ignoreRemoteMs = 3000; // Remote-Updates für 3s nach eigenem Write ignorieren
 var photosRef = null;
 var chatRef = null;
 var _chatMessages = []; // eigener Chat-State, unabhängig von state{}
@@ -501,7 +503,8 @@ async function initFb() {
     setSyncStatus("syncing","Verbinde...");
     fbRef.on("value", snap => {
       const remote = snap.val();
-      if (remote && ignoreNextRemote === 0) {
+     var _shouldIgnore = (Date.now() - _lastWriteTs) < _ignoreRemoteMs;
+      if (remote && !_shouldIgnore) {
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
@@ -523,7 +526,7 @@ async function initFb() {
         // Reschedule termin reminders if termine data changed
         scheduleTerminReminders();
       }
-      if (ignoreNextRemote > 0) ignoreNextRemote--;
+      // ignoreNextRemote deprecated – durch _lastWriteTs ersetzt
       if (!_permSaving) setSyncStatus("connected","Synchron");
       isConnected = true;
       updateSyncBanner();
@@ -551,13 +554,13 @@ function pushFb(onDone) {
   // Fotos nie im Haupt-State speichern – die haben ihren eigenen Pfad
   var stateToSave = Object.assign({}, state);
   delete stateToSave.memberPhotos;
-  ignoreNextRemote += 2; // Zwei Callbacks ignorieren (Firebase sendet Write+Confirm)
+ _lastWriteTs = Date.now();
   fbRef.set(stateToSave).then(function() {
     setSyncStatus('connected', 'Synchron');
     if (onDone) onDone(null);
   }).catch(function(err) {
     setSyncStatus('error','Sync-Fehler');
-    if (ignoreNextRemote > 0) ignoreNextRemote--;
+    _lastWriteTs = 0;
     console.error(err);
     showToast('⚠️ Sync fehlgeschlagen');
     if (onDone) onDone(err);
