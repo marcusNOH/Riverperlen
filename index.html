@@ -477,17 +477,20 @@ async function initFb() {
   }
 }
 
-function pushFb() {
-  if (!fbRef) return;
+function pushFb(onDone) {
+  if (!fbRef) { if (onDone) onDone(null); return; }
   setSyncStatus('syncing','Speichert…');
   ignoreNextRemote++;
-  fbRef.set(state).then(()=>{
-    setSyncStatus('connected','Synchron');
-  }).catch(err=>{
-    setSyncStatus('error','Sync-Fehler');
-    if (ignoreNextRemote > 0) ignoreNextRemote--;
-    console.error(err);
-    showToast('⚠️ Sync fehlgeschlagen – Daten lokal gespeichert');
+  fbRef.set(state, function(err) {
+    if (err) {
+      setSyncStatus('error','Sync-Fehler');
+      if (ignoreNextRemote > 0) ignoreNextRemote--;
+      console.error(err);
+      showToast('⚠️ Sync fehlgeschlagen');
+    } else {
+      setSyncStatus('connected','Synchron');
+    }
+    if (onDone) onDone(err);
   });
 }
 
@@ -1633,26 +1636,12 @@ function togglePerm(member, key) {
   saveLocalState();
   renderBerechtigungen();
   applyPermissions();
-  // Firebase schreiben – mit hartem Timeout als Fallback
-  if (fbRef) {
-    setSyncStatus('syncing','Speichert…');
-    ignoreNextRemote++;
-    fbRef.set(state, function(err) {
-      if (err) {
-        setSyncStatus('error','Sync-Fehler');
-        showToast('❌ Speichern fehlgeschlagen');
-      } else {
-        setSyncStatus('connected','Synchron');
-        showToast('✅ Berechtigung gespeichert');
-      }
-      _permSaving = false;
-    });
-    // Harter Fallback: nach 5s freigeben egal was
-    setTimeout(function() { _permSaving = false; }, 5000);
-  } else {
-    setTimeout(function() { _permSaving = false; }, 300);
-    showToast('💾 Lokal gespeichert');
-  }
+  pushFb(function(err) {
+    _permSaving = false;
+    if (!err) showToast('✅ Berechtigung gespeichert');
+  });
+  // Harter Fallback
+  setTimeout(function() { _permSaving = false; }, 6000);
 }
 
 function setAllPerms(member, val) {
@@ -1663,23 +1652,11 @@ function setAllPerms(member, val) {
   saveLocalState();
   renderBerechtigungen();
   applyPermissions();
-  if (fbRef) {
-    setSyncStatus('syncing','Speichert…');
-    ignoreNextRemote++;
-    fbRef.set(state, function(err) {
-      if (err) {
-        setSyncStatus('error','Sync-Fehler');
-      } else {
-        setSyncStatus('connected','Synchron');
-        showToast('✅ Berechtigungen gespeichert');
-      }
-      _permSaving = false;
-    });
-    setTimeout(function() { _permSaving = false; }, 5000);
-  } else {
-    setTimeout(function() { _permSaving = false; }, 300);
-    showToast('💾 Lokal gespeichert');
-  }
+  pushFb(function(err) {
+    _permSaving = false;
+    if (!err) showToast('✅ Berechtigungen gespeichert');
+  });
+  setTimeout(function() { _permSaving = false; }, 6000);
 }
 
 function toggleBerechtigungExpand(member) {
