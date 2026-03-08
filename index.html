@@ -434,7 +434,19 @@ async function initFb() {
     fbRef.on("value", snap => {
       const remote = snap.val();
       if (remote && ignoreNextRemote === 0) {
-        const prevChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
+        // iOS Fix: pending-Nachrichten aus sessionStorage in prevChatMsgs mergen
+        var pendingMsgs = [];
+        try {
+          pendingMsgs = JSON.parse(sessionStorage.getItem('rp_pending_chat')||'[]');
+        } catch(e) {}
+        var localChatMsgs = state.chatMessages ? [...state.chatMessages] : [];
+        // Pending-Msgs die noch nicht im lokalen State sind hinzufügen
+        if (pendingMsgs.length > 0) {
+          var localTsSet = new Set(localChatMsgs.map(function(m){return m.ts;}));
+          pendingMsgs.forEach(function(m){ if(!localTsSet.has(m.ts)) localChatMsgs.push(m); });
+          localChatMsgs.sort(function(a,b){return a.ts-b.ts;});
+        }
+        const prevChatMsgs = localChatMsgs;
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
@@ -2317,9 +2329,19 @@ function sendChat() {
   state.chatMessages.push({ author: currentUser, text, ts: Date.now() });
   if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
   inp.value = '';
+  // iOS Safari Fix: pending-Nachricht separat merken falls pushFb() unterbrochen wird
+  try {
+    var pending = JSON.parse(sessionStorage.getItem('rp_pending_chat')||'[]');
+    var lastMsg = state.chatMessages[state.chatMessages.length-1];
+    pending.push(lastMsg);
+    sessionStorage.setItem('rp_pending_chat', JSON.stringify(pending));
+  } catch(e) {}
   saveLocalState();
   renderChat();
-  pushFb();
+  pushFb(function() {
+    // Nach erfolgreichem Push: pending leeren
+    try { sessionStorage.removeItem('rp_pending_chat'); } catch(e) {}
+  });
 }
 
 // ═══════════════════════════════════════════
