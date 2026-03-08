@@ -3268,17 +3268,71 @@ function setPerm(member, key, val) {
 function applyPermissions() {
   if (!currentUser) return;
 
-  // Pages to hide completely if no permission
-  const pagePerms = {
-    'kasse':     'kas.seite',
-    'events':    'evt.seite',
-    'stats':     'sta.seite',
-    'spielideen':'spi.seite',
+  // Navigationspunkte ausblenden
+  var pagePerms = {
+    'kasse':      'kas.seite',
+    'events':     'evt.seite',
+    'stats':      'sta.seite',
+    'spielideen': 'spi.seite',
   };
-  Object.entries(pagePerms).forEach(([page, permKey]) => {
-    const btn = document.querySelector(`[data-page="${page}"]`);
-    if (btn) btn.style.display = canDo(permKey) ? '' : 'none';
+  Object.keys(pagePerms).forEach(function(page) {
+    var btn = document.querySelector('[data-page="'+page+'"]');
+    if (btn) btn.style.display = canDo(pagePerms[page]) ? '' : 'none';
   });
+
+  // Trinkroulette Quick-Button
+  var els = document.querySelectorAll('.quick-btn');
+  els.forEach(function(el) {
+    if (el.textContent.indexOf('Trinkroulette') !== -1) {
+      el.style.display = canDo('dash.trinkroulette') ? '' : 'none';
+    }
+  });
+
+  // Abstimmung erstellen – Formular ausblenden
+  var abstForm = document.querySelector('#abstimmungFrage');
+  if (abstForm) {
+    var abstBlock = abstForm.closest('div[style*="border-top"]');
+    if (abstBlock) abstBlock.style.display = canDo('dash.abstimmung') ? '' : 'none';
+  }
+
+  // Abend-Notiz Textarea
+  var notizEl = document.getElementById('abendNotizInput');
+  if (notizEl) notizEl.style.display = canDo('dash.notiz') ? '' : 'none';
+
+  // Abschluss-Buttons: Kegelbahnkosten + Abend speichern
+  var abschlussPage = document.getElementById('page-abschluss');
+  if (abschlussPage) {
+    var btnKegel = abschlussPage.querySelector('[onclick*="kegelbahnKosten"]');
+    if (btnKegel) btnKegel.style.display = canDo('str.bahnkosten') ? '' : 'none';
+    var btnSave = abschlussPage.querySelector('[onclick*="abendSpeichern"]');
+    if (btnSave) btnSave.style.display = canDo('abs.speichern') ? '' : 'none';
+  }
+
+  // Strafen: + Strafe hinzufügen Button
+  var btnStrafe = document.querySelector('[onclick*="addStrafe"]');
+  if (btnStrafe) btnStrafe.style.display = canDo('str.eintragen') ? '' : 'none';
+
+  // Kasse: Einträge bearbeiten – falls vorhanden
+  var kasseAddBtns = document.querySelectorAll('[onclick*="kasseAdd"],[onclick*="addKasse"],[onclick*="kasseEdit"]');
+  kasseAddBtns.forEach(function(b) { b.style.display = canDo('kas.bearbeiten') ? '' : 'none'; });
+
+  // Events: Erstellen/Bearbeiten
+  var evtAddBtns = document.querySelectorAll('[onclick*="addEvent"],[onclick*="evtEdit"],[onclick*="editEvent"]');
+  evtAddBtns.forEach(function(b) { b.style.display = canDo('evt.bearbeiten') ? '' : 'none'; });
+
+  // Termine: Zusatztermine anlegen
+  var terAddBtns = document.querySelectorAll('[onclick*="addZusatz"],[onclick*="zusatzTermin"],[onclick*="addExtraTermin"]');
+  terAddBtns.forEach(function(b) { b.style.display = canDo('ter.zusatz') ? '' : 'none'; });
+
+  // Chat: Senden-Button und Input ausblenden
+  var chatInput = document.getElementById('chatInput');
+  if (chatInput) chatInput.style.display = canDo('cha.schreiben') ? '' : 'none';
+  var chatSend = document.querySelector('[onclick*="sendChat"]');
+  if (chatSend) chatSend.style.display = canDo('cha.schreiben') ? '' : 'none';
+
+  // Profil: Bearbeiten ausblenden
+  var profilEdit = document.querySelectorAll('[onclick*="saveMyField"],[onchange*="saveMyField"],[onclick*="uploadMemberPhoto"]');
+  profilEdit.forEach(function(b) { b.style.display = canDo('pro.bearbeiten') ? '' : 'none'; });
 }
 // ═══════════════════════════════════════════
 // LOGIN
