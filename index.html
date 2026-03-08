@@ -2305,7 +2305,7 @@ function sendChat() {
   if (state.chatMessages.length > 100) state.chatMessages = state.chatMessages.slice(-100);
   inp.value = '';
   saveState(); renderChat();
-  // Notification für andere wird via checkIncomingChatNotif (Firebase-Listener) ausgelöst
+  // Notification für andere Mitglieder wird via checkIncomingChatNotif (Firebase-Listener) ausgelöst
 }
 
 // ═══════════════════════════════════════════
