@@ -3347,25 +3347,25 @@ function openVerliererGewinner() {
   var members = getMembers().filter(function(m){ return state.anwesenheit[m]&&state.anwesenheit[m].present; });
   if (members.length < 2) members = getMembers();
 
-  var opts = members.map(function(m){
-    return '<option value="'+m+'">'+m.split(' ')[0]+'</option>';
+  var rows = members.map(function(m){
+    var mkey = m.replace(/\s/g,'_');
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:14px;font-weight:600;color:var(--text)">'+m.split(' ')[0]+'</div>'
+      +'<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<div style="font-size:9px;font-weight:700;color:#ffd700;letter-spacing:1px">GEWINNER</div>'
+      +'<div class="toggle-btn" id="vgtW_'+mkey+'" onclick="vgToggle(\''+m+'\',\'winner\')" style="border-color:#ffd700"></div>'
+      +'</div>'
+      +'<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+      +'<div style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:1px">VERLIERER</div>'
+      +'<div class="toggle-btn" id="vgtL_'+mkey+'" onclick="vgToggle(\''+m+'\',\'loser\')"></div>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
   }).join('');
 
-  var body = ''
-    +'<div style="margin-bottom:18px">'
-    +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#ffd700;margin-bottom:6px">&#x2605; GEWINNER</div>'
-    +'<select id="vgWinnerSel" onchange="vgUpdateConfirm()" style="width:100%;padding:12px 14px;border-radius:10px;border:2px solid #ffd700;background:rgba(255,215,0,.08);color:#ffd700;font-size:15px;font-weight:700;appearance:none;-webkit-appearance:none">'
-    +'<option value="">— Gewinner wählen —</option>'+opts
-    +'</select>'
-    +'</div>'
-    +'<div style="text-align:center;font-size:22px;color:var(--text3);margin-bottom:18px">VS</div>'
-    +'<div>'
-    +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--red);margin-bottom:6px">&#x2620; VERLIERER</div>'
-    +'<select id="vgLoserSel" onchange="vgUpdateConfirm()" style="width:100%;padding:12px 14px;border-radius:10px;border:2px solid var(--red);background:rgba(232,64,64,.08);color:var(--red);font-size:15px;font-weight:700;appearance:none;-webkit-appearance:none">'
-    +'<option value="">— Verlierer wählen —</option>'+opts
-    +'</select>'
-    +'</div>'
-    +'<div id="vgHint" style="margin-top:12px;min-height:20px;text-align:center;font-size:12px;color:var(--text3)">Wähle Gewinner und Verlierer</div>';
+  var body = '<div id="vgHint" style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:12px">Wähle jeweils einen Gewinner und einen Verlierer</div>'
+    +'<div>'+rows+'</div>';
 
   showModal('🏆 Verlierer zahlt!', body,
     function(){ vgStartAnimation(); },
@@ -3377,23 +3377,46 @@ function openVerliererGewinner() {
   }, 50);
 }
 
+function vgToggle(m, role) {
+  if (role === 'winner') {
+    // Alten Gewinner-Toggle ausschalten
+    if (_vgWinner && _vgWinner !== m) {
+      var oldKey = _vgWinner.replace(/\s/g,'_');
+      var oldEl = document.getElementById('vgtW_'+oldKey);
+      if (oldEl) oldEl.className = 'toggle-btn';
+    }
+    _vgWinner = (_vgWinner === m) ? null : m;
+    var el = document.getElementById('vgtW_'+m.replace(/\s/g,'_'));
+    if (el) el.className = 'toggle-btn' + (_vgWinner === m ? ' on' : '');
+    if (el) el.style.borderColor = '#ffd700';
+    if (el && _vgWinner !== m) el.style.borderColor = '';
+  } else {
+    // Alten Verlierer-Toggle ausschalten
+    if (_vgLoser && _vgLoser !== m) {
+      var oldKey = _vgLoser.replace(/\s/g,'_');
+      var oldEl = document.getElementById('vgtL_'+oldKey);
+      if (oldEl) oldEl.className = 'toggle-btn';
+    }
+    _vgLoser = (_vgLoser === m) ? null : m;
+    var el = document.getElementById('vgtL_'+m.replace(/\s/g,'_'));
+    if (el) el.className = 'toggle-btn' + (_vgLoser === m ? ' on' : '');
+  }
+  vgUpdateConfirm();
+}
+
 function vgUpdateConfirm() {
-  var ws = document.getElementById('vgWinnerSel');
-  var ls = document.getElementById('vgLoserSel');
   var hint = document.getElementById('vgHint');
-  if (!ws || !ls) return;
-  _vgWinner = ws.value || null;
-  _vgLoser  = ls.value || null;
   var btn = document.getElementById('modalConfirmBtn');
-  var ready = (_vgWinner && _vgLoser && _vgWinner !== _vgLoser);
+  var same = (_vgWinner && _vgLoser && _vgWinner === _vgLoser);
+  var ready = (_vgWinner && _vgLoser && !same);
   if (btn) { btn.disabled = !ready; btn.style.opacity = ready ? '1' : '0.4'; }
   if (hint) {
-    if (_vgWinner && _vgLoser && _vgWinner === _vgLoser)
-      hint.innerHTML = '<span style="color:var(--red)">&#x26A0; Gewinner und Verlierer m\u00fcssen verschieden sein!</span>';
+    if (same)
+      hint.innerHTML = '<span style="color:var(--red)">&#x26A0; Gewinner und Verlierer müssen verschieden sein!</span>';
     else if (ready)
-      hint.innerHTML = '<span style="color:#ffd700">'+_vgWinner.split(' ')[0]+'</span> &nbsp;vs&nbsp; <span style="color:var(--red)">'+_vgLoser.split(' ')[0]+'</span> &nbsp;\u2014 bereit!';
+      hint.innerHTML = '<span style="color:#ffd700">&#x2605; '+_vgWinner.split(' ')[0]+'</span> &nbsp;vs&nbsp; <span style="color:var(--red)">&#x2620; '+_vgLoser.split(' ')[0]+'</span> — bereit!';
     else
-      hint.innerHTML = 'W\u00e4hle Gewinner und Verlierer';
+      hint.innerHTML = 'Wähle jeweils einen Gewinner und einen Verlierer';
   }
 }
 
