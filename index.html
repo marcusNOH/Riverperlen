@@ -3347,54 +3347,53 @@ function openVerliererGewinner() {
   var members = getMembers().filter(function(m){ return state.anwesenheit[m]&&state.anwesenheit[m].present; });
   if (members.length < 2) members = getMembers();
 
-  var chips = members.map(function(m){
-    return '<div class="vg-chip" id="vgchip_'+m.replace(/\s/g,'_')+'" onclick="vgPick(\''+m+'\')">'+avatar(m)+' '+m.split(' ')[0]+'</div>';
+  var opts = members.map(function(m){
+    return '<option value="'+m+'">'+m.split(' ')[0]+'</option>';
   }).join('');
 
-  showModal('🏆 Verlierer zahlt!',
-    '<div style="font-size:13px;color:var(--text2);margin-bottom:10px">1. Tippe auf den <strong style="color:#ffd700">Gewinner</strong> → 2. Tippe auf den <strong style="color:var(--red)">Verlierer</strong></div>'
-    +'<div id="vgInfo" style="min-height:24px;font-size:13px;color:var(--text3);margin-bottom:10px;text-align:center">Wähle zuerst den Gewinner</div>'
-    +'<div style="display:flex;flex-wrap:wrap;justify-content:center">'+chips+'</div>',
+  var body = ''
+    +'<div style="margin-bottom:18px">'
+    +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:#ffd700;margin-bottom:6px">&#x2605; GEWINNER</div>'
+    +'<select id="vgWinnerSel" onchange="vgUpdateConfirm()" style="width:100%;padding:12px 14px;border-radius:10px;border:2px solid #ffd700;background:rgba(255,215,0,.08);color:#ffd700;font-size:15px;font-weight:700;appearance:none;-webkit-appearance:none">'
+    +'<option value="">— Gewinner wählen —</option>'+opts
+    +'</select>'
+    +'</div>'
+    +'<div style="text-align:center;font-size:22px;color:var(--text3);margin-bottom:18px">VS</div>'
+    +'<div>'
+    +'<div style="font-size:11px;font-weight:700;letter-spacing:1px;color:var(--red);margin-bottom:6px">&#x2620; VERLIERER</div>'
+    +'<select id="vgLoserSel" onchange="vgUpdateConfirm()" style="width:100%;padding:12px 14px;border-radius:10px;border:2px solid var(--red);background:rgba(232,64,64,.08);color:var(--red);font-size:15px;font-weight:700;appearance:none;-webkit-appearance:none">'
+    +'<option value="">— Verlierer wählen —</option>'+opts
+    +'</select>'
+    +'</div>'
+    +'<div id="vgHint" style="margin-top:12px;min-height:20px;text-align:center;font-size:12px;color:var(--text3)">Wähle Gewinner und Verlierer</div>';
+
+  showModal('🏆 Verlierer zahlt!', body,
     function(){ vgStartAnimation(); },
     '🎳 Los geht\'s!', 'btn-gold'
   );
-  // Confirm-Button initial deaktivieren
   setTimeout(function(){
     var btn = document.getElementById('modalConfirmBtn');
     if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
   }, 50);
 }
 
-function vgPick(m) {
-  if (!_vgWinner) {
-    _vgWinner = m;
-  } else if (!_vgLoser && m !== _vgWinner) {
-    _vgLoser = m;
-  } else if (m === _vgWinner) {
-    _vgWinner = null;
-    if (_vgLoser === null) {}
-  } else if (m === _vgLoser) {
-    _vgLoser = null;
-  }
-  // Chips updaten
-  getMembers().forEach(function(n){
-    var el = document.getElementById('vgchip_'+n.replace(/\s/g,'_'));
-    if (!el) return;
-    el.className = 'vg-chip';
-    if (n === _vgWinner) el.className += ' winner';
-    if (n === _vgLoser)  el.className += ' loser';
-  });
-  var info = document.getElementById('vgInfo');
-  if (info) {
-    if (!_vgWinner) info.innerHTML = 'Wähle zuerst den <strong style="color:#ffd700">Gewinner</strong>';
-    else if (!_vgLoser) info.innerHTML = '<span style="color:#ffd700">Gewinner: '+_vgWinner.split(' ')[0]+'</span> &nbsp;·&nbsp; Jetzt den <strong style="color:var(--red)">Verlierer</strong> wählen';
-    else info.innerHTML = '<span style="color:#ffd700">&#x2605; '+_vgWinner.split(' ')[0]+'</span> &nbsp;vs&nbsp; <span style="color:var(--red)">&#x2620; '+_vgLoser.split(' ')[0]+'</span>';
-  }
+function vgUpdateConfirm() {
+  var ws = document.getElementById('vgWinnerSel');
+  var ls = document.getElementById('vgLoserSel');
+  var hint = document.getElementById('vgHint');
+  if (!ws || !ls) return;
+  _vgWinner = ws.value || null;
+  _vgLoser  = ls.value || null;
   var btn = document.getElementById('modalConfirmBtn');
-  if (btn) {
-    var ready = (_vgWinner && _vgLoser);
-    btn.disabled = !ready;
-    btn.style.opacity = ready ? '1' : '0.4';
+  var ready = (_vgWinner && _vgLoser && _vgWinner !== _vgLoser);
+  if (btn) { btn.disabled = !ready; btn.style.opacity = ready ? '1' : '0.4'; }
+  if (hint) {
+    if (_vgWinner && _vgLoser && _vgWinner === _vgLoser)
+      hint.innerHTML = '<span style="color:var(--red)">&#x26A0; Gewinner und Verlierer m\u00fcssen verschieden sein!</span>';
+    else if (ready)
+      hint.innerHTML = '<span style="color:#ffd700">'+_vgWinner.split(' ')[0]+'</span> &nbsp;vs&nbsp; <span style="color:var(--red)">'+_vgLoser.split(' ')[0]+'</span> &nbsp;\u2014 bereit!';
+    else
+      hint.innerHTML = 'W\u00e4hle Gewinner und Verlierer';
   }
 }
 
@@ -3402,35 +3401,162 @@ function vgStartAnimation() {
   if (!_vgWinner || !_vgLoser) return;
   var drink = VG_DRINKS[Math.floor(Math.random()*VG_DRINKS.length)];
   closeModal();
-  setTimeout(function(){ vgShowResult(drink, false); }, 200);
+  setTimeout(function(){ vgShowResult(drink); }, 200);
 }
 
-function vgShowResult(drink, reroll) {
-  if (reroll) {
-    drink = VG_DRINKS[Math.floor(Math.random()*VG_DRINKS.length)];
+function vgShowResult(drink) {
+  var body = '<div style="text-align:center">'
+    +'<canvas id="vgCanvas" width="300" height="160" style="display:block;margin:0 auto 14px;border-radius:10px;background:#0a1520"></canvas>'
+    +'<div id="vgResultText" style="min-height:80px"></div>'
+    +'<button onclick="vgReroll()" style="margin-top:10px;padding:9px 20px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">🎲 Anderes Getr\u00e4nk</button>'
+    +'</div>';
+  showModal('🏆 Ergebnis!', body, null, null, null);
+  setTimeout(function(){ vgAnimate(drink); }, 120);
+}
+
+function vgAnimate(drink) {
+  var cv = document.getElementById('vgCanvas');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  var W=300, H=160;
+  // Pin positions (bowling triangle, 4 rows)
+  var pinR = 7;
+  var pinBase = {x:230, y:80};
+  var gap = 19;
+  var pins = [];
+  var rows = [[0],[1,2],[3,4,5],[6,7,8,9]];
+  rows.forEach(function(row, ri){
+    row.forEach(function(pi, ci){
+      pins.push({
+        x: pinBase.x + ri*gap - (row.length-1)*gap/2 + ci*gap - ri*gap/2,
+        y: pinBase.y - (rows.length-1-ri)*gap/2 + ci*(gap*0.55) - (row.length-1)*(gap*0.55)/2,
+        fallen: false,
+        angle: 0,
+        vx: 0, vy: 0, va: 0
+      });
+    });
+  });
+  // Corrected layout: standard bowling triangle
+  pins = [];
+  var cx0=240, cy0=80;
+  var sp=18;
+  // Row 4 (back): 4 pins
+  for(var i=0;i<4;i++) pins.push({x:cx0+sp*1.5, y:cy0-sp*1.5+i*sp, fallen:false, angle:0, vx:0,vy:0,va:0});
+  // Row 3: 3 pins
+  for(var i=0;i<3;i++) pins.push({x:cx0+sp, y:cy0-sp+i*sp, fallen:false, angle:0, vx:0,vy:0,va:0});
+  // Row 2: 2 pins
+  for(var i=0;i<2;i++) pins.push({x:cx0+sp*0.5, y:cy0-sp*0.5+i*sp, fallen:false, angle:0, vx:0,vy:0,va:0});
+  // Row 1 (front): 1 pin (head pin)
+  pins.push({x:cx0, y:cy0, fallen:false, angle:0, vx:0,vy:0,va:0});
+
+  var ball = {x:-30, y:80, r:13};
+  var phase = 'roll'; // roll → impact → done
+  var impactT = 0;
+  var startT = performance.now();
+
+  function drawPin(p) {
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.angle);
+    if (p.fallen) {
+      // Fallen pin – horizontal
+      ctx.strokeStyle='rgba(255,255,255,.3)';
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(-pinR,0); ctx.lineTo(pinR,0); ctx.stroke();
+    } else {
+      // Standing pin
+      ctx.fillStyle='#fff';
+      ctx.beginPath();
+      ctx.moveTo(0,-pinR*1.6);
+      ctx.lineTo(pinR*0.6, pinR);
+      ctx.lineTo(-pinR*0.6, pinR);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle='var(--red)';
+      ctx.fillRect(-pinR*0.25,-pinR*0.4,pinR*0.5,pinR*0.5);
+    }
+    ctx.restore();
   }
-  var _drink = drink;
-  showModal('🏆 Ergebnis!',
-    '<div style="text-align:center;padding:10px 0">'
-    +'<div style="font-size:64px;margin-bottom:8px">'+drink.emoji+'</div>'
-    +'<div style="font-size:22px;font-weight:900;color:var(--gold);margin-bottom:6px">'+drink.name+'</div>'
-    +'<div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">'
-    +'<span style="color:var(--red);font-weight:700">'+_vgLoser.split(' ')[0]+'</span>'
-    +' kauft ein <strong>'+drink.name+'</strong><br>für '
-    +'<span style="color:#ffd700;font-weight:700">'+_vgWinner.split(' ')[0]+'</span>!'
-    +'</div>'
-    +'<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'
-    +'<button onclick="vgReroll()" style="padding:10px 18px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:700;cursor:pointer">🎲 Anderes Getränk</button>'
-    +'</div>'
-    +'</div>',
-    null, null, null
-  );
+
+  function draw(now) {
+    var t = (now - startT)/1000;
+    ctx.clearRect(0,0,W,H);
+    // Lane
+    ctx.fillStyle='#0d1a2a';
+    ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(255,255,255,.06)';
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0,H/2-30); ctx.lineTo(W,H/2-30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,H/2+30); ctx.lineTo(W,H/2+30); ctx.stroke();
+
+    if (phase==='roll') {
+      // Ball rolls from left to pins
+      ball.x = -30 + (cx0+20)*Math.min(t/1.2, 1);
+      if (ball.x >= cx0-10) { phase='impact'; impactT=now; }
+    }
+    if (phase==='impact') {
+      var it = (now-impactT)/1000;
+      // Knock all pins with delay cascade
+      pins.forEach(function(p,i){
+        var delay = i*0.06;
+        if (it > delay && !p.fallen) {
+          p.fallen=true;
+          p.vx = 1.5+Math.random();
+          p.vy = (Math.random()-0.5)*2;
+          p.va = (Math.random()-0.5)*0.3;
+        }
+        if (p.fallen) {
+          p.x += p.vx; p.y += p.vy;
+          p.angle += p.va;
+          p.vx *= 0.92; p.vy *= 0.92;
+        }
+      });
+      if (it > 1.5) phase='done';
+    }
+
+    // Draw pins
+    pins.forEach(function(p){ drawPin(p); });
+
+    // Draw ball
+    var grad = ctx.createRadialGradient(ball.x-4,ball.y-4,2,ball.x,ball.y,ball.r);
+    grad.addColorStop(0,'#555');
+    grad.addColorStop(1,'#111');
+    ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+    ctx.fillStyle=grad; ctx.fill();
+    ctx.strokeStyle='#333'; ctx.lineWidth=1.5; ctx.stroke();
+    // Finger holes
+    ctx.fillStyle='rgba(0,0,0,.5)';
+    ctx.beginPath(); ctx.arc(ball.x+3,ball.y-4,2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ball.x-2,ball.y-6,2,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(ball.x+5,ball.y+2,2,0,Math.PI*2); ctx.fill();
+
+    if (phase !== 'done') {
+      requestAnimationFrame(draw);
+    } else {
+      // Show result text
+      var res = document.getElementById('vgResultText');
+      if (res) res.innerHTML = ''
+        +'<div style="font-size:36px;margin-bottom:4px">'+drink.emoji+'</div>'
+        +'<div style="font-size:19px;font-weight:900;color:var(--gold);margin-bottom:6px">'+drink.name+'</div>'
+        +'<div style="font-size:13px;color:var(--text2);line-height:1.6">'
+        +'<span style="color:var(--red);font-weight:700">'+_vgLoser.split(' ')[0]+'</span>'
+        +' kauft ein <strong>'+drink.name+'</strong> f\u00fcr '
+        +'<span style="color:#ffd700;font-weight:700">'+_vgWinner.split(' ')[0]+'</span>!'
+        +'</div>';
+    }
+  }
+  requestAnimationFrame(draw);
 }
 
 function vgReroll() {
-  closeModal();
-  setTimeout(function(){ vgShowResult(null, true); }, 150);
-}
+  var drink = VG_DRINKS[Math.floor(Math.random()*VG_DRINKS.length)];
+  var res = document.getElementById('vgResultText');
+  if (res) res.innerHTML = '';
+  var cv = document.getElementById('vgCanvas');
+  if (cv) cv.getContext('2d').clearRect(0,0,300,160);
+  setTimeout(function(){ vgAnimate(drink); }, 100);
+} 
+  
 // ═══════════════════════════════════════════
 // BERECHTIGUNGS-SYSTEM
 // ═══════════════════════════════════════════
