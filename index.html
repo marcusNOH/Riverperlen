@@ -1866,25 +1866,43 @@ function confirmReset() {
   showModal('Daten zurücksetzen',
     `<p class="modal-text">Was soll zurückgesetzt werden?</p>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
-      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetStrafen" checked> Strafen & Anwesenheit (heute)</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetTestHistory" checked> 🧪 Testdaten: History, Kasse, Statistiken<br><span style="font-size:11px;color:var(--text3);margin-left:22px">Profil, Fotos, Berechtigungen, Strafen-Liste bleiben erhalten</span></label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetStrafen"> Strafen &amp; Anwesenheit (heute)</label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetKasse"> Kasse</label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetHistory"> Gesamte Historie</label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetEvents"> Events</label>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetAbstimmungen"> Abstimmungen</label>
       <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;color:var(--text)"><input type="checkbox" id="resetChat"> Chat-Nachrichten</label>
     </div>`,
     () => {
+      // ── Testdaten-Reset: nur History/Kasse/Statistiken – Profildaten bleiben ──
+      if (document.getElementById('resetTestHistory')?.checked) {
+        state.history = [];
+        state.kasse = [];
+        state.kasseStart = 0;
+        state.bezahlt = {};
+        state.strafen = {};
+        state.anwesenheit = {};
+        state.freieStrafen = {};
+        state.abstimmungen = [];
+        state.terminZusagen = {};
+        state.extraTermine = [];
+        state.abendNotizen = {};
+        state.strafenPinned = [];
+        // ── NICHT angefasst: memberPhotos, memberProfiles, memberBdays, memberPerms, strafenListe, paypal, members, memberPasswords ──
+      }
       if (document.getElementById('resetStrafen')?.checked) { state.strafen={}; state.anwesenheit={}; state.freieStrafen={}; }
       if (document.getElementById('resetKasse')?.checked) { state.kasse=[]; state.kasseStart=0; state.bezahlt={}; }
       if (document.getElementById('resetHistory')?.checked) { state.history=[]; }
       if (document.getElementById('resetEvents')?.checked) { state.events=[]; }
+      if (document.getElementById('resetAbstimmungen')?.checked) { state.abstimmungen=[]; }
       if (document.getElementById('resetChat')?.checked) { state.chatMessages=[]; if(chatRef) chatRef.set(null); }
-      saveState(); renderDashboard();
+      saveState(); renderDashboard(); renderKasse();
       showToast('✅ Ausgewählte Daten zurückgesetzt');
     },
     '🗑️ Zurücksetzen', 'btn-danger'
   );
 }
-
 // ═══════════════════════════════════════════
 // EXPORT
 // ═══════════════════════════════════════════
