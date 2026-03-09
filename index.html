@@ -3790,6 +3790,15 @@ function pinSubmit() {
   updatePinDots();
   var err = document.getElementById('loginError');
 
+  // Brute-Force-Schutz
+  var _bfKey = 'rp_bf';
+  var _bf = JSON.parse(localStorage.getItem(_bfKey) || '{"count":0,"until":0}');
+  if (Date.now() < _bf.until) {
+    var sek = Math.ceil((_bf.until - Date.now()) / 1000);
+    if (err) err.textContent = '⏳ Gesperrt – noch ' + sek + ' Sekunden warten';
+    return;
+  }
+
   if (pin === ADMIN_PIN) {
     _isAdminSession = true;
     try { sessionStorage.setItem('rp_admin','1'); } catch(e) {}
@@ -3830,8 +3839,17 @@ function pinSubmit() {
     updateAbendNavLabel();
     // Start termin reminder scheduler
     startReminderLoop();
-  } else {
-    if (err) err.textContent = '❌ PIN unbekannt';
+ } else {
+    _bf.count = (_bf.count || 0) + 1;
+    if (_bf.count >= 3) {
+      _bf.until = Date.now() + 30000; // 30 Sekunden Sperre
+      _bf.count = 0;
+      localStorage.setItem(_bfKey, JSON.stringify(_bf));
+      if (err) err.textContent = '🚫 3x falsch – 30 Sekunden gesperrt!';
+    } else {
+      localStorage.setItem(_bfKey, JSON.stringify(_bf));
+      if (err) err.textContent = '❌ PIN falsch (' + _bf.count + '/3 Versuchen)';
+    }
   }
 }
 
