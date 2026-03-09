@@ -56,11 +56,14 @@ window._firebaseReady = (async () => {
   try {
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
+    return true;
     return true;
   } catch(e) {
     try {
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
+     await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js');
       return true;
     } catch(e2) {
       console.warn('Firebase konnte nicht geladen werden – Offline-Modus aktiv');
@@ -442,6 +445,17 @@ async function initFb() {
       }, "rp");
     }
     const db = firebase.database(fbApp);
+    // Anonymous Auth – erforderlich für Firebase Rules (auth != null)
+    try {
+      const auth = firebase.auth(fbApp);
+      if (!auth.currentUser) {
+        await auth.signInAnonymously();
+        console.log('[Auth] Anonym eingeloggt');
+      }
+    } catch(authErr) {
+      console.warn('[Auth] Fehler:', authErr.message);
+      // Kein harter Fehler – App läuft weiter, Rules bleiben offen bis Auth klappt
+    }
     fbRef = db.ref("riverperlen/state");
     photosRef = db.ref("riverperlen/photos");
     // Einmalige Migration: alte Fotos aus state in photosRef verschieben
