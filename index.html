@@ -817,6 +817,7 @@ function toggleAbendAktiv() {
 }
 
 function renderAnwesenheit() {
+  console.log('[ANW] _isAdminSession:', _isAdminSession, '| adminToggle:', document.getElementById('anwAdminToggle'));
   // Admin-Toggle rendern
   var adminToggle = document.getElementById('anwAdminToggle');
   if (adminToggle) {
