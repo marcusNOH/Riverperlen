@@ -448,8 +448,8 @@ async function initFb() {
     try {
       if (typeof firebase.appCheck === 'function') {
         var appCheck = firebase.appCheck(fbApp);
-        appCheck.activate(
-          new firebase.appCheck.ReCaptchaV3Provider('6LcrrIQsAAAAAxzKtTma1dCuu8a1FXWMN5GkpFP'),
+       appCheck.activate(
+  new firebase.appCheck.ReCaptchaV3Provider('6LcMEYosAAAAAGAy6U3auuO1ZagVysXvyLwJKDs-'),
           true // isTokenAutoRefreshEnabled
         );
         console.log('[AppCheck] aktiviert mit ReCaptchaV3Provider');
