@@ -22,7 +22,7 @@ window._swRegistration = null;
 (function registerSW() {
   if (!('serviceWorker' in navigator)) return;
   // Echter SW nötig für FCM – liegt neben index.html im Repo
-  var swUrl = 'https://raw.githack.com/marcusNOH/Riverperlen/main/firebase-messaging-sw.js';
+  var swUrl = 'https://riverperlen.schmele.eu/firebase-messaging-sw.js';
   navigator.serviceWorker.register(swUrl, { scope: './' }).then(function(reg) {
     window._swRegistration = reg;
     console.log('[SW] FCM Service Worker registriert:', reg.scope);
