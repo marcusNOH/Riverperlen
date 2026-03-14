@@ -444,12 +444,15 @@ async function initFb() {
         projectId: fbCfg.projectId,
         appId: "1:000000000000:web:riverperlen"
       }, "rp");
-    // ── App Check (reCAPTCHA v3) ──────────────────────────
+   // ── App Check (reCAPTCHA v3) ──────────────────────────
     try {
       if (typeof firebase.appCheck === 'function') {
         var appCheck = firebase.appCheck(fbApp);
-        appCheck.activate('6LcrrIQsAAAAAxzKtTma1dCuu8a1FXWMN5GkpFP', true);
-        console.log('[AppCheck] aktiviert');
+        appCheck.activate(
+          new firebase.appCheck.ReCaptchaV3Provider('6LcrrIQsAAAAAxzKtTma1dCuu8a1FXWMN5GkpFP'),
+          true // isTokenAutoRefreshEnabled
+        );
+        console.log('[AppCheck] aktiviert mit ReCaptchaV3Provider');
       }
     } catch(acErr) {
       console.warn('[AppCheck] Fehler:', acErr.message);
