@@ -1503,12 +1503,13 @@ function renderTermineItem(t, zusagen) {
             \u274C ${myStatus==='absage'?'Abgesagt':'Ich kann nicht'}
           </button>
         </div>
-        ${myStatus==='absage'?`
-        <div style="margin-top:6px">
-          <input type="text" maxlength="80" placeholder="Grund angeben (optional)…"
+      ${myStatus==='absage'?`
+        <div style="margin-top:6px;display:flex;gap:6px;align-items:center">
+          <input type="text" id="grundInput_${dateKey}" maxlength="80" placeholder="Grund angeben (optional)…"
             value="${myGrund.replace(/"/g,'&quot;')}"
             oninput="terminGrund('${dateKey}',this.value)"
-            style="width:100%;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-sizing:border-box">
+            style="flex:1;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-sizing:border-box">
+          <button onclick="terminGrundSpeichern('${dateKey}')" style="padding:7px 12px;background:var(--green);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">✓ OK</button>
         </div>`:''}`;
     }
   }
@@ -1576,7 +1577,11 @@ function terminZusage(dateKey, status) {
   if (status === 'zusage' && prev !== 'zusage') showToast('✅ Zusage gespeichert!');
   if (status === 'absage' && prev !== 'absage') showToast('❌ Absage gespeichert');
 }
-
+function terminGrundSpeichern(dateKey) {
+  if (!currentUser) return;
+  saveState();
+  showToast('✅ Absage-Grund gespeichert');
+}
 function terminGrund(dateKey, grund) {
   if (!currentUser) return;
   if (!state.terminZusagen) state.terminZusagen = {};
