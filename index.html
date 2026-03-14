@@ -829,7 +829,8 @@ function renderAnwesenheit() {
         + '<div style="font-size:24px">' + (aktiv ? '&#x1F7E2;' : '&#x1F534;') + '</div>'
         + '<div>'
         + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:16px;color:' + (aktiv ? 'var(--green)' : 'var(--red)') + '">' + (aktiv ? 'ABEND AKTIV' : 'ABEND INAKTIV') + '</div>'
-        + '<div style="font-size:11px;color:var(--text3)">Tippen zum ' + (aktiv ? 'Deaktivieren' : 'Aktivieren') + '</div>'
+      + '<div style="font-size:11px;color:var(--text3)">Tippen zum ' + (aktiv ? 'Deaktivieren' : 'Aktivieren') + '</div>'
+        + '<div style="font-size:11px;color:var(--text2);margin-top:2px">' + (function(){ var t = getNaechsterTermin(); return t ? formatTerminLabel(t) : 'Kein Termin gefunden'; })() + '</div>'
         + '</div></div>'
         + '<div class="toggle-btn ' + (aktiv ? 'on' : '') + '" style="pointer-events:none"></div>'
         + '</div>';
