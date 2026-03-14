@@ -3813,58 +3813,77 @@ function pinSubmit() {
     return;
   }
 
-  if (pin === ADMIN_PIN) {
-    _isAdminSession = true;
-    try { sessionStorage.setItem('rp_admin','1'); } catch(e) {}
-    // Admin also enters app as "Admin"
-    currentUser = '__admin__';
-    hideLoginScreen();
-    updateLoginLogo();
-    updateHeader();
-    renderDashboard();
-    initChatWatermark();
-    applyPermissions();
-    startReminderLoop();
-    // Go directly to settings
-    setTimeout(()=>{ showPage('settings', document.querySelector('[data-page="settings"]')); }, 100);
-    return;
-  }
+  // Loading-Anzeige
+  if (err) err.textContent = '🔄 Prüfe…';
 
-  var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
-  var members = getMembers();
-  var found = null;
-  for (var i = 0; i < members.length; i++) {
-    var mpin = passwords[members[i]] || String(i + 1).padStart(4, '0');
-    if (pin === mpin) { found = members[i]; break; }
-  }
-
-  if (found) {
-    if (err) err.textContent = '';
-    currentUser = found;
-    try { sessionStorage.setItem('rp_user', found); } catch(e) {}
-    hideLoginScreen();
-    updateLoginLogo();
-    updateHeader();
-    renderDashboard();
-    setTimeout(initPresence, 1000);
-    // Init chat watermark – must happen BEFORE any Firebase update fires notifs
-    initChatWatermark();
-    applyPermissions();
-    updateAbendNavLabel();
-    // Start termin reminder scheduler
-    startReminderLoop();
- } else {
-    _bf.count = (_bf.count || 0) + 1;
-    if (_bf.count >= 3) {
-      _bf.until = Date.now() + 30000; // 30 Sekunden Sperre
-      _bf.count = 0;
-      localStorage.setItem(_bfKey, JSON.stringify(_bf));
-      if (err) err.textContent = '🚫 3x falsch – 30 Sekunden gesperrt!';
+  fetch('https://api.schmele.eu/webhook/rp-k3g3l-x7q2w9', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin: pin })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.success) {
+      localStorage.setItem(_bfKey, JSON.stringify({count:0,until:0}));
+      if (err) err.textContent = '';
+      if (data.isAdmin) {
+        _isAdminSession = true;
+        try { sessionStorage.setItem('rp_admin','1'); } catch(e) {}
+        currentUser = '__admin__';
+        hideLoginScreen();
+        updateLoginLogo(); updateHeader(); renderDashboard();
+        initChatWatermark(); applyPermissions(); startReminderLoop();
+        setTimeout(function(){ showPage('settings', document.querySelector('[data-page="settings"]')); }, 100);
+      } else {
+        currentUser = data.member;
+        try { sessionStorage.setItem('rp_user', data.member); } catch(e) {}
+        hideLoginScreen();
+        updateLoginLogo(); updateHeader(); renderDashboard();
+        setTimeout(initPresence, 1000);
+        initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
+      }
     } else {
-      localStorage.setItem(_bfKey, JSON.stringify(_bf));
-      if (err) err.textContent = '❌ PIN falsch (' + _bf.count + '/3 Versuchen)';
+      _bf.count = (_bf.count || 0) + 1;
+      if (_bf.count >= 3) {
+        _bf.until = Date.now() + 30000;
+        _bf.count = 0;
+        localStorage.setItem(_bfKey, JSON.stringify(_bf));
+        if (err) err.textContent = '🚫 3x falsch – 30 Sekunden gesperrt!';
+      } else {
+        localStorage.setItem(_bfKey, JSON.stringify(_bf));
+        if (err) err.textContent = '❌ PIN falsch (' + _bf.count + '/3 Versuchen)';
+      }
     }
-  }
+  })
+  .catch(function() {
+    // Fallback: lokale Prüfung wenn n8n nicht erreichbar
+    if (err) err.textContent = '⚠️ Server nicht erreichbar – lokaler Fallback';
+    var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
+    var members = getMembers();
+    var found = null;
+    for (var i = 0; i < members.length; i++) {
+      var mpin = passwords[members[i]] || String(i + 1).padStart(4, '0');
+      if (pin === mpin) { found = members[i]; break; }
+    }
+    if (found) {
+      currentUser = found;
+      try { sessionStorage.setItem('rp_user', found); } catch(e) {}
+      hideLoginScreen();
+      updateLoginLogo(); updateHeader(); renderDashboard();
+      setTimeout(initPresence, 1000);
+      initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
+    } else {
+      _bf.count = (_bf.count || 0) + 1;
+      if (_bf.count >= 3) {
+        _bf.until = Date.now() + 30000; _bf.count = 0;
+        localStorage.setItem(_bfKey, JSON.stringify(_bf));
+        if (err) err.textContent = '🚫 3x falsch – 30 Sekunden gesperrt!';
+      } else {
+        localStorage.setItem(_bfKey, JSON.stringify(_bf));
+        if (err) err.textContent = '❌ PIN falsch (' + _bf.count + '/3 Versuchen)';
+      }
+    }
+  });
 }
 
 function renderAdminPanel() {
