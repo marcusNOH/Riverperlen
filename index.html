@@ -17,39 +17,18 @@ function loadScript(src) {
   });
 }
 // ── Service Worker (Blob) für iOS PWA Push Notifications ──────────────────
+// ── Service Worker für FCM Background Push ────────────────────────────────
 window._swRegistration = null;
 (function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  try {
-    var swCode = [
-      'self.addEventListener("install", function(e){ self.skipWaiting(); });',
-      'self.addEventListener("activate", function(e){ e.waitUntil(self.clients.claim()); });',
-      'self.addEventListener("push", function(e){',
-      '  var data = {};',
-      '  try { data = e.data ? e.data.json() : {}; } catch(x) {}',
-      '  e.waitUntil(self.registration.showNotification(data.title||"Riverperlen", {',
-      '    body: data.body||"",',
-      '    icon: data.icon||"",',
-      '    tag: data.tag||"msg",',
-      '    renotify: true',
-      '  }));',
-      '});',
-      'self.addEventListener("notificationclick", function(e){',
-      '  e.notification.close();',
-      '  e.waitUntil(clients.openWindow(self.location.origin));',
-      '});'
-    ].join("\n");
-    var blob = new Blob([swCode], { type: 'application/javascript' });
-    var swUrl = URL.createObjectURL(blob);
-    navigator.serviceWorker.register(swUrl, { scope: './' }).then(function(reg) {
-      window._swRegistration = reg;
-      console.log('[SW] registriert:', reg.scope);
-    }).catch(function(err) {
-      console.warn('[SW] Registrierung fehlgeschlagen:', err);
-    });
-  } catch(e) {
-    console.warn('[SW] Fehler:', e);
-  }
+  // Echter SW nötig für FCM – liegt neben index.html im Repo
+  var swUrl = 'https://raw.githack.com/marcusNOH/Riverperlen/main/firebase-messaging-sw.js';
+  navigator.serviceWorker.register(swUrl, { scope: './' }).then(function(reg) {
+    window._swRegistration = reg;
+    console.log('[SW] FCM Service Worker registriert:', reg.scope);
+  }).catch(function(err) {
+    console.warn('[SW] Registrierung fehlgeschlagen:', err);
+  });
 })();
 
 window._firebaseReady = (async () => {
@@ -58,13 +37,15 @@ window._firebaseReady = (async () => {
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
     return true;
   } catch(e) {
     try {
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js');
-     await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
-     await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js');
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-check-compat.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-messaging-compat.min.js');
       return true;
     } catch(e2) {
       console.warn('Firebase konnte nicht geladen werden – Offline-Modus aktiv');
@@ -401,6 +382,70 @@ var _ignoreRemoteMs = 3000; // Remote-Updates für 3s nach eigenem Write ignorie
 var photosRef = null;
 var chatRef = null;
 var _chatMessages = []; // eigener Chat-State, unabhängig von state{}
+  // ── FCM Token & Messaging ─────────────────────────────────────────────────
+var _fcmMessaging = null;
+var _fcmTokensRef = null;
+var FCM_VAPID_KEY = 'BNsBxw-vu9gzzBX_sIiLr_oWfiSFP34Km5znI7FDXSEToCv1zfBRpvLDhR9tE_FB0YtVRQxHIBtqcLQrpdm1yHk';
+
+function initFcmMessaging(fbApp) {
+  if (!currentUser || typeof firebase === 'undefined') return;
+  try {
+    var db = firebase.database(fbApp);
+    _fcmTokensRef = db.ref('riverperlen/fcmTokens');
+    _fcmMessaging = firebase.messaging(fbApp);
+
+    // SW muss bereit sein bevor wir Token holen
+    var swReady = window._swRegistration
+      ? Promise.resolve(window._swRegistration)
+      : navigator.serviceWorker.ready;
+
+    swReady.then(function(reg) {
+      // FCM SW als aktive Registration setzen
+      return _fcmMessaging.getToken({
+        vapidKey: FCM_VAPID_KEY,
+        serviceWorkerRegistration: reg
+      });
+    }).then(function(token) {
+      if (!token) { console.warn('[FCM] Kein Token – Notification-Berechtigung fehlt?'); return; }
+      console.log('[FCM] Token erhalten:', token.substring(0,20) + '…');
+      // Token in Firebase speichern – unter Username + deviceKey
+      var deviceKey = btoa(navigator.userAgent).replace(/[^a-zA-Z0-9]/g,'').substring(0,20);
+      var tokenKey = currentUser.replace(/[^a-zA-Z0-9]/g,'_') + '_' + deviceKey;
+      _fcmTokensRef.child(tokenKey).set({
+        user:    currentUser,
+        token:   token,
+        ts:      Date.now(),
+        device:  navigator.userAgent.substring(0,80)
+      }).then(function() {
+        console.log('[FCM] Token gespeichert für:', currentUser);
+      });
+    }).catch(function(err) {
+      console.warn('[FCM] Token-Fehler:', err.message);
+    });
+
+    // Foreground-Push empfangen (App ist offen)
+    _fcmMessaging.onMessage(function(payload) {
+      console.log('[FCM] Foreground Push:', payload);
+      var title = (payload.notification && payload.notification.title) || 'Riverperlen';
+      var body  = (payload.notification && payload.notification.body)  || '';
+      var tag   = (payload.data && payload.data.tag) || 'rp-push';
+      // Foreground: direkt als lokale Notification anzeigen
+      if (Notification.permission === 'granted') {
+        var opts = { body: body, tag: tag, renotify: true };
+        if (window._swRegistration && window._swRegistration.active) {
+          window._swRegistration.showNotification(title, opts);
+        } else {
+          new Notification(title, { body: body, tag: tag });
+        }
+      }
+      // Chat-Nachrichten: sofort rendern wenn Chat-Seite offen
+      if (tag === 'chat' && currentPage === 'chat') renderChat();
+    });
+
+  } catch(err) {
+    console.warn('[FCM] Init-Fehler:', err.message);
+  }
+}
 
 (function loadFbCfg() {
   try { fbCfg = JSON.parse(localStorage.getItem('rp_fbcfg')||'null'); } catch(e){}
@@ -2224,10 +2269,12 @@ function renderNotifSettings() {
   ];
 
   const items = [
-    { key: 'chat',   icon: '💬', label: 'Neue Chat-Nachricht' },
-    { key: 'strafe', icon: '⚠️', label: 'Strafe eingetragen' },
-    { key: 'bday',   icon: '🎂', label: 'Geburtstag heute' },
-    { key: 'termin', icon: '📆', label: 'Termin-Erinnerung' },
+    { key: 'chat',        icon: '💬', label: 'Neue Chat-Nachricht' },
+    { key: 'strafe',      icon: '⚠️', label: 'Strafe eingetragen' },
+    { key: 'bday',        icon: '🎂', label: 'Geburtstag heute' },
+    { key: 'termin',      icon: '📆', label: 'Termin-Erinnerung' },
+    { key: 'abstimmung',  icon: '🗳️', label: 'Neue Abstimmung' },
+    { key: 'kegelabend',  icon: '🎳', label: 'Kegelabend-Erinnerung (via n8n)' },
   ];
 
   const el = document.getElementById('notifSettings');
@@ -3088,12 +3135,24 @@ function addAbstimmung() {
   const fq = document.getElementById('abstimmungFrage'); if(fq) fq.value='';
   const op = document.getElementById('abstimmungOptionen'); if(op) op.value='';
   showToast('Abstimmung erstellt');
+  // FCM Push über n8n triggern (fire & forget)
+  triggerN8nPush('abstimmung', '🗳️ Neue Abstimmung', frage);
 }
 
 function deleteAbstimmung(ai) {
   if (!state.abstimmungen) return;
   state.abstimmungen.splice(ai,1);
   saveState(); renderAbstimmungen();
+}
+  // n8n Push-Trigger (fire & forget – kein Fehler wenn n8n nicht erreichbar)
+function triggerN8nPush(type, title, body) {
+  try {
+    fetch('https://api.schmele.eu/webhook/rp-push-trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: type, title: title, body: body, sender: currentUser || 'System' })
+    }).catch(function(){});
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════
@@ -3902,7 +3961,8 @@ function pinSubmit() {
         currentUser = '__admin__';
         hideLoginScreen();
         updateLoginLogo(); updateHeader(); renderDashboard();
-        initChatWatermark(); applyPermissions(); startReminderLoop();
+        initChatWatermark();
+      if (fbApp) setTimeout(function(){ initFcmMessaging(fbApp); }, 1500); applyPermissions(); startReminderLoop();
         setTimeout(function(){ showPage('settings', document.querySelector('[data-page="settings"]')); }, 100);
       } else {
         currentUser = data.member;
