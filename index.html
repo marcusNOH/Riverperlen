@@ -1505,14 +1505,10 @@ function renderTermineItem(t, zusagen) {
         </div>
         ${myStatus==='absage'?`
         <div style="margin-top:6px">
-          <select onchange="terminGrund('${dateKey}',this.value)" style="width:100%;padding:6px;font-size:12px;border-radius:8px">
-            <option value="">Grund w\u00E4hlen\u2026</option>
-            <option value="Krank"    ${myGrund==='Krank'   ?'selected':''}>🤒 Krank</option>
-            <option value="Arbeit"   ${myGrund==='Arbeit'  ?'selected':''}>💼 Arbeit</option>
-            <option value="Urlaub"   ${myGrund==='Urlaub'  ?'selected':''}>✈️ Urlaub</option>
-            <option value="Fam\u00EEl\u00E4r" ${myGrund==='Fam\u00EEl\u00E4r'?'selected':''}>👨‍👩‍👧 Fami\u00E4r</option>
-            <option value="Anderes"  ${myGrund==='Anderes' ?'selected':''}>📝 Anderes</option>
-          </select>
+          <input type="text" maxlength="80" placeholder="Grund angeben (optional)…"
+            value="${myGrund.replace(/"/g,'&quot;')}"
+            oninput="terminGrund('${dateKey}',this.value)"
+            style="width:100%;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-sizing:border-box">
         </div>`:''}`;
     }
   }
@@ -1587,7 +1583,8 @@ function terminGrund(dateKey, grund) {
   if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
   if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: 'absage', grund: '' };
   state.terminZusagen[dateKey][currentUser].grund = grund;
-  saveState(); renderTermine();
+  saveState();
+  // Kein renderTermine() hier – wird per oninput live gespeichert, kein Flackern
 }
 
 // ═══════════════════════════════════════════
