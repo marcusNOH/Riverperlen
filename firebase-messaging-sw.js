@@ -11,7 +11,7 @@ firebase.initializeApp({
   apiKey: 'AIzaSyBr0rO8xKa5HlfKiAoOzuvtAg4j1PZAzaU',
   projectId: 'riverperlen-440c1',
   messagingSenderId: '169916112882',
-  appId: '1:169916112882:web:riverperlen'
+  appId: '1:169916112882:web:1:169916112882:web:ba4e8ede2ce4af0d43956b'
 });
 
 const messaging = firebase.messaging();
