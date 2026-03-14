@@ -2219,16 +2219,23 @@ function renderNotifSettings() {
 function checkBdayNotifs() {
   const now = new Date();
   const todayStr = String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const flagKey = 'rp_bday_notif_shown_' + now.getFullYear() + '-' + todayStr;
+  try { if (localStorage.getItem(flagKey)) return; } catch(e) {}
   const bdays = state.memberBdays || {};
+  var shown = false;
   getMembers().forEach(m => {
     if (!bdays[m]) return;
     const mmdd = bdays[m].slice(5);
     if (mmdd === todayStr) {
       const y = parseInt(bdays[m].split('-')[0]);
       const age = now.getFullYear() - y;
-      sendNotif('🎂 Geburtstag!', `${m} wird heute ${age} Jahre alt!`, 'bday');
+      sendNotif('🎂 Geburtstag!', m + ' wird heute ' + age + ' Jahre alt!', 'bday');
+      shown = true;
     }
   });
+  if (shown) {
+    try { localStorage.setItem(flagKey, '1'); } catch(e) {}
+  }
 }
 
 // ═══════════════════════════════════════════
