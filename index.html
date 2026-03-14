@@ -358,7 +358,8 @@ function defaultState() {
     abendNotizen: {},
     strafenPinned: [],
     abstimmungen: [],
-    memberPerms: {}
+  memberPerms: {},
+    abendAktiv: false
   };
 }
 
@@ -805,7 +806,42 @@ function fillAbendBanner(prefix) {
     : '📅 Kein weiterer Termin geplant';
 }
 
+function toggleAbendAktiv() {
+  if (!_isAdminSession) return;
+  state.abendAktiv = !state.abendAktiv;
+  saveState();
+  renderAnwesenheit();
+  renderStrafen();
+  applyPermissions();
+  showToast(state.abendAktiv ? '✅ Abend aktiviert – alle können jetzt eintragen!' : '🔒 Abend deaktiviert');
+}
+
 function renderAnwesenheit() {
+  // Admin-Toggle rendern
+  var adminToggle = document.getElementById('anwAdminToggle');
+  if (adminToggle) {
+    if (_isAdminSession) {
+      var aktiv = state.abendAktiv || false;
+      adminToggle.style.display = '';
+      adminToggle.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:' + (aktiv ? 'rgba(61,214,140,.1)' : 'rgba(232,64,64,.08)') + ';border:1px solid ' + (aktiv ? 'rgba(61,214,140,.35)' : 'rgba(232,64,64,.3)') + ';border-radius:14px;margin-bottom:12px;cursor:pointer" onclick="toggleAbendAktiv()">'
+        + '<div style="display:flex;align-items:center;gap:10px">'
+        + '<div style="font-size:24px">' + (aktiv ? '&#x1F7E2;' : '&#x1F534;') + '</div>'
+        + '<div>'
+        + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:16px;color:' + (aktiv ? 'var(--green)' : 'var(--red)') + '">' + (aktiv ? 'ABEND AKTIV' : 'ABEND INAKTIV') + '</div>'
+        + '<div style="font-size:11px;color:var(--text3)">Tippen zum ' + (aktiv ? 'Deaktivieren' : 'Aktivieren') + '</div>'
+        + '</div></div>'
+        + '<div class="toggle-btn ' + (aktiv ? 'on' : '') + '" style="pointer-events:none"></div>'
+        + '</div>';
+    } else {
+      adminToggle.style.display = 'none';
+    }
+  }
+
+  // Sperrhinweise anzeigen/verstecken
+  var abendAktiv = state.abendAktiv || false;
+  var sperrAnw = document.getElementById('anwSperrHinweis');
+  if (sperrAnw) sperrAnw.style.display = abendAktiv ? 'none' : '';
+
   // Abend-Info Banner füllen
   fillAbendBanner('anw');
   fillAbendBanner('str');
@@ -859,6 +895,11 @@ let selMember = null;
 function getSelMember() { return selMember || MEMBERS[0]; }
 
 function renderStrafen() {
+  // Sperrhinweis anzeigen/verstecken
+  var abendAktiv = state.abendAktiv || false;
+  var sperrStr = document.getElementById('strSperrHinweis');
+  if (sperrStr) sperrStr.style.display = abendAktiv ? 'none' : '';
+
   fillAbendBanner('str');
   if (!selMember) selMember = MEMBERS[0];
   // FIX: correct ID "strafeMemberTabs"
@@ -3698,6 +3739,23 @@ function setPerm(member, key, val) {
 function applyPermissions() {
   if (!currentUser) return;
 
+  // Abend-Status: Tabs "Heute" und "Strafen" optisch sperren
+  var abendAktiv = state.abendAktiv || false;
+  var navHeute   = document.querySelector('[data-page="anwesenheit"]');
+  var navStrafen = document.querySelector('[data-page="strafen"]');
+  if (navHeute) {
+    navHeute.style.opacity       = abendAktiv ? '1'       : '0.4';
+    navHeute.style.cursor        = abendAktiv ? 'pointer' : 'default';
+    navHeute.style.pointerEvents = abendAktiv ? ''        : 'none';
+    navHeute.title               = abendAktiv ? ''        : 'Kein aktiver Abend';
+  }
+  if (navStrafen) {
+    navStrafen.style.opacity       = abendAktiv ? '1'       : '0.4';
+    navStrafen.style.cursor        = abendAktiv ? 'pointer' : 'default';
+    navStrafen.style.pointerEvents = abendAktiv ? ''        : 'none';
+    navStrafen.title               = abendAktiv ? ''        : 'Kein aktiver Abend';
+  }
+
   // Navigationspunkte ausblenden
   var pagePerms = {
     'kasse':      'kas.seite',
@@ -4146,8 +4204,14 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
       <div style="text-align:center;padding:8px 0 4px;font-size:10px;color:var(--text3);letter-spacing:1px">PEGELCLUB RIVERPERLEN · v07.03.2026</div>
     </div>
 
-    <!-- ANWESENHEIT -->
+   <!-- ANWESENHEIT -->
     <div class="page" id="page-anwesenheit">
+      <div id="anwAdminToggle" style="display:none"></div>
+      <div id="anwSperrHinweis" style="background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.3);border-radius:14px;padding:18px 16px;margin-bottom:12px;text-align:center">
+        <div style="font-size:28px;margin-bottom:6px">🔒</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--red);margin-bottom:4px">Kein aktiver Abend</div>
+        <div style="font-size:12px;color:var(--text3)">Kein Abend aktiv – warte auf Admin</div>
+      </div>
       <div id="anwAbendInfo" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-size:32px;line-height:1">🎳</div>
@@ -4164,6 +4228,11 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
 
     <!-- STRAFEN -->
     <div class="page" id="page-strafen">
+      <div id="strSperrHinweis" style="background:rgba(232,64,64,.08);border:1px solid rgba(232,64,64,.3);border-radius:14px;padding:18px 16px;margin-bottom:12px;text-align:center">
+        <div style="font-size:28px;margin-bottom:6px">🔒</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:18px;color:var(--red);margin-bottom:4px">Kein aktiver Abend</div>
+        <div style="font-size:12px;color:var(--text3)">Kein Abend aktiv – warte auf Admin</div>
+      </div>
       <div id="strAbendInfo" style="background:linear-gradient(135deg,rgba(240,165,0,.15),rgba(240,165,0,.05));border:1px solid rgba(240,165,0,.3);border-radius:14px;padding:14px 16px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="font-size:32px;line-height:1">🎳</div>
