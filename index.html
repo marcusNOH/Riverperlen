@@ -44,7 +44,7 @@ window._firebaseReady = (async () => {
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.min.js');
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.min.js');
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-auth-compat.min.js');
-      await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-check-compat.min.js');
+      // AppCheck Fallback deaktiviert
       await loadScript('https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-messaging-compat.min.js');
       return true;
     } catch(e2) {
@@ -491,6 +491,7 @@ async function initFb() {
         appId: "1:169916112882:web:ba4e8ede2ce4af0d43956b"
       }, "rp");
    // AppCheck temporär deaktiviert – Throttle aktiv
+    }
     const db = firebase.database(fbApp);
     // Anonymous Auth – erforderlich für Firebase Rules (auth != null)
     try {
