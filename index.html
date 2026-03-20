@@ -33,10 +33,9 @@ window._swRegistration = null;
 
 window._firebaseReady = (async () => {
   try {
-   www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-   www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
-   www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
-   www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js');
+   await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
     return true;
   } catch(e) {
