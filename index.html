@@ -3150,7 +3150,7 @@ function triggerN8nPush(type, title, body) {
     fetch('https://api.schmele.eu/webhook/rp-push-trigger', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: type, title: title, body: body, sender: currentUser || 'System' })
+      body: JSON.stringify({ secret: 'rp-push-2026', type: type, title: title, body: body, sender: currentUser || 'System' })
     }).catch(function(){});
   } catch(e) {}
 }
