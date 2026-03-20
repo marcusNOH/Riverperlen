@@ -33,10 +33,10 @@ window._swRegistration = null;
 
 window._firebaseReady = (async () => {
   try {
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
-    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js');
+   www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+   www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
+   www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
+   www.gstatic.com/firebasejs/10.12.0/firebase-app-check-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
     return true;
   } catch(e) {
@@ -490,19 +490,7 @@ async function initFb() {
         projectId: fbCfg.projectId,
         appId: "1:169916112882:web:ba4e8ede2ce4af0d43956b"
       }, "rp");
-   // ── App Check (reCAPTCHA v3) ──────────────────────────
-    try {
-      if (typeof firebase.appCheck === 'function') {
-        var appCheck = firebase.appCheck(fbApp);
-       appCheck.activate(
-  new firebase.appCheck.ReCaptchaV3Provider('6LcMEYosAAAAAGAy6U3auuO1ZagVysXvyLwJKDs-'),
-          true // isTokenAutoRefreshEnabled
-        );
-        console.log('[AppCheck] aktiviert mit ReCaptchaV3Provider');
-      }
-    } catch(acErr) {
-      console.warn('[AppCheck] Fehler:', acErr.message);
-    }
+   /// AppCheck temporär deaktiviert – Throttle aktiv
     }
     const db = firebase.database(fbApp);
     // Anonymous Auth – erforderlich für Firebase Rules (auth != null)
