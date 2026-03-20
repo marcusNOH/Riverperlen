@@ -33,9 +33,10 @@ window._swRegistration = null;
 
 window._firebaseReady = (async () => {
   try {
-   await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
+    await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js');
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js');
+    // AppCheck temporär deaktiviert
     await loadScript('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
     return true;
   } catch(e) {
