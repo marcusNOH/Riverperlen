@@ -940,11 +940,11 @@ function renderStrafen() {
   var strafenMembers = MEMBERS.filter(function(m){ return state.anwesenheit[m]&&state.anwesenheit[m].present; });
   if (strafenMembers.length === 0) strafenMembers = MEMBERS;
   if (selMember && strafenMembers.indexOf(selMember) === -1) selMember = strafenMembers[0];
-  document.getElementById('strafeMemberTabs').innerHTML = strafenMembers.map(m=>{
-    const t = calcMemberStrafen(m);
-    return `<div class="strafe-tab ${m===selMember?'active':''}" onclick="selMember='${m}';renderStrafen()">
-      ${m.split(' ')[0]}${t>0?` <span style="color:var(--red);font-size:10px">${fmt(t)}</span>`:''}
-    </div>`;
+ document.getElementById('strafeMemberTabs').innerHTML = strafenMembers.map(function(m){
+    var t = calcMemberStrafen(m);
+    return '<div class="strafe-tab ' + (m===selMember?'active':'') + '" onclick="selMember=\'' + m + '\';renderStrafen()">'
+      + m.split(' ')[0] + (t>0?' <span style="color:var(--red);font-size:10px">' + fmt(t) + '</span>':'')
+      + '</div>';
   }).join('');
 
   const ms = state.strafen[selMember]||{};
