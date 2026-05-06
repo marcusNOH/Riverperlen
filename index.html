@@ -3950,9 +3950,8 @@ function pinSubmit() {
       hideLoginScreen();
       updateLoginLogo(); updateHeader(); renderDashboard();
       setTimeout(initPresence, 1000);
-     initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
-    }
-  } else {
+      initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
+    } else {
       _bf.count = (_bf.count || 0) + 1;
       if (_bf.count >= 3) {
         _bf.until = Date.now() + 30000;
