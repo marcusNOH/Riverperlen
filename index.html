@@ -3940,17 +3940,16 @@ function pinSubmit() {
   })
   .then(function(res) { return res.json(); })
   .then(function(data) {
-    if (data.success) {
+   if (data.success) {
       localStorage.setItem(_bfKey, JSON.stringify({count:0,until:0}));
       if (err) err.textContent = '';
-     currentUser = data.isAdmin ? 'Admin' : data.member;
+      currentUser = data.isAdmin ? 'Admin' : data.member;
       _isAdminSession = true;
       try { sessionStorage.setItem('rp_user', currentUser); } catch(e) {}
       hideLoginScreen();
       updateLoginLogo(); updateHeader(); renderDashboard();
       setTimeout(initPresence, 1000);
       initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
-      }
     } else {
       _bf.count = (_bf.count || 0) + 1;
       if (_bf.count >= 3) {
