@@ -3943,22 +3943,13 @@ function pinSubmit() {
     if (data.success) {
       localStorage.setItem(_bfKey, JSON.stringify({count:0,until:0}));
       if (err) err.textContent = '';
-      if (data.isAdmin) {
-        _isAdminSession = true;
-        try { sessionStorage.setItem('rp_admin','1'); } catch(e) {}
-        currentUser = '__admin__';
-        hideLoginScreen();
-        updateLoginLogo(); updateHeader(); renderDashboard();
-        initChatWatermark();
-      if (fbApp) setTimeout(function(){ initFcmMessaging(fbApp); }, 1500); applyPermissions(); startReminderLoop();
-        setTimeout(function(){ showPage('settings', document.querySelector('[data-page="settings"]')); }, 100);
-      } else {
-        currentUser = data.member;
-        try { sessionStorage.setItem('rp_user', data.member); } catch(e) {}
-        hideLoginScreen();
-        updateLoginLogo(); updateHeader(); renderDashboard();
-        setTimeout(initPresence, 1000);
-        initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
+     currentUser = data.isAdmin ? 'Admin' : data.member;
+      _isAdminSession = true;
+      try { sessionStorage.setItem('rp_user', currentUser); } catch(e) {}
+      hideLoginScreen();
+      updateLoginLogo(); updateHeader(); renderDashboard();
+      setTimeout(initPresence, 1000);
+      initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
       }
     } else {
       _bf.count = (_bf.count || 0) + 1;
