@@ -61,6 +61,7 @@ window._firebaseReady = (async () => {
     --gold:#f0a500;--gold2:#ffc84a;--red:#e84040;--green:#3dd68c;--blue:#4a9eff;--purple:#a78bfa;
     --text:#e8eaf0;--text2:#8a90a8;--text3:#5a6080;
     --radius:14px;--radius-sm:8px;--shadow:0 4px 24px rgba(0,0,0,.5);
+    --tablet-col-w: 160px;
   }
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden}
@@ -86,6 +87,54 @@ window._firebaseReady = (async () => {
   /* NAV */
   nav{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;overflow-x:auto;gap:2px;padding:6px 8px;flex-shrink:0;scrollbar-width:none}
   nav::-webkit-scrollbar{display:none}
+  /* ── TABLET MODE ─────────────────────────────────────── */
+  body.tablet-mode #app { max-width: 900px; }
+  body.tablet-mode nav { flex-wrap: wrap; gap: 4px; padding: 8px 10px; }
+  body.tablet-mode .nav-btn { font-size: 13px; padding: 7px 14px; }
+
+  /* Strafen Tablet: fixer Name-Streifen links */
+  body.tablet-mode #page-strafen .strafen-tablet-wrap {
+    display: flex; gap: 0; height: 100%;
+  }
+  body.tablet-mode #page-strafen .strafen-name-col {
+    width: var(--tablet-col-w);
+    flex-shrink: 0;
+    background: var(--bg2);
+    border-right: 2px solid var(--border);
+    border-radius: var(--radius) 0 0 var(--radius);
+    overflow-y: auto;
+    position: sticky;
+    top: 0;
+    max-height: calc(100vh - 160px);
+  }
+  body.tablet-mode #page-strafen .strafen-name-col .strafe-tab {
+    display: block;
+    width: 100%;
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 13px;
+  }
+  body.tablet-mode #page-strafen .strafen-name-col .strafe-tab.active {
+    border-left: 3px solid var(--gold);
+    background: rgba(240,165,0,.1);
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+  }
+  body.tablet-mode #page-strafen .strafen-content-col {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 0 0 14px;
+    max-height: calc(100vh - 160px);
+  }
+  /* Normal mode: hide tablet wrapper structure */
+  #page-strafen .strafen-name-col { display: none; }
+  #page-strafen .strafen-content-col { display: contents; }
+  body.tablet-mode #page-strafen .strafen-name-col { display: block; }
+  body.tablet-mode #page-strafen .strafen-content-col { display: block; }
+  body.tablet-mode #page-strafen .strafe-member-tabs { display: none; }
   .nav-btn{flex-shrink:0;padding:6px 12px;border-radius:20px;border:none;background:transparent;color:var(--text2);cursor:pointer;font-family:'Barlow',sans-serif;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:all .18s}
   .nav-btn.active{background:var(--gold);color:#000}
   .nav-btn:not(.active):hover{background:var(--bg3);color:var(--text)}
@@ -940,13 +989,18 @@ function renderStrafen() {
   var strafenMembers = MEMBERS.filter(function(m){ return state.anwesenheit[m]&&state.anwesenheit[m].present; });
   if (strafenMembers.length === 0) strafenMembers = MEMBERS;
   if (selMember && strafenMembers.indexOf(selMember) === -1) selMember = strafenMembers[0];
- document.getElementById('strafeMemberTabs').innerHTML = strafenMembers.map(function(m){
+ var tabHtml = strafenMembers.map(function(m){
     var t = calcMemberStrafen(m);
     return '<div class="strafe-tab ' + (m===selMember?'active':'') + '" onclick="selMember=\'' + m + '\';renderStrafen()">'
       + m.split(' ')[0] + (t>0?' <span style="color:var(--red);font-size:10px">' + fmt(t) + '</span>':'')
       + '</div>';
   }).join('');
-
+  document.getElementById('strafeMemberTabs').innerHTML = tabHtml;
+  // Tablet: Name-Spalte links befüllen
+  var nameCol = document.getElementById('strafenNameCol');
+  if (nameCol) nameCol.innerHTML = tabHtml;
+  }).join('');
+  
   const ms = state.strafen[selMember]||{};
   const modes = state.strafenModes||{};
   const freieList = (state.freieStrafen?.[selMember]||[]);
@@ -1356,6 +1410,8 @@ function renderKasse() {
   // FIX: correct IDs kasseTotalDisplay and kasseHistory
   const totEl = document.getElementById('kasseTotalDisplay');
   if (totEl) totEl.textContent = fmt(calcKasse());
+  const startInp = document.getElementById('kasseStartInput');
+  if (startInp && document.activeElement !== startInp) startInp.value = (state.kasseStart||0).toFixed(2);
   const entries=[...(state.kasse||[])].reverse();
   const histEl = document.getElementById('kasseHistory');
   if (!histEl) return;
@@ -1372,7 +1428,29 @@ function renderKasse() {
         </div>`;
       }).join('');
 }
+  function toggleTabletMode() {
+  var isTablet = document.body.classList.toggle('tablet-mode');
+  localStorage.setItem('rp_tablet', isTablet ? '1' : '0');
+  var btn = document.getElementById('tabletToggleBtn');
+  if (btn) btn.textContent = isTablet ? '🖥️' : '📱';
+  if (btn) btn.title = isTablet ? 'Zur Mobile-Ansicht wechseln' : 'Zur Tablet-Ansicht wechseln';
+  renderStrafen();
+  showToast(isTablet ? '🖥️ Tablet-Ansicht aktiv' : '📱 Mobile-Ansicht aktiv');
+}
 
+function initTabletMode() {
+  var saved = localStorage.getItem('rp_tablet');
+  if (saved === '1') {
+    document.body.classList.add('tablet-mode');
+    var btn = document.getElementById('tabletToggleBtn');
+    if (btn) { btn.textContent = '🖥️'; btn.title = 'Zur Mobile-Ansicht wechseln'; }
+  }
+}
+function setKasseStart(val) {
+  state.kasseStart = val;
+  saveState(); renderKasse(); updateHeader();
+  showToast('💰 Startbetrag auf ' + fmt(val) + ' gesetzt');
+}
 function kasseEintrag() {
   const desc=document.getElementById('kasseDesc').value.trim();
   const betrag=parseFloat(document.getElementById('kasseBetrag').value);
@@ -4086,6 +4164,7 @@ function logout() {
 // ═══════════════════════════════════════════
 function init() {
   updateLoginLogo();
+  initTabletMode();
   if (fbCfg) {
     setSyncStatus('syncing','Verbinde…');
     initFb();
@@ -4171,6 +4250,7 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
   <div style="display:flex;align-items:center;padding:3px 12px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--border)">
     <span style="font-size:11px;color:var(--text2)">👤 <span id="headerUser">–</span></span>
     <div id="onlineIndicator" style="display:none;align-items:center;gap:4px;margin-left:10px;flex:1"></div>
+    <button id="tabletToggleBtn" onclick="toggleTabletMode()" style="background:transparent;border:1px solid var(--border);color:var(--text3);font-size:11px;cursor:pointer;padding:2px 7px;border-radius:6px;margin-right:6px">📱</button>
     <button onclick="logout()" style="background:transparent;border:none;color:var(--text3);font-size:11px;cursor:pointer;padding:2px 4px">Abmelden ↩</button>
   </div>
 
@@ -4285,12 +4365,17 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
         </div>
         <div id="strNaechsterLabel" style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(240,165,0,.2);font-size:12px;color:var(--text3)"></div>
       </div>
-      <!-- FIX: correct class "strafe-member-tabs" and ID "strafeMemberTabs" -->
-      <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
-      <div id="strafeList"></div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-purple" onclick="openFreieModal()" style="flex:1">💸 Freie Strafe</button>
-        <button class="btn btn-gold" onclick="kegelbahnKosten()" style="flex:1">🎳 Bahnkosten</button>
+      <div class="strafen-tablet-wrap" id="strafenTabletWrap">
+        <div class="strafen-name-col" id="strafenNameCol"></div>
+        <div class="strafen-content-col">
+          <!-- FIX: correct class "strafe-member-tabs" and ID "strafeMemberTabs" -->
+          <div class="strafe-member-tabs" id="strafeMemberTabs"></div>
+          <div id="strafeList"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-purple" onclick="openFreieModal()" style="flex:1">💸 Freie Strafe</button>
+            <button class="btn btn-gold" onclick="kegelbahnKosten()" style="flex:1">🎳 Bahnkosten</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4323,9 +4408,15 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
     <div class="page" id="page-kasse">
       <div class="section-title"><span class="accent">💰</span> Kasse</div>
       <div class="card">
-        <div class="card-title">Kassenstand</div>
-        <!-- FIX: correct ID "kasseTotalDisplay" -->
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px" id="kasseTotalDisplay">€ 0,00</div>
+       <div class="card-title">Kassenstand</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:900;color:var(--green);margin-bottom:4px" id="kasseTotalDisplay">€ 0,00</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:12px;color:var(--text3)">Startbetrag:</span>
+          <input id="kasseStartInput" type="number" step="0.50" placeholder="0.00"
+            style="width:110px;padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--gold);font-size:14px;font-weight:700"
+            onchange="setKasseStart(parseFloat(this.value)||0)">
+          <span style="font-size:11px;color:var(--text3)">€ Anfangsbestand</span>
+        </div>
         <div class="gap-8">
           <input id="kasseDesc" type="text" placeholder="Beschreibung (z.B. Getränke)">
           <div class="flex-row">
