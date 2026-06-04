@@ -740,6 +740,15 @@ function renderPage(id) {
 // ═══════════════════════════════════════════
 // HELPERS
 // ═══════════════════════════════════════════
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .split('&').join('&amp;')
+    .split('<').join('&lt;')
+    .split('>').join('&gt;')
+    .split('"').join('&quot;')
+    .split("'").join('&#39;');
+}
 function fmt(v) { return '€ '+v.toFixed(2).replace('.',','); }
 function initials(n) { return n.split(' ').map(x=>x[0]).join('').substring(0,2).toUpperCase(); }
 function today() { return new Date().toISOString().split('T')[0]; }
@@ -1044,7 +1053,7 @@ function renderStrafen() {
       ${freieList.map((f,i)=>`
         <div class="strafe-item" style="background:rgba(240,165,0,.06);border:1px solid rgba(240,165,0,.15)">
           <div class="strafe-name">
-            <div class="strafe-label">${f.label}</div>
+            <div class="strafe-label">${escapeHtml(f.label)}</div>
             <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
               <span class="strafe-price" style="color:var(--gold)">${fmt(f.betrag)} einmalig</span>
               ${!f.addToKasse?'<span style="font-size:10px;color:var(--text3)">nicht in Kasse</span>':''}
@@ -1404,7 +1413,7 @@ function showMemberProfile(member) {
           ${fields.map(f=>`
             <div style="background:var(--bg3);border-radius:10px;padding:10px 14px">
               <div style="font-size:11px;color:var(--text3);margin-bottom:2px">${f.icon} ${f.label}</div>
-              <div style="font-size:14px;color:var(--text)">${f.val}</div>
+              <div style="font-size:14px;color:var(--text)">${escapeHtml(f.val)}</div>
             </div>`).join('')}
         </div>`
       : `<div style="color:var(--text3);text-align:center;padding:20px;font-size:14px">Dieses Mitglied hat noch keine Profilinfos hinterlegt.</div>`
@@ -2660,8 +2669,8 @@ function renderChat() {
         const d = new Date(m.ts);
         const time = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
         return `<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};margin-bottom:10px">
-          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${m.author} · ${time}</div>
-          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${m.text}</div>
+          <div style="font-size:10px;color:var(--text3);margin-bottom:2px;${isMe?'margin-right:4px':'margin-left:4px'}">${escapeHtml(m.author)} · ${time}</div>
+          <div style="max-width:80%;background:${isMe?'var(--gold)':'var(--bg3)'};color:${isMe?'#000':'var(--text)'};padding:10px 14px;border-radius:${isMe?'14px 14px 4px 14px':'14px 14px 14px 4px'};font-size:14px;line-height:1.4">${escapeHtml(m.text)}</div>
         </div>`;
       }).join('');
   el.scrollTop = el.scrollHeight;
@@ -3252,7 +3261,7 @@ function renderAbstimmungen() {
   el.innerHTML = list.map((a, ai) => {
     const total = Object.values(a.votes || {}).length;
     return `<div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid var(--border)">
-      <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗳️ ${a.frage}</div>
+      <div style="font-weight:700;font-size:14px;margin-bottom:10px">🗳️ ${escapeHtml(a.frage)}</div>
       ${a.optionen.map((opt, oi) => {
         const votes = Object.values(a.votes || {}).filter(v => v === oi).length;
         const pct = total ? Math.round(votes/total*100) : 0;
@@ -3261,7 +3270,7 @@ function renderAbstimmungen() {
         return `<div onclick="voteAbstimmung(${ai},${oi})" style="margin-bottom:6px;padding:9px 12px;border-radius:10px;border:2px solid ${isMine?'var(--gold)':'var(--border)'};background:${isMine?'rgba(240,165,0,.08)':'var(--bg2)'};cursor:pointer;position:relative;overflow:hidden">
           <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;background:${isMine?'rgba(240,165,0,.12)':'rgba(255,255,255,.03)'};pointer-events:none"></div>
           <div style="position:relative;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;font-weight:${isMine?700:400};color:${isMine?'var(--gold)':'var(--text)'}">${opt}</span>
+            <span style="font-size:13px;font-weight:${isMine?700:400};color:${isMine?'var(--gold)':'var(--text)'}">${escapeHtml(opt)}</span>
             <span style="font-size:12px;color:var(--text3)">${votes} (${pct}%)</span>
           </div>
         </div>`;
