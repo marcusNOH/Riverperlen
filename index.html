@@ -2682,7 +2682,7 @@ function sendChat() {
   const text = inp.value.trim();
   if (!text) return;
   if (!chatRef) { showToast('❌ Keine Verbindung'); return; }
-  var msg = { author: currentUser, text: text, ts: Date.now() };
+  var msg = { author: escapeHtml(currentUser), text: escapeHtml(text), ts: Date.now() };
   inp.value = '';
   // Sofort lokal anzeigen (optimistic UI)
   _chatMessages.push(msg);
