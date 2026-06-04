@@ -999,30 +999,29 @@ function renderStrafen() {
   // Tablet: Name-Spalte links befüllen
   var nameCol = document.getElementById('strafenNameCol');
   if (nameCol) nameCol.innerHTML = tabHtml;
-  
-  const ms = state.strafen[selMember]||{};
-  const modes = state.strafenModes||{};
-  const freieList = (state.freieStrafen?.[selMember]||[]);
 
-  const strafeHtml = getStrafen().map(s=>{
+  var ms = state.strafen[selMember]||{};
+  var modes = state.strafenModes||{};
+  var freieList = (state.freieStrafen && state.freieStrafen[selMember]) ? state.freieStrafen[selMember] : [];
+
+  var strafeHtml = getStrafen().map(function(s){
     const count = ms[s.id]||0;
     const isAlle = (modes[s.id]||'einzel')==='alle';
-    return `<div class="strafe-item">
-      <div class="strafe-name">
-        <div class="strafe-label">${s.name}</div>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
-          <span class="strafe-price">${fmt(s.price)} je</span>
-          ${isAlle?'<span class="badge-alle">🔔 Alle bekommen</span>':''}
-        </div>
-      </div>
-      <div class="counter-wrap">
-        <button class="cnt-btn minus" onclick="strafeCount('${selMember}','${s.id}',-1)">−</button>
-        <div class="cnt-val">${count}</div>
-        ${isAlle
-          ? `<button class="cnt-btn alle-plus" onclick="openAlleModal('${s.id}')">🔔</button>`
-          : `<button class="cnt-btn plus" onclick="strafeCount('${selMember}','${s.id}',1)">+</button>`}
-      </div>
-    </div>`;
+   var isAlleBtn = isAlle
+      ? '<button class="cnt-btn alle-plus" onclick="openAlleModal(\'' + s.id + '\')">🔔</button>'
+      : '<button class="cnt-btn plus" onclick="strafeCount(\'' + selMember + '\',\'' + s.id + '\',1)">+</button>';
+    return '<div class="strafe-item">'
+      + '<div class="strafe-name">'
+      + '<div class="strafe-label">' + s.name + '</div>'
+      + '<div style="display:flex;gap:6px;align-items:center;margin-top:2px">'
+      + '<span class="strafe-price">' + fmt(s.price) + ' je</span>'
+      + (isAlle ? '<span class="badge-alle">🔔 Alle bekommen</span>' : '')
+      + '</div></div>'
+      + '<div class="counter-wrap">'
+      + '<button class="cnt-btn minus" onclick="strafeCount(\'' + selMember + '\',\'' + s.id + '\',-1)">−</button>'
+      + '<div class="cnt-val">' + count + '</div>'
+      + isAlleBtn
+      + '</div></div>';
   }).join('');
 
   const freieHtml = freieList.length === 0 ? '' : `
