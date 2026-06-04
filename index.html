@@ -4148,33 +4148,9 @@ function pinSubmit() {
     }
   })
   .catch(function() {
-    // Fallback: lokale Prüfung wenn n8n nicht erreichbar
-    if (err) err.textContent = '⚠️ Server nicht erreichbar – lokaler Fallback';
-    var passwords = (state && state.memberPasswords) ? state.memberPasswords : {};
-    var members = getMembers();
-    var found = null;
-    for (var i = 0; i < members.length; i++) {
-      var mpin = passwords[members[i]] || String(i + 1).padStart(4, '0');
-      if (pin === mpin) { found = members[i]; break; }
-    }
-    if (found) {
-      currentUser = found;
-      try { sessionStorage.setItem('rp_user', found); } catch(e) {}
-      hideLoginScreen();
-      updateLoginLogo(); updateHeader(); renderDashboard();
-      setTimeout(initPresence, 1000);
-      initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
-    } else {
-      _bf.count = (_bf.count || 0) + 1;
-      if (_bf.count >= 3) {
-        _bf.until = Date.now() + 30000; _bf.count = 0;
-        localStorage.setItem(_bfKey, JSON.stringify(_bf));
-        if (err) err.textContent = '🚫 3x falsch – 30 Sekunden gesperrt!';
-      } else {
-        localStorage.setItem(_bfKey, JSON.stringify(_bf));
-        if (err) err.textContent = '❌ PIN falsch (' + _bf.count + '/3 Versuchen)';
-      }
-    }
+    if (err) err.textContent = '⚠️ Server nicht erreichbar – bitte Internetverbindung prüfen';
+    _pinBuffer = '';
+    updatePinDots();
   });
 }
 
