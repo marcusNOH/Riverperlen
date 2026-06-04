@@ -1777,10 +1777,67 @@ function renderStats() {
   getStrafen().forEach(s=>sc[s.id]=0);
   (state.history||[]).forEach(h=>MEMBERS.forEach(m=>{const ms=h.strafen?.[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));}));
   MEMBERS.forEach(m=>{const ms=state.strafen[m]||{};getStrafen().forEach(s=>sc[s.id]=(sc[s.id]||0)+(ms[s.id]||0));});
-  const stEl = document.getElementById('statsStrafenTop');
-  if (stEl) stEl.innerHTML=getStrafen().map(s=>({name:s.name,count:sc[s.id]}))
-    .sort((a,b)=>b.count-a.count).slice(0,5)
-    .map((s,i)=>`<div class="kasse-row"><span>${i+1}. ${s.name}</span><span style="font-family:'Barlow Condensed';font-weight:700;color:var(--gold)">${s.count}×</span></div>`).join('');
+  var stEl = document.getElementById('statsStrafenTop');
+  if (stEl) stEl.innerHTML=getStrafen().map(function(s){return {name:s.name,count:sc[s.id]};})
+    .sort(function(a,b){return b.count-a.count;}).slice(0,5)
+    .map(function(s,i){return '<div class="kasse-row"><span>'+i+1+'. '+s.name+'</span><span style="font-family:\'Barlow Condensed\';font-weight:700;color:var(--gold)">'+s.count+'×</span></div>';}).join('');
+
+  // ── Abend-Rückblick ──────────────────────────────────────────────────────
+  var histEl = document.getElementById('statsHistory');
+  if (!histEl) return;
+  var hist = (state.history || []).slice().reverse();
+  if (!hist.length) {
+    histEl.innerHTML = '<div style="color:var(--text3);font-size:13px">Noch keine gespeicherten Abende</div>';
+    return;
+  }
+  histEl.innerHTML = hist.map(function(h, hi) {
+    var realIdx = hist.length - 1 - hi;
+    var abendNr = realIdx + 1;
+    var abendTotal = 0;
+    var memberRows = '';
+    getMembers().forEach(function(m) {
+      var ms = (h.strafen && h.strafen[m]) ? h.strafen[m] : {};
+      var total = 0;
+      var details = [];
+      getStrafen().forEach(function(s) {
+        var cnt = ms[s.id] || 0;
+        if (cnt > 0) {
+          total += cnt * s.price;
+          details.push(s.name + ' \u00d7' + cnt + ' = ' + fmt(cnt * s.price));
+        }
+      });
+      abendTotal += total;
+      if (total > 0) {
+        memberRows += '<div style="display:flex;flex-direction:column;padding:7px 0;border-bottom:1px solid var(--border)">'
+          + '<div style="display:flex;justify-content:space-between;align-items:center">'
+          + '<span style="font-weight:700;font-size:13px">' + m.split(' ')[0] + '</span>'
+          + '<span style="font-family:\'Barlow Condensed\',sans-serif;font-weight:700;font-size:16px;color:var(--red)">' + fmt(total) + '</span>'
+          + '</div>'
+          + '<div style="font-size:11px;color:var(--text3);margin-top:2px">' + details.join(', ') + '</div>'
+          + '</div>';
+      }
+    });
+    if (!memberRows) memberRows = '<div style="font-size:12px;color:var(--text3);padding:6px 0">Keine Strafen eingetragen</div>';
+    var anwesend = Object.keys(h.anwesenheit || {}).filter(function(m){ return h.anwesenheit[m] && h.anwesenheit[m].present; });
+    var detailId = 'histDetail_' + hi;
+    var arrowId  = 'histArrow_'  + hi;
+    return '<div style="border-bottom:1px solid var(--border);padding:10px 0">'
+      + '<div onclick="toggleHistDetail(\'' + detailId + '\',\'' + arrowId + '\')" style="display:flex;align-items:center;gap:10px;cursor:pointer">'
+      + '<div style="background:var(--gold);color:#000;border-radius:8px;width:42px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">'
+      + '<div style="font-family:\'Barlow Condensed\',sans-serif;font-weight:900;font-size:15px;line-height:1">#' + abendNr + '</div>'
+      + '<div style="font-size:9px;font-weight:700">' + (h.date || '') + '</div>'
+      + '</div>'
+      + '<div style="flex:1">'
+      + '<div style="font-weight:700;font-size:14px">Kegelabend #' + abendNr + '</div>'
+      + '<div style="font-size:11px;color:var(--text3)">' + h.date + ' \u00b7 ' + anwesend.length + ' dabei \u00b7 Strafen: ' + fmt(abendTotal) + '</div>'
+      + '</div>'
+      + '<div id="' + arrowId + '" style="color:var(--text3);font-size:18px;transition:transform .2s">\u203a</div>'
+      + '</div>'
+      + '<div id="' + detailId + '" style="display:none;margin-top:8px;padding:8px;background:var(--bg3);border-radius:10px">'
+      + memberRows
+      + '</div>'
+      + '</div>';
+  }).join('');
 }
 
 // ═══════════════════════════════════════════
@@ -3108,7 +3165,14 @@ function renderSpielideen() {
         </div>`).join('')}
     </div>`).join('');
 }
-
+function toggleHistDetail(detailId, arrowId) {
+  var el = document.getElementById(detailId);
+  var arrow = document.getElementById(arrowId);
+  if (!el) return;
+  var open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(90deg)';
+}
 function toggleSpiel(id) {
   const detail = document.getElementById('spiel-detail-' + id);
   const arrow  = document.getElementById('arrow-' + id);
@@ -4483,7 +4547,12 @@ document.addEventListener('DOMContentLoaded', function() { init(); });
         <div class="kasse-row"><span>Kegelabende</span><span id="statsAbende">0</span></div>
         <div class="kasse-row"><span>Kassenstand</span><span id="statsKasse">€ 0,00</span></div>
       </div>
-      <div class="card"><div class="card-title">⚠️ Top Strafen</div><div id="statsStrafenTop"></div></div>
+     <div class="card"><div class="card-title">⚠️ Top Strafen</div><div id="statsStrafenTop"></div></div>
+      <div class="card">
+        <div class="card-title">📅 Abend-Rückblick</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Tippe auf einen Abend für Details</div>
+        <div id="statsHistory"></div>
+      </div>
     </div>
 
     <!-- CHAT -->
