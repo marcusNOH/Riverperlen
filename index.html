@@ -2214,7 +2214,8 @@ function initPresence() {
     onlineRef.on('value', snap => {
       onlineUsers = {};
       const val = snap.val() || {};
-      Object.values(val).forEach(u => { if (u.name) onlineUsers[u.name] = u.ts; });
+      const cutoff = Date.now() - 5 * 60 * 1000;
+      Object.values(val).forEach(u => { if (u.name && u.ts > cutoff) onlineUsers[u.name] = u.ts; });
       renderOnlineIndicator();
     });
     setInterval(() => myRef.set({ name: currentUser, ts: Date.now() }), 120000);
