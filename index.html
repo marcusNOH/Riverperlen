@@ -1339,19 +1339,19 @@ function renderMyProfile() {
         <input type="date" value="${bday}" onchange="saveMyField('bday',this.value)" style="width:100%">
       </div>
       <div><label>💳 PayPal Benutzername</label>
-        <input type="text" placeholder="deinname" value="${pp}" onchange="saveMyField('paypal',this.value)" style="width:100%">
+        <input type="text" placeholder="deinname" value="${escapeHtml(pp)}" onchange="saveMyField('paypal',this.value)" style="width:100%">
       </div>
       <div><label>📧 E-Mail Adresse</label>
-        <input type="text" placeholder="deine@email.de" value="${p.email||''}" onchange="saveMyField('email',this.value)" style="width:100%">
+        <input type="text" placeholder="deine@email.de" value="${escapeHtml(p.email||'')}" onchange="saveMyField('email',this.value)" style="width:100%">
       </div>
       <div><label>🏠 Adresse</label>
-        <input type="text" placeholder="Straße, Stadt…" value="${p.adresse||''}" onchange="saveMyField('adresse',this.value)" style="width:100%">
+        <input type="text" placeholder="Straße, Stadt…" value="${escapeHtml(p.adresse||'')}" onchange="saveMyField('adresse',this.value)" style="width:100%">
       </div>
       <div><label>🍺 Vorlieben / Getränke</label>
-        <input type="text" placeholder="z.B. Helles, Wasser…" value="${p.vorlieben||''}" onchange="saveMyField('vorlieben',this.value)" style="width:100%">
+        <input type="text" placeholder="z.B. Helles, Wasser…" value="${escapeHtml(p.vorlieben||'')}" onchange="saveMyField('vorlieben',this.value)" style="width:100%">
       </div>
       <div><label>📝 Notizen / Über mich</label>
-        <textarea placeholder="Was andere über dich wissen sollen…" onchange="saveMyField('notizen',this.value)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px;min-height:80px;resize:vertical">${p.notizen||''}</textarea>
+        <textarea placeholder="Was andere über dich wissen sollen…" onchange="saveMyField('notizen',this.value)" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:14px;min-height:80px;resize:vertical">${escapeHtml(p.notizen||'')}</textarea>
       </div>
     </div>
   `;
