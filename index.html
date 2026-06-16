@@ -1261,16 +1261,14 @@ function generateSpielBericht() {
     + '\nAbwesend: ' + (abwesend.length ? abwesend.map(function(m){ return m.split(' ')[0]; }).join(', ') : 'alle da')
     + '\nStrafen: ' + (strafenZeilen.length ? strafenZeilen.join('; ') : 'keine Strafen heute')
     + (notiz ? '\nAbend-Notiz: ' + notiz : '');
-  fetch('https://api.anthropic.com/v1/messages', {
+  fetch('https://api.schmele.eu/webhook/rp-spielbericht', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': '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', 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 400,
-      messages: [{ role: 'user', content: prompt }] })
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: 'rp-push-x9k4m2z7', prompt: prompt })
   })
   .then(function(res){ return res.json(); })
   .then(function(data) {
-    var text = (data.content && data.content[0] && data.content[0].text)
-      ? data.content[0].text : 'Fehler beim Generieren';
+    var text = data.text ? data.text : 'Fehler beim Generieren';
     berichtEl.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:1px;margin-bottom:8px">✨ KI-SPIELBERICHT</div>'
       + '<div style="font-size:13px;color:var(--text);line-height:1.6">' + escapeHtml(text) + '</div>'
       + '<div style="margin-top:10px;display:flex;gap:8px">'
