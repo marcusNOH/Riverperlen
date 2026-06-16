@@ -1078,7 +1078,7 @@ function strafeCount(m, id, delta) {
     const s = getStrafen().find(x=>x.id===id);
     sendNotif('⚠️ Strafe für ' + m.split(' ')[0], (s?.name||'Strafe') + ' – ' + fmt(s?.price||0), 'strafe');
   }
-  saveState(); renderStrafen(); updateHeader();
+ saveState(); setTimeout(function(){ renderStrafen(); updateHeader(); }, 0);
 }
 
 // ═══════════════════════════════════════════
