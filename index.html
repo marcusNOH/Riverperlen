@@ -1252,15 +1252,22 @@ function generateSpielBericht() {
     strafenZeilen.push(m.split(' ')[0] + ': ' + fmt(total) + ' (' + details + ')');
   });
   var notiz = (state.abendNotizen || {})[new Date().toISOString().slice(0,10)] || '';
+  var getraenke = [];
+  MEMBERS.forEach(function(m) {
+    var prof = (state.memberProfiles || {})[m] || {};
+    if (prof.vorlieben) getraenke.push(m.split(' ')[0] + ': ' + prof.vorlieben);
+  });
   var abendNr = getAbendNummer();
   var prompt = 'Du bist Vereinsreporter des Pegelclub Riverperlen, einem deutschen Kegelclub.'
     + ' Schreibe einen kurzen, lustigen und leicht übertriebenen Spielbericht für Kegelabend #' + abendNr + '.'
     + ' Erwähne die Mitglieder mit Vornamen, kommentiere die Strafen frech aber freundschaftlich.'
+    + ' Falls Getränke-Vorlieben oder persönliche Notizen erwähnt werden, gehe darauf humorvoll und persönlich ein – z.B. wer welches Getränk bevorzugt oder was in den Notizen steht.'
     + ' Halte es auf ca. 150 Wörter, auf Deutsch.'
     + '\n\nAnwesend: ' + (anwesend.length ? anwesend.map(function(m){ return m.split(' ')[0]; }).join(', ') : 'niemand')
     + '\nAbwesend: ' + (abwesend.length ? abwesend.map(function(m){ return m.split(' ')[0]; }).join(', ') : 'alle da')
     + '\nStrafen: ' + (strafenZeilen.length ? strafenZeilen.join('; ') : 'keine Strafen heute')
-    + (notiz ? '\nAbend-Notiz: ' + notiz : '');
+   + (notiz ? '\nAbend-Notiz: ' + notiz : '')
+    + (getraenke.length ? '\nGetränke-Vorlieben: ' + getraenke.join('; ') : '');
   fetch('https://api.schmele.eu/webhook/rp-spielbericht', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -1278,6 +1285,53 @@ function generateSpielBericht() {
   })
   .catch(function() {
     berichtEl.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:12px">❌ Keine Verbindung zur KI-API</div>';
+  });
+}
+  function generateHistBericht(idx) {
+  var h = (state.history || [])[idx];
+  if (!h) { showToast('Abend nicht gefunden'); return; }
+  var el = document.getElementById('histBericht_' + idx);
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--text3)"><span style="font-size:20px">&#x2728;</span><br>KI schreibt Zusammenfassung…</div>';
+
+  var anwArr = Object.keys(h.anwesenheit || {}).filter(function(m){ return h.anwesenheit[m] && h.anwesenheit[m].present; });
+  var abwArr = getMembers().filter(function(m){ return anwArr.indexOf(m) === -1; });
+  var strafenZeilen = [];
+  getMembers().forEach(function(m) {
+    var ms = (h.strafen && h.strafen[m]) ? h.strafen[m] : {};
+    var total = 0;
+    var details = [];
+    getStrafen().forEach(function(s){
+      var cnt = ms[s.id] || 0;
+      if (cnt > 0) { total += cnt * s.price; details.push(s.name + ' x' + cnt); }
+    });
+    if (total > 0) strafenZeilen.push(m.split(' ')[0] + ': ' + fmt(total) + ' (' + details.join(', ') + ')');
+  });
+  var abendNr = idx + 1;
+  var prompt = 'Du bist Vereinsreporter des Pegelclub Riverperlen, einem deutschen Kegelclub.'
+    + ' Schreibe eine kurze, witzige Zusammenfassung (ca. 80 Wörter) des bereits vergangenen Kegelabends #' + abendNr + ' vom ' + (h.date || 'unbekannt') + '.'
+    + ' Erwähne Anwesende mit Vornamen und kommentiere die Strafen frech aber freundschaftlich. Auf Deutsch.'
+    + '\n\nAnwesend: ' + (anwArr.length ? anwArr.map(function(m){ return m.split(' ')[0]; }).join(', ') : 'niemand')
+    + '\nAbwesend: ' + (abwArr.length ? abwArr.map(function(m){ return m.split(' ')[0]; }).join(', ') : 'alle da')
+    + '\nStrafen: ' + (strafenZeilen.length ? strafenZeilen.join('; ') : 'keine Strafen');
+
+  fetch('https://api.schmele.eu/webhook/rp-spielbericht', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret: 'rp-push-x9k4m2z7', prompt: prompt })
+  })
+  .then(function(res){ return res.json(); })
+  .then(function(data) {
+    var text = data.text ? data.text : 'Fehler beim Generieren';
+    el.innerHTML = '<div style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.25);border-radius:10px;padding:12px">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:1px;margin-bottom:6px">&#x2728; KI-ZUSAMMENFASSUNG</div>'
+      + '<div style="font-size:13px;color:var(--text);line-height:1.6">' + escapeHtml(text) + '</div>'
+      + '<button onclick="generateHistBericht(' + idx + ')" style="margin-top:8px;width:100%;padding:6px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer">&#x1F504; Neu generieren</button>'
+      + '</div>';
+  })
+  .catch(function() {
+    el.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:10px">❌ Keine Verbindung zur KI-API</div>';
   });
 }
 
@@ -1923,6 +1977,8 @@ function renderStats() {
       + '</div>'
       + '<div id="' + detailId + '" style="display:none;margin-top:8px;padding:8px;background:var(--bg3);border-radius:10px">'
       + memberRows
+      + '<button onclick="generateHistBericht(' + realIdx + ')" style="margin-top:8px;width:100%;padding:8px;background:linear-gradient(135deg,#a78bfa,#c4b5fd);color:#000;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">&#x2728; KI-Zusammenfassung</button>'
+      + '<div id="histBericht_' + realIdx + '" style="display:none;margin-top:8px"></div>'
       + '</div>'
       + '</div>';
   }).join('');
