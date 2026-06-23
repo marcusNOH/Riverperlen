@@ -631,6 +631,7 @@ async function initFb() {
           delete state.memberPhotos; // nicht im state halten
         }
         saveLocalState();
+       _restoreLocalZusagen();
         if (!_permSaving) { refreshCurrentPage(); updateHeader(); }
         else { updateHeader(); updateSyncBanner(); }
         // Reschedule termin reminders if termine data changed
@@ -1872,7 +1873,33 @@ function delExtraTermin(i) {
     state.extraTermine.splice(i,1); saveState(); renderTermine(); showToast('🗑️ Gelöscht');
   });
 }
+// ── TERMIN-ZUSAGEN: lokal persistieren gegen Firebase-Überschreibung ──────
+function _saveLocalZusagen() {
+  if (!currentUser || !state.terminZusagen) return;
+  try {
+    var myData = {};
+    Object.keys(state.terminZusagen).forEach(function(dk) {
+      if (state.terminZusagen[dk] && state.terminZusagen[dk][currentUser] !== undefined) {
+        myData[dk] = state.terminZusagen[dk][currentUser];
+      }
+    });
+    localStorage.setItem('rp_myzusagen_' + currentUser, JSON.stringify(myData));
+  } catch(e) {}
+}
 
+function _restoreLocalZusagen() {
+  if (!currentUser) return;
+  try {
+    var raw = localStorage.getItem('rp_myzusagen_' + currentUser);
+    if (!raw) return;
+    var myData = JSON.parse(raw);
+    if (!state.terminZusagen) state.terminZusagen = {};
+    Object.keys(myData).forEach(function(dk) {
+      if (!state.terminZusagen[dk]) state.terminZusagen[dk] = {};
+      state.terminZusagen[dk][currentUser] = myData[dk];
+    });
+  } catch(e) {}
+}
 function terminZusage(dateKey, status) {
   if (!currentUser) { showToast('❌ Bitte erst einloggen'); return; }
   if (!state.terminZusagen) state.terminZusagen = {};
@@ -1884,13 +1911,16 @@ function terminZusage(dateKey, status) {
     state.terminZusagen[dateKey][currentUser] = { status, grund: '' };
   }
   _lastWriteTs = Date.now();
-  saveState(); renderTermine();
+  saveState();
+  _saveLocalZusagen();
+  renderTermine();
   if (status === 'zusage' && prev !== 'zusage') showToast('✅ Zusage gespeichert!');
   if (status === 'absage' && prev !== 'absage') showToast('❌ Absage gespeichert');
 }
 function terminGrundSpeichern(dateKey) {
   if (!currentUser) return;
   saveState();
+  _saveLocalZusagen();
   showToast('✅ Absage-Grund gespeichert');
 }
 function terminGrund(dateKey, grund) {
