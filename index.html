@@ -631,7 +631,7 @@ async function initFb() {
           delete state.memberPhotos; // nicht im state halten
         }
         saveLocalState();
-       _restoreLocalZusagen();
+       if (currentUser) _restoreLocalZusagen();
         if (!_permSaving) { refreshCurrentPage(); updateHeader(); }
         else { updateHeader(); updateSyncBanner(); }
         // Reschedule termin reminders if termine data changed
@@ -4278,7 +4278,9 @@ function pinSubmit() {
       _isAdminSession = true;
       try { sessionStorage.setItem('rp_user', currentUser); } catch(e) {}
       hideLoginScreen();
-      updateLoginLogo(); updateHeader(); renderDashboard();
+      updateLoginLogo(); updateHeader();
+      _restoreLocalZusagen();
+      renderDashboard();
       setTimeout(initPresence, 1000);
       initChatWatermark(); applyPermissions(); updateAbendNavLabel(); startReminderLoop();
     } else {
@@ -4366,6 +4368,7 @@ function initLogin() {
     hideLoginScreen();
     updateLoginLogo();
     updateHeader();
+    _restoreLocalZusagen();
     renderDashboard();
     setTimeout(initPresence, 2000);
     // Init chat watermark – must happen BEFORE any Firebase update fires notifs
