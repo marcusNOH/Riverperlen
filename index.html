@@ -1661,15 +1661,12 @@ let termineCount = 12;
 function termineShowMore() { termineCount+=10; renderTermine(); }
 
 // Build unified sorted list of all termine (regular + extra)
-function getAllTermine() {
+ffunction getAllTermine() {
   const list = [];
-  // Regular repeating Kegelabende – UTC-Basis damit Zeitzonenwechsel keinen Einfluss haben
-  var baseMs = Date.UTC(2026, 2, 5); // 05.03.2026 UTC
+  // Regular repeating Kegelabende
   for (let i = 0; i < termineCount; i++) {
-    var ms = baseMs + i * 28 * 24 * 60 * 60 * 1000;
-    var d = new Date(ms);
-    var dateKey = new Date(ms).toISOString().slice(0,10);
-    list.push({ date: d, dateKey: dateKey, isExtra: false, extraIdx: null, name: null, zeit: null, ort: null, extraName: null });
+    const d = new Date(TERMIN_START.getTime() + i * 28 * 24 * 60 * 60 * 1000);
+    list.push({ date: d, dateKey: d.toISOString().slice(0,10), isExtra: false, extraIdx: null, name: null, zeit: null, ort: null, extraName: null });
   }
   // Extra termine – merge into same list chronologically
   (state.extraTermine || []).forEach((t, i) => {
@@ -2533,11 +2530,12 @@ function scheduleTerminReminders() {
   const alleTermine = [];
 
   // Regular repeating termine (every 28 days from base date)
-  var baseMs2 = Date.UTC(2026, 2, 5);
+  const baseDate = new Date('2026-03-05');
   for (let i = 0; i < 52; i++) {
-    var ms2 = baseMs2 + i * 28 * 24 * 60 * 60 * 1000;
-    var dk = new Date(ms2).toISOString().slice(0,10);
-    alleTermine.push({ dateKey: dk, name: 'Kegelabend', ts: ms2 });
+    const d = new Date(baseDate);
+    d.setDate(d.getDate() + i * 28);
+    const dk = d.toISOString().slice(0,10);
+    alleTermine.push({ dateKey: dk, name: 'Kegelabend', ts: d.getTime() });
   }
   // Extra termine
   (state.extraTermine || []).forEach(et => {
