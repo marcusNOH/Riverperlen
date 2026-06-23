@@ -618,9 +618,22 @@ async function initFb() {
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
+        // terminZusagen: eigene Einträge lokal sichern bevor Remote überschreibt
+        var localZusagen = (state.terminZusagen && currentUser)
+          ? JSON.parse(JSON.stringify(state.terminZusagen)) : null;
         state = {...defaultState(),...remote};
         // Lokale Perms behalten – Remote nie überschreiben lassen
         if (localPerms) state.memberPerms = localPerms;
+        // Eigene Termin-Zusagen lokal behalten – merge mit Remote
+        if (localZusagen && currentUser) {
+          if (!state.terminZusagen) state.terminZusagen = {};
+          Object.keys(localZusagen).forEach(function(dateKey) {
+            if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
+            if (localZusagen[dateKey][currentUser] !== undefined) {
+              state.terminZusagen[dateKey][currentUser] = localZusagen[dateKey][currentUser];
+            }
+          });
+        }
 
         // Sync Firebase photos to localMeta for this device
         // memberPhotos kommt jetzt aus /riverperlen/photos – hier ignorieren
