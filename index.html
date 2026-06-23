@@ -625,8 +625,15 @@ async function initFb() {
         // Lokale Perms behalten – Remote nie überschreiben lassen
         if (localPerms) state.memberPerms = localPerms;
         // Eigene Termin-Zusagen lokal behalten – merge mit Remote
+        if (loc// Eigene Termin-Zusagen lokal behalten – Remote-Eintrag für currentUser
+        // komplett durch lokalen Stand ersetzen (nie mergen – nur überschreiben)
         if (localZusagen && currentUser) {
           if (!state.terminZusagen) state.terminZusagen = {};
+          Object.keys(state.terminZusagen).forEach(function(dateKey) {
+            if (state.terminZusagen[dateKey]) {
+              delete state.terminZusagen[dateKey][currentUser];
+            }
+          });
           Object.keys(localZusagen).forEach(function(dateKey) {
             if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
             if (localZusagen[dateKey][currentUser] !== undefined) {
