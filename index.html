@@ -618,8 +618,8 @@ async function initFb() {
         // memberPerms: lokal hat Priorität wenn bereits Daten vorhanden
         var localPerms = (state.memberPerms && Object.keys(state.memberPerms).length > 0)
           ? state.memberPerms : null;
-        // terminZusagen: eigene Einträge lokal sichern bevor Remote überschreibt
-        var localZusagen = (state.terminZusagen && currentUser)
+        // terminZusagen: nur sichern wenn User bereits eingeloggt
+        var localZusagen = (state.terminZusagen && currentUser && Object.keys(state.terminZusagen).length > 0)
           ? JSON.parse(JSON.stringify(state.terminZusagen)) : null;
         state = {...defaultState(),...remote};
         // Lokale Perms behalten – Remote nie überschreiben lassen
