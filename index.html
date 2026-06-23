@@ -1779,15 +1779,29 @@ function renderTermineItem(t, zusagen) {
     ? `<button onclick="delExtraTermin(${t.extraIdx})" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;padding:4px;flex-shrink:0" title="Termin l\u00F6schen">\u2715</button>`
     : '';
 
-  let participantHtml = '';
+ let participantHtml = '';
   if (isFuture || isToday) {
     const zuNames   = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
     const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
+    const abNames   = abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+escapeHtml(v.grund)+')':''));
+    const offen     = getMembers().filter(function(m){ return !dayZusagen[m]; });
+    const offenNames= offen.map(function(m){ return m.split(' ')[0]; });
     participantHtml = `
-      <div style="margin-top:8px;font-size:11px">
-        ${zuCount>0?`<div style="color:var(--green);margin-bottom:2px">\u2705 Dabei (${zuCount}): ${zuNames.join(', ')}</div>`:''}
-        ${abCount>0?`<div style="color:var(--red);margin-bottom:2px">\u274C Abgesagt (${abCount}): ${abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+escapeHtml(v.grund)+')':'')).join(', ')}</div>`:''}
-        ${zuCount===0&&abCount===0?`<div style="color:var(--text3)">Noch keine R\u00FCckmeldungen</div>`:''}
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:6px">
+          <div style="flex:1;background:rgba(61,214,140,.08);border-radius:8px;padding:7px 9px">
+            <div style="font-size:10px;font-weight:700;color:var(--green);letter-spacing:.5px;margin-bottom:3px">\u2705 DABEI \u00b7 ${zuCount}</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.5">${zuCount?zuNames.join(', '):'\u2013'}</div>
+          </div>
+          <div style="flex:1;background:rgba(232,64,64,.07);border-radius:8px;padding:7px 9px">
+            <div style="font-size:10px;font-weight:700;color:var(--red);letter-spacing:.5px;margin-bottom:3px">\u274C ABGESAGT \u00b7 ${abCount}</div>
+            <div style="font-size:11px;color:var(--text2);line-height:1.5">${abCount?abNames.join(', '):'\u2013'}</div>
+          </div>
+        </div>
+        <div style="background:var(--bg3);border-radius:8px;padding:7px 9px">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:3px">\u2753 KEINE R\u00DCCKMELDUNG \u00b7 ${offen.length}</div>
+          <div style="font-size:11px;color:var(--text3);line-height:1.5">${offen.length?offenNames.join(', '):'Alle haben geantwortet \uD83C\uDFB3'}</div>
+        </div>
       </div>`;
     if (currentUser) {
       participantHtml += `
@@ -1880,10 +1894,11 @@ function terminGrundSpeichern(dateKey) {
 }
 function terminGrund(dateKey, grund) {
   if (!currentUser) return;
-  if (!state.terminZusagen) state.terminZusagen = {};
-  if (!state.terminZusagen[dateKey]) state.terminZusagen[dateKey] = {};
-  if (!state.terminZusagen[dateKey][currentUser]) state.terminZusagen[dateKey][currentUser] = { status: 'absage', grund: '' };
-  state.terminZusagen[dateKey][currentUser].grund = grund;
+  // Grund NUR speichern wenn der User tatsächlich auf "absage" steht.
+  // Sonst würde ein altes Grund-Feld den frischen Status überschreiben.
+  var eintrag = state.terminZusagen && state.terminZusagen[dateKey] && state.terminZusagen[dateKey][currentUser];
+  if (!eintrag || eintrag.status !== 'absage') return;
+  eintrag.grund = grund;
   saveState();
   // Kein renderTermine() hier – wird per oninput live gespeichert, kein Flackern
 }
