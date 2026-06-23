@@ -1883,6 +1883,7 @@ function terminZusage(dateKey, status) {
   } else {
     state.terminZusagen[dateKey][currentUser] = { status, grund: '' };
   }
+  _lastWriteTs = Date.now();
   saveState(); renderTermine();
   if (status === 'zusage' && prev !== 'zusage') showToast('✅ Zusage gespeichert!');
   if (status === 'absage' && prev !== 'absage') showToast('❌ Absage gespeichert');
