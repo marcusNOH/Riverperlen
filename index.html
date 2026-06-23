@@ -1785,11 +1785,7 @@ function renderTermineItem(t, zusagen) {
     const zuNames   = Object.entries(dayZusagen).filter(([,v])=>v.status==='zusage').map(([k])=>k.split(' ')[0]);
     const abEntries = Object.entries(dayZusagen).filter(([,v])=>v.status==='absage');
     const abNames   = abEntries.map(([k,v])=>k.split(' ')[0]+(v.grund?' ('+escapeHtml(v.grund)+')':''));
-const offen = getMembers().filter(function(m) {
-      var short = m.split(' ')[0];
-      return (!dayZusagen[m] || !dayZusagen[m].status) &&
-             (!dayZusagen[short] || !dayZusagen[short].status);
-    });
+const offen     = getMembers().filter(function(m){ return !dayZusagen[m] || (!dayZusagen[m].status); });
     const offenNames= offen.map(function(m){ return m.split(' ')[0]; });
     participantHtml = `
       <div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">
