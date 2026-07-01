@@ -1822,7 +1822,27 @@ const offen     = getMembers().filter(function(m){ return !dayZusagen[m] || (!da
             style="flex:1;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-sizing:border-box">
           <button onclick="terminGrundSpeichern('${dateKey}')" style="padding:7px 12px;background:var(--green);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">✓ OK</button>
         </div>`:''}`;
+   }
+  }
+
+  var notizHtml = '';
+  if (isFuture || isToday) {
+    var notizVal = (state.abendNotizen || {})[dateKey] || '';
+    notizHtml = '<div style="margin-top:8px;background:var(--bg3);border-radius:8px;padding:7px 9px">'
+      + '<div style="font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.5px;margin-bottom:4px">\uD83D\uDCDD NOTIZ</div>';
+    if (notizVal) {
+      notizHtml += '<div style="font-size:12px;color:var(--text2);line-height:1.5;white-space:pre-wrap;margin-bottom:6px">' + escapeHtml(notizVal) + '</div>';
     }
+    if (currentUser) {
+      notizHtml += '<div style="display:flex;gap:6px;align-items:center">'
+        + '<input type="text" id="notizInput_' + dateKey + '" maxlength="200" placeholder="Notiz hinzuf\u00FCgen (z.B. Gast kommt mit)\u2026" '
+        + 'value="' + notizVal.split('"').join('&quot;') + '" '
+        + 'oninput="terminNotiz(\'' + dateKey + '\',this.value)" '
+        + 'style="flex:1;padding:7px 10px;font-size:12px;border-radius:8px;border:1px solid var(--border);background:var(--bg2);color:var(--text);box-sizing:border-box">'
+        + '<button onclick="terminNotizSpeichern(\'' + dateKey + '\')" style="padding:7px 12px;background:var(--gold);border:none;border-radius:8px;color:#000;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0">\u2713 OK</button>'
+        + '</div>';
+    }
+    notizHtml += '</div>';
   }
 
   return `<div class="termin-item" style="${isPast&&!isToday?'opacity:0.45':''}">
@@ -1833,7 +1853,8 @@ const offen     = getMembers().filter(function(m){ return !dayZusagen[m] || (!da
     <div class="termin-info" style="flex:1">
       <div class="termin-title">${title}</div>
       <div class="termin-sub">${sub}</div>
-      ${(isFuture||isToday)?participantHtml:''}
+     ${(isFuture||isToday)?participantHtml:''}
+      ${(isFuture||isToday)?notizHtml:''}
     </div>
     ${delBtn}
   </div>`;
@@ -1932,6 +1953,19 @@ function terminGrund(dateKey, grund) {
   eintrag.grund = grund;
   saveState();
   // Kein renderTermine() hier – wird per oninput live gespeichert, kein Flackern
+}
+  function terminNotiz(dateKey, val) {
+  if (!currentUser) return;
+  if (!state.abendNotizen) state.abendNotizen = {};
+  state.abendNotizen[dateKey] = val;
+  saveState();
+  // Kein renderTermine() hier – live per oninput, kein Flackern
+}
+function terminNotizSpeichern(dateKey) {
+  if (!currentUser) return;
+  saveState();
+  showToast('\uD83D\uDCDD Notiz gespeichert');
+  renderTermine();
 }
 
 // ═══════════════════════════════════════════
